@@ -1,8 +1,7 @@
 import { useState } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import { getUser, saveUser, generateReferralCode, findUserByReferralCode, addReferral } from '../lib/storage'
-import { REF_L1, REF_L2 } from '../lib/plans'
+import { verifyUser, createUser, findUserByReferralCode, getUser, generateReferralCode } from '../lib/db'
 
 export default function AuthPage() {
   const [tab, setTab] = useState('login')
@@ -41,41 +40,41 @@ export default function AuthPage() {
 
     try {
       if (tab === 'login') {
-        const userData = getUser(normalPhone)
-        if (!userData) { setError('Account not found. Please register.'); setLoading(false); return }
-        if (userData.pin !== pin) { setError('Incorrect PIN'); setLoading(false); return }
+        const userData = await verifyUser(normalPhone, pin)
+        if (!userData) {
+          setError('Account not found or incorrect PIN')
+          setLoading(false)
+          return
+        }
         login(userData)
         navigate('/dashboard')
       } else {
         if (!name.trim()) { setError('Please enter your full name'); setLoading(false); return }
-        const existing = getUser(normalPhone)
+
+        const existing = await getUser(normalPhone)
         if (existing) { setError('Account already exists. Please login.'); setLoading(false); return }
 
         const referralCode = generateReferralCode(normalPhone)
-        const userData = {
-          id: normalPhone,
+        let referredBy = null
+
+        if (refCode.trim()) {
+          const referrer = await findUserByReferralCode(refCode.trim().toUpperCase())
+          if (referrer) referredBy = referrer.phone
+        }
+
+        const userData = await createUser({
           phone: normalPhone,
           name: name.trim(),
           pin,
-          balance: 0,
           referralCode,
-          referredBy: null,
-          createdAt: new Date().toISOString(),
-        }
+          referredBy,
+        })
 
-        // Handle referral
-        if (refCode.trim()) {
-          const referrer = findUserByReferralCode(refCode.trim().toUpperCase())
-          if (referrer) {
-            userData.referredBy = referrer.phone
-          }
-        }
-
-        saveUser(normalPhone, userData)
-        login(userData)
+        login({ ...userData, id: normalPhone })
         navigate('/dashboard')
       }
     } catch (err) {
+      console.error(err)
       setError('Something went wrong. Please try again.')
     }
     setLoading(false)
@@ -83,7 +82,6 @@ export default function AuthPage() {
 
   return (
     <div className="min-h-screen bg-gray-950 flex flex-col items-center justify-center p-4">
-      {/* Logo */}
       <div className="mb-8 text-center">
         <h1 className="text-4xl font-black bg-gradient-to-r from-red-500 to-pink-500 bg-clip-text text-transparent">
           Dumiropay
@@ -93,7 +91,6 @@ export default function AuthPage() {
 
       <div className="w-full max-w-md">
         <div className="card">
-          {/* Tabs */}
           <div className="flex gap-1 bg-gray-800 p-1 rounded-xl mb-6">
             {['login', 'register'].map(t => (
               <button

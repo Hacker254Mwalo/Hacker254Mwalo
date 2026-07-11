@@ -1,44 +1,56 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
-import { saveUser, getReferrals } from '../lib/storage'
+import { updateUserBalance, getReferrals, generateReferralCode, addDeposit } from '../lib/db'
 import { MPESA_PAYBILL, WITHDRAWAL_FEE } from '../lib/plans'
-import { generateReferralCode } from '../lib/storage'
 
-function RechargeModal({ onClose, onRecharge }) {
+function DepositModal({ user, onClose, onPending }) {
   const [amount, setAmount] = useState('')
-  const [mpesaCode, setMpesaCode] = useState('')
-  const [step, setStep] = useState(1)
+  const [loading, setLoading] = useState(false)
+  const [sent, setSent] = useState(false)
+  const [error, setError] = useState('')
 
-  function proceed() {
+  async function initiateStkPush() {
     const amt = parseInt(amount)
-    if (!amt || amt < 100) return
-    setStep(2)
-  }
+    if (!amt || amt < 100) { setError('Minimum deposit is KSh 100'); return }
+    setLoading(true)
+    setError('')
 
-  function confirm() {
-    if (!mpesaCode.trim()) return
-    onRecharge(parseInt(amount))
-    onClose()
+    try {
+      const res = await fetch('/api/stk-push', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          phone: user.phone,
+          amount: amt,
+          userPhone: user.phone,
+        }),
+      })
+      const data = await res.json()
+
+      if (data.success || data.checkoutRequestId) {
+        await addDeposit(user.phone, { amount: amt, checkoutId: data.checkoutRequestId })
+        setSent(true)
+        onPending()
+      } else {
+        setError(data.message || data.error || 'STK Push failed. Try again.')
+      }
+    } catch (err) {
+      setError('Network error. Please try again.')
+    }
+    setLoading(false)
   }
 
   return (
     <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4" onClick={onClose}>
       <div className="card max-w-sm w-full" onClick={e => e.stopPropagation()}>
-        <h3 className="text-xl font-bold mb-2">📱 Recharge via M-Pesa</h3>
+        <h3 className="text-xl font-bold mb-2">📱 Deposit via M-Pesa</h3>
 
-        {step === 1 ? (
+        {!sent ? (
           <>
-            <div className="bg-gray-800 rounded-xl p-4 mb-4">
-              <p className="text-sm text-gray-400 mb-1">M-Pesa Paybill Number</p>
-              <p className="text-3xl font-black text-white tracking-widest">{MPESA_PAYBILL}</p>
-              <p className="text-xs text-gray-500 mt-1">Account Number: Your Phone Number</p>
-            </div>
-            <ol className="text-sm text-gray-400 space-y-1 mb-4 list-decimal list-inside">
-              <li>Go to M-Pesa → Lipa na M-Pesa → Paybill</li>
-              <li>Enter Business No: <span className="text-white font-bold">{MPESA_PAYBILL}</span></li>
-              <li>Account No: your phone number</li>
-              <li>Enter amount and complete payment</li>
-            </ol>
+            <p className="text-gray-400 text-sm mb-4">
+              Enter the amount and we'll send an M-Pesa prompt to <span className="text-white font-semibold">{user.phone}</span>
+            </p>
+
             <div className="mb-4">
               <label className="text-xs text-gray-400 mb-1 block">Amount (KSh)</label>
               <input
@@ -50,34 +62,38 @@ function RechargeModal({ onClose, onRecharge }) {
                 onChange={e => setAmount(e.target.value)}
               />
             </div>
+
+            {error && (
+              <div className="bg-red-900/40 border border-red-700 text-red-300 text-sm rounded-lg px-4 py-3 mb-4">
+                {error}
+              </div>
+            )}
+
+            <div className="bg-gray-800 rounded-xl p-3 mb-4 text-xs text-gray-400">
+              <p>Paybill: <span className="text-white font-bold">{MPESA_PAYBILL}</span></p>
+              <p>Account: <span className="text-white font-bold">{user.phone}</span></p>
+            </div>
+
             <div className="flex gap-3">
               <button onClick={onClose} className="btn-secondary flex-1">Cancel</button>
-              <button onClick={proceed} disabled={!amount || parseInt(amount) < 100} className="btn-primary flex-1">
-                Next
+              <button
+                onClick={initiateStkPush}
+                disabled={loading || !amount || parseInt(amount) < 100}
+                className="btn-primary flex-1"
+              >
+                {loading ? 'Sending...' : 'Pay Now'}
               </button>
             </div>
           </>
         ) : (
           <>
-            <p className="text-gray-400 text-sm mb-4">Enter the M-Pesa confirmation code you received after payment.</p>
-            <div className="mb-4">
-              <label className="text-xs text-gray-400 mb-1 block">M-Pesa Code</label>
-              <input
-                className="input-field"
-                placeholder="e.g. QJK7T8XXXX"
-                value={mpesaCode}
-                onChange={e => setMpesaCode(e.target.value.toUpperCase())}
-              />
+            <div className="text-center py-6">
+              <p className="text-5xl mb-3">📲</p>
+              <p className="text-green-400 font-bold text-lg mb-2">M-Pesa Prompt Sent!</p>
+              <p className="text-gray-400 text-sm">Check your phone and enter your M-Pesa PIN to complete the deposit.</p>
+              <p className="text-yellow-400 text-xs mt-3">⏳ Your deposit will appear as <strong>Pending</strong> until admin approves it.</p>
             </div>
-            <p className="text-xs text-gray-500 mb-4">
-              Amount to credit: <span className="text-green-400 font-bold">KSh {parseInt(amount || 0).toLocaleString()}</span>
-            </p>
-            <div className="flex gap-3">
-              <button onClick={() => setStep(1)} className="btn-secondary flex-1">Back</button>
-              <button onClick={confirm} disabled={!mpesaCode.trim()} className="btn-primary flex-1">
-                Confirm
-              </button>
-            </div>
+            <button onClick={onClose} className="btn-primary w-full">Done</button>
           </>
         )}
       </div>
@@ -164,16 +180,21 @@ function WithdrawModal({ balance, onClose, onWithdraw }) {
 
 export default function ProfilePage() {
   const { user, updateUser, logout } = useAuth()
-  const [showRecharge, setShowRecharge] = useState(false)
+  const [showDeposit, setShowDeposit] = useState(false)
   const [showWithdraw, setShowWithdraw] = useState(false)
   const [toast, setToast] = useState('')
   const [copied, setCopied] = useState(false)
+  const [referrals, setReferrals] = useState([])
 
-  const referrals = user ? getReferrals(user.id) : []
   const refCode = user ? (user.referralCode || generateReferralCode(user.phone)) : ''
   const refLink = `${window.location.origin}/login?ref=${refCode}`
   const totalL1 = referrals.filter(r => r.level === 1).reduce((s, r) => s + r.commission, 0)
   const totalL2 = referrals.filter(r => r.level === 2).reduce((s, r) => s + r.commission, 0)
+
+  useEffect(() => {
+    if (!user) return
+    getReferrals(user.phone || user.id).then(setReferrals).catch(() => {})
+  }, [user])
 
   function showToast(msg) {
     setToast(msg)
@@ -187,20 +208,16 @@ export default function ProfilePage() {
     })
   }
 
-  function handleRecharge(amount) {
-    const newBalance = (user.balance || 0) + amount
-    updateUser({ balance: newBalance })
-    saveUser(user.id, { balance: newBalance })
-    showToast(`✅ KSh ${amount.toLocaleString()} added to your balance!`)
-  }
-
-  function handleWithdraw(amount) {
+  async function handleWithdraw(amount) {
     const fee = Math.floor(amount * WITHDRAWAL_FEE)
     const newBalance = (user.balance || 0) - amount
     updateUser({ balance: newBalance })
-    saveUser(user.id, { balance: newBalance })
+    await updateUserBalance(user.phone || user.id, newBalance).catch(() => {})
     showToast(`✅ Withdrawal of KSh ${(amount - fee).toLocaleString()} initiated! (Fee: KSh ${fee})`)
   }
+
+  const adminPhone = import.meta.env.VITE_ADMIN_PHONE
+  const isAdmin = user && adminPhone && user.phone === adminPhone
 
   return (
     <div className="pt-4 md:pt-20 pb-24 md:pb-8 px-4 max-w-2xl mx-auto">
@@ -210,8 +227,20 @@ export default function ProfilePage() {
         </div>
       )}
 
-      {showRecharge && <RechargeModal onClose={() => setShowRecharge(false)} onRecharge={handleRecharge} />}
-      {showWithdraw && <WithdrawModal balance={user?.balance || 0} onClose={() => setShowWithdraw(false)} onWithdraw={handleWithdraw} />}
+      {showDeposit && (
+        <DepositModal
+          user={user}
+          onClose={() => setShowDeposit(false)}
+          onPending={() => showToast('✅ Deposit pending admin approval!')}
+        />
+      )}
+      {showWithdraw && (
+        <WithdrawModal
+          balance={user?.balance || 0}
+          onClose={() => setShowWithdraw(false)}
+          onWithdraw={handleWithdraw}
+        />
+      )}
 
       {/* Profile Header */}
       <div className="card mb-6 flex items-center gap-4">
@@ -223,6 +252,11 @@ export default function ProfilePage() {
           <p className="text-gray-400 text-sm">{user?.phone}</p>
           <p className="text-xs text-gray-500 mt-1">Member since {user?.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'N/A'}</p>
         </div>
+        {isAdmin && (
+          <a href="/admin" className="text-xs bg-yellow-600 hover:bg-yellow-500 text-white px-3 py-1.5 rounded-lg font-semibold transition-colors">
+            Admin
+          </a>
+        )}
       </div>
 
       {/* Balance */}
@@ -230,8 +264,8 @@ export default function ProfilePage() {
         <p className="text-gray-400 text-sm mb-1">Available Balance</p>
         <p className="text-3xl font-black">KSh {(user?.balance || 0).toLocaleString()}</p>
         <div className="flex gap-3 mt-4">
-          <button onClick={() => setShowRecharge(true)} className="btn-primary flex-1 text-sm py-2.5">
-            + Recharge
+          <button onClick={() => setShowDeposit(true)} className="btn-primary flex-1 text-sm py-2.5">
+            + Deposit
           </button>
           <button onClick={() => setShowWithdraw(true)} className="btn-secondary flex-1 text-sm py-2.5">
             Withdraw
@@ -267,7 +301,6 @@ export default function ProfilePage() {
           </button>
         </div>
 
-        {/* Referral list */}
         {referrals.length > 0 ? (
           <div className="space-y-2 mt-4">
             <p className="text-sm font-semibold text-gray-400 uppercase tracking-wider">Referral History</p>
@@ -289,7 +322,6 @@ export default function ProfilePage() {
         )}
       </div>
 
-      {/* Logout */}
       <button
         onClick={logout}
         className="w-full text-center py-3 text-red-400 hover:text-red-300 text-sm font-medium transition-colors border border-red-900/50 rounded-xl hover:bg-red-900/20"

@@ -1,10 +1,9 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import { canClaimLoginBonus, setLastLoginBonus, canSpin, setLastSpin, isSpinDay, getInvestments } from '../lib/storage'
-import { saveUser } from '../lib/storage'
+import { canClaimLoginBonus, setLastLoginBonus, canSpin, setLastSpin, isSpinDay } from '../lib/storage'
+import { getInvestments, updateUserBalance } from '../lib/db'
 import { LOGIN_BONUS } from '../lib/plans'
-
 
 const SPIN_PRIZES = [50, 100, 200, 0, 150, 75, 300, 0, 250, 500]
 
@@ -35,7 +34,6 @@ function SpinModal({ onClose, onResult }) {
         <h3 className="text-xl font-bold text-center mb-2">🎰 Lucky Spin</h3>
         <p className="text-gray-400 text-sm text-center mb-6">Available every Monday & Friday</p>
 
-        {/* Wheel visual */}
         <div className="relative mx-auto w-48 h-48 mb-6">
           <div
             className="w-full h-full rounded-full border-4 border-red-500 flex items-center justify-center bg-gradient-to-br from-red-900 to-pink-900 transition-transform"
@@ -75,8 +73,13 @@ export default function Dashboard() {
   const navigate = useNavigate()
   const [showSpin, setShowSpin] = useState(false)
   const [toast, setToast] = useState('')
+  const [investments, setInvestments] = useState([])
 
-  const investments = user ? getInvestments(user.id) : []
+  useEffect(() => {
+    if (!user) return
+    getInvestments(user.phone || user.id).then(setInvestments).catch(() => {})
+  }, [user])
+
   const activeInvestments = investments.filter(i => i.status === 'active')
 
   function showToast(msg) {
@@ -84,30 +87,29 @@ export default function Dashboard() {
     setTimeout(() => setToast(''), 3000)
   }
 
-  function claimLoginBonus() {
+  async function claimLoginBonus() {
     if (!canClaimLoginBonus(user.id)) {
       showToast('Daily bonus already claimed today!')
       return
     }
     const newBalance = (user.balance || 0) + LOGIN_BONUS
     updateUser({ balance: newBalance })
-    saveUser(user.id, { balance: newBalance })
+    await updateUserBalance(user.phone || user.id, newBalance).catch(() => {})
     setLastLoginBonus(user.id)
     showToast(`+KSh ${LOGIN_BONUS} Daily Login Bonus claimed! 🎉`)
   }
 
-  function handleSpinResult(prize) {
+  async function handleSpinResult(prize) {
     if (prize > 0) {
       const newBalance = (user.balance || 0) + prize
       updateUser({ balance: newBalance })
-      saveUser(user.id, { balance: newBalance })
+      await updateUserBalance(user.phone || user.id, newBalance).catch(() => {})
     }
     setLastSpin(user.id)
   }
 
   const spinAvailable = user && canSpin(user.id)
   const loginBonusAvailable = user && canClaimLoginBonus(user.id)
-  const spinDayName = new Date().getDay() === 1 ? 'Monday' : new Date().getDay() === 5 ? 'Friday' : null
 
   return (
     <div className="pt-4 md:pt-20 pb-24 md:pb-8 px-4 max-w-2xl mx-auto">
@@ -124,7 +126,6 @@ export default function Dashboard() {
         />
       )}
 
-      {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
           <p className="text-gray-400 text-sm">Welcome back,</p>
@@ -135,7 +136,6 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Balance card */}
       <div className="balance-gradient rounded-2xl p-6 mb-6">
         <p className="text-gray-400 text-sm mb-1">Total Balance</p>
         <p className="text-4xl font-black text-white">
@@ -146,7 +146,7 @@ export default function Dashboard() {
             onClick={() => navigate('/profile')}
             className="btn-primary text-sm py-2 px-4"
           >
-            + Recharge
+            + Deposit
           </button>
           <button
             onClick={() => navigate('/profile')}
@@ -157,10 +157,9 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Action buttons */}
       <div className="grid grid-cols-2 gap-4 mb-6">
-        {/* Daily Bonus */}
-        <div className={`card flex flex-col items-center gap-2 cursor-pointer transition-transform active:scale-95 ${loginBonusAvailable ? 'ring-2 ring-green-500/40' : 'opacity-60'}`}
+        <div
+          className={`card flex flex-col items-center gap-2 cursor-pointer transition-transform active:scale-95 ${loginBonusAvailable ? 'ring-2 ring-green-500/40' : 'opacity-60'}`}
           onClick={claimLoginBonus}
         >
           <span className="text-3xl">🎁</span>
@@ -170,7 +169,6 @@ export default function Dashboard() {
           </span>
         </div>
 
-        {/* Lucky Spin */}
         <div
           className={`card flex flex-col items-center gap-2 cursor-pointer transition-transform active:scale-95 ${spinAvailable ? 'ring-2 ring-yellow-500/40' : 'opacity-60'}`}
           onClick={() => { if (spinAvailable) setShowSpin(true) }}
@@ -183,7 +181,6 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Quick Invest */}
       <div className="card mb-6 flex items-center justify-between">
         <div>
           <p className="font-semibold">Start Investing</p>
@@ -194,7 +191,6 @@ export default function Dashboard() {
         </button>
       </div>
 
-      {/* Active investments */}
       {activeInvestments.length > 0 && (
         <div className="card mb-6">
           <h3 className="font-semibold mb-3 flex items-center gap-2">
@@ -217,7 +213,6 @@ export default function Dashboard() {
           </div>
         </div>
       )}
-
     </div>
   )
 }

@@ -2,8 +2,11 @@ import { NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 
 export default function Navbar() {
-  const { logout } = useAuth()
+  const { user, logout } = useAuth()
   const navigate = useNavigate()
+
+  const adminPhone = import.meta.env.VITE_ADMIN_PHONE
+  const isAdmin = user && adminPhone && user.phone === adminPhone
 
   function handleLogout() {
     logout()
@@ -44,6 +47,11 @@ export default function Navbar() {
           <button onClick={handleLogout} className="ml-2 px-4 py-2 text-sm text-gray-400 hover:text-red-400 rounded-lg hover:bg-gray-800 transition-colors">
             Logout
           </button>
+          {isAdmin && (
+            <NavLink to="/admin" className="ml-1 px-3 py-1.5 text-xs bg-yellow-600 hover:bg-yellow-500 text-white rounded-lg font-semibold transition-colors">
+              Admin
+            </NavLink>
+          )}
         </div>
       </nav>
 

@@ -1,8 +1,7 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
-import { saveUser, addInvestment, getInvestments, findUserByReferralCode, addReferral } from '../lib/storage'
+import { getInvestments, addInvestment, updateUserBalance, getUser, addReferralCommission } from '../lib/db'
 import { PLANS, getDailyReturn, getTotalReturn, REF_L1, REF_L2 } from '../lib/plans'
-
 
 function PlanCard({ plan, onInvest, alreadyUsed }) {
   const daily = getDailyReturn(plan.amount)
@@ -45,7 +44,7 @@ function PlanCard({ plan, onInvest, alreadyUsed }) {
   )
 }
 
-function ConfirmModal({ plan, balance, onConfirm, onClose }) {
+function ConfirmModal({ plan, balance, onConfirm, onClose, confirming }) {
   if (!plan) return null
   const enough = balance >= plan.amount
 
@@ -82,14 +81,14 @@ function ConfirmModal({ plan, balance, onConfirm, onClose }) {
 
         {!enough && (
           <div className="bg-red-900/40 border border-red-700 text-red-300 text-sm rounded-lg px-4 py-3 mb-4">
-            Insufficient balance. Please recharge via M-Pesa first.
+            Insufficient balance. Please deposit via M-Pesa first.
           </div>
         )}
 
         <div className="flex gap-3">
           <button onClick={onClose} className="btn-secondary flex-1">Cancel</button>
-          <button onClick={onConfirm} disabled={!enough} className="btn-primary flex-1">
-            Confirm
+          <button onClick={onConfirm} disabled={!enough || confirming} className="btn-primary flex-1">
+            {confirming ? 'Processing...' : 'Confirm'}
           </button>
         </div>
       </div>
@@ -101,75 +100,73 @@ export default function PlansPage() {
   const { user, updateUser } = useAuth()
   const [selectedPlan, setSelectedPlan] = useState(null)
   const [toast, setToast] = useState('')
-  const investments = user ? getInvestments(user.id) : []
+  const [confirming, setConfirming] = useState(false)
+  const [investments, setInvestments] = useState([])
+
+  useEffect(() => {
+    if (!user) return
+    getInvestments(user.phone || user.id).then(setInvestments).catch(() => {})
+  }, [user])
 
   function showToast(msg) {
     setToast(msg)
     setTimeout(() => setToast(''), 3500)
   }
 
-  function handleInvest(plan) {
-    setSelectedPlan(plan)
-  }
-
-  function confirmInvest() {
+  async function confirmInvest() {
     const plan = selectedPlan
-    if (!plan || !user) return
+    if (!plan || !user || confirming) return
+    setConfirming(true)
 
+    const userPhone = user.phone || user.id
     const newBalance = (user.balance || 0) - plan.amount
-    if (newBalance < 0) return
+    if (newBalance < 0) { setConfirming(false); return }
 
-    const investment = addInvestment(user.id, {
-      planId: plan.id,
-      planName: plan.name,
-      amount: plan.amount,
-      dailyReturn: getDailyReturn(plan.amount),
-      totalReturn: getTotalReturn(plan.amount),
-      status: 'active',
-    })
+    try {
+      await addInvestment(userPhone, {
+        planId: plan.id,
+        planName: plan.name,
+        amount: plan.amount,
+        dailyReturn: getDailyReturn(plan.amount),
+        totalReturn: getTotalReturn(plan.amount),
+        status: 'active',
+      })
 
-    updateUser({ balance: newBalance })
-    saveUser(user.id, { balance: newBalance })
+      await updateUserBalance(userPhone, newBalance)
+      updateUser({ balance: newBalance })
 
-    // Handle referral commission on first deposit
-    if (user.referredBy && investments.length === 0) {
-      // L1 referrer
-      const allUsers = JSON.parse(localStorage.getItem('dp_users') || '{}')
-      const l1User = allUsers[user.referredBy]
-      if (l1User) {
-        const l1Commission = Math.floor(plan.amount * 0.10)
-        const newL1Balance = (l1User.balance || 0) + l1Commission
-        allUsers[user.referredBy] = { ...l1User, balance: newL1Balance }
-        addReferral(user.referredBy, {
-          referredPhone: user.phone,
+      // Referral commission on first deposit
+      if (user.referredBy && investments.length === 0) {
+        const l1Commission = Math.floor(plan.amount * REF_L1)
+        await addReferralCommission(user.referredBy, {
+          referredPhone: userPhone,
           referredName: user.name,
           level: 1,
           commission: l1Commission,
           planName: plan.name,
         })
-
-        // L2 referrer
-        if (l1User.referredBy) {
-          const l2User = allUsers[l1User.referredBy]
-          if (l2User) {
-            const l2Commission = Math.floor(plan.amount * 0.04)
-            const newL2Balance = (l2User.balance || 0) + l2Commission
-            allUsers[l1User.referredBy] = { ...l2User, balance: newL2Balance }
-            addReferral(l1User.referredBy, {
-              referredPhone: user.phone,
-              referredName: user.name,
-              level: 2,
-              commission: l2Commission,
-              planName: plan.name,
-            })
-          }
+        const l1User = await getUser(user.referredBy)
+        if (l1User?.referredBy) {
+          const l2Commission = Math.floor(plan.amount * REF_L2)
+          await addReferralCommission(l1User.referredBy, {
+            referredPhone: userPhone,
+            referredName: user.name,
+            level: 2,
+            commission: l2Commission,
+            planName: plan.name,
+          })
         }
-        localStorage.setItem('dp_users', JSON.stringify(allUsers))
       }
-    }
 
-    setSelectedPlan(null)
-    showToast(`✅ Invested KSh ${plan.amount.toLocaleString()} in ${plan.name} plan!`)
+      const fresh = await getInvestments(userPhone)
+      setInvestments(fresh)
+      setSelectedPlan(null)
+      showToast(`✅ Invested KSh ${plan.amount.toLocaleString()} in ${plan.name} plan!`)
+    } catch (err) {
+      console.error(err)
+      showToast('❌ Investment failed. Please try again.')
+    }
+    setConfirming(false)
   }
 
   function isOnceUsed(plan) {
@@ -191,6 +188,7 @@ export default function PlansPage() {
           balance={user?.balance || 0}
           onConfirm={confirmInvest}
           onClose={() => setSelectedPlan(null)}
+          confirming={confirming}
         />
       )}
 
@@ -199,7 +197,6 @@ export default function PlansPage() {
         <p className="text-gray-400 text-sm mt-1">3% daily returns • 90-day duration</p>
       </div>
 
-      {/* Balance summary */}
       <div className="balance-gradient rounded-xl px-5 py-4 mb-6 flex items-center justify-between">
         <div>
           <p className="text-gray-400 text-xs">Available Balance</p>
@@ -213,12 +210,11 @@ export default function PlansPage() {
           <PlanCard
             key={plan.id}
             plan={plan}
-            onInvest={handleInvest}
+            onInvest={setSelectedPlan}
             alreadyUsed={isOnceUsed(plan)}
           />
         ))}
       </div>
-
     </div>
   )
 }

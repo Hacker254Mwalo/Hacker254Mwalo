@@ -6,6 +6,7 @@ import Dashboard from './pages/Dashboard'
 import PlansPage from './pages/PlansPage'
 import ProfilePage from './pages/ProfilePage'
 import HistoryPage from './pages/HistoryPage'
+import AdminPage from './pages/AdminPage'
 
 export default function App() {
   return (
@@ -13,6 +14,7 @@ export default function App() {
       <AuthProvider>
         <Routes>
           <Route path="/login" element={<AuthPage />} />
+          <Route path="/admin" element={<AdminPage />} />
           <Route element={<Layout />}>
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/plans" element={<PlansPage />} />
