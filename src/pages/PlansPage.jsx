@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { saveUser, addInvestment, getInvestments, findUserByReferralCode, addReferral } from '../lib/storage'
 import { PLANS, getDailyReturn, getTotalReturn, REF_L1, REF_L2 } from '../lib/plans'
-import RiskBanner from '../components/RiskBanner'
+
 
 function PlanCard({ plan, onInvest, alreadyUsed }) {
   const daily = getDailyReturn(plan.amount)
@@ -219,9 +219,6 @@ export default function PlansPage() {
         ))}
       </div>
 
-      <div className="mt-6">
-        <RiskBanner />
-      </div>
     </div>
   )
 }

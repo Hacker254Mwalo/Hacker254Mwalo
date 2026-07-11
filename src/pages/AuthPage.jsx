@@ -178,7 +178,6 @@ export default function AuthPage() {
 
         <p className="text-center text-xs text-gray-600 mt-6">
           By using Dumiropay you agree to our Terms & Conditions.
-          <br />This is a demo platform. Investments involve risk.
         </p>
       </div>
     </div>

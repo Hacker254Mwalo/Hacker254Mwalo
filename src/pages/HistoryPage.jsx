@@ -1,6 +1,6 @@
 import { useAuth } from '../context/AuthContext'
 import { getInvestments } from '../lib/storage'
-import RiskBanner from '../components/RiskBanner'
+
 
 export default function HistoryPage() {
   const { user } = useAuth()
@@ -29,23 +29,6 @@ export default function HistoryPage() {
           </div>
         </div>
       )}
-
-      {/* Risk Disclaimer - prominent */}
-      <div className="bg-red-950/50 border-2 border-red-700/60 rounded-2xl p-5 mb-6">
-        <div className="flex gap-3 items-start">
-          <span className="text-3xl flex-shrink-0">⚠️</span>
-          <div>
-            <p className="text-red-400 font-bold mb-2">Important Risk Disclaimer</p>
-            <p className="text-red-300/80 text-sm leading-relaxed">
-              Investing involves significant risk including the possible loss of principal.
-              The 3% daily returns displayed are for demonstration purposes only and do not
-              represent guaranteed returns. Past performance is not indicative of future results.
-              Dumiropay is a demo platform. Never invest money you cannot afford to lose.
-              Seek independent financial advice before making investment decisions.
-            </p>
-          </div>
-        </div>
-      </div>
 
       {/* Investment list */}
       {investments.length === 0 ? (

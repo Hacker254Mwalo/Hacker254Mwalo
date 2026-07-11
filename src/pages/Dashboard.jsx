@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext'
 import { canClaimLoginBonus, setLastLoginBonus, canSpin, setLastSpin, isSpinDay, getInvestments } from '../lib/storage'
 import { saveUser } from '../lib/storage'
 import { LOGIN_BONUS } from '../lib/plans'
-import RiskBanner from '../components/RiskBanner'
+
 
 const SPIN_PRIZES = [50, 100, 200, 0, 150, 75, 300, 0, 250, 500]
 
@@ -218,8 +218,6 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Risk Banner */}
-      <RiskBanner />
     </div>
   )
 }
