@@ -61,8 +61,10 @@ export async function getUser(phone) {
 
 export async function createUser(userData) {
   if (!isSupabaseConfigured) {
-    local.saveUser(userData.phone, userData)
-    return userData
+    const pinHash = await hashPin(userData.pin)
+    const row = { ...userData, pin: undefined, pin_hash: pinHash }
+    local.saveUser(userData.phone, row)
+    return row
   }
   const pinHash = await hashPin(userData.pin)
   const row = {
@@ -86,7 +88,8 @@ export async function verifyUser(phone, pin) {
   if (!isSupabaseConfigured) {
     const u = local.getUser(phone)
     if (!u) return null
-    if (u.pin !== pin) return null
+    const pinHash = await hashPin(pin)
+    if (u.pin_hash !== pinHash) return null
     return u
   }
   const { data } = await supabase

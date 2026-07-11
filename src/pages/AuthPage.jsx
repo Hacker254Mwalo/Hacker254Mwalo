@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { verifyUser, createUser, findUserByReferralCode, getUser, generateReferralCode } from '../lib/db'
@@ -11,6 +11,7 @@ export default function AuthPage() {
   const [refCode, setRefCode] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const failRef = useRef({ count: 0, lockedUntil: 0 })
   const { login } = useAuth()
   const navigate = useNavigate()
 
@@ -25,6 +26,15 @@ export default function AuthPage() {
     e.preventDefault()
     setError('')
     setLoading(true)
+
+    // Brute-force lock check
+    const { count, lockedUntil } = failRef.current
+    if (Date.now() < lockedUntil) {
+      const secs = Math.ceil((lockedUntil - Date.now()) / 1000)
+      setError(`Too many failed attempts. Try again in ${secs}s.`)
+      setLoading(false)
+      return
+    }
 
     const normalPhone = normalizePhone(phone)
     if (!/^\+254\d{9}$/.test(normalPhone)) {
@@ -42,10 +52,18 @@ export default function AuthPage() {
       if (tab === 'login') {
         const userData = await verifyUser(normalPhone, pin)
         if (!userData) {
-          setError('Account not found or incorrect PIN')
+          failRef.current.count += 1
+          if (failRef.current.count >= 5) {
+            failRef.current.lockedUntil = Date.now() + 60_000
+            failRef.current.count = 0
+            setError('Too many failed attempts. Locked for 60 seconds.')
+          } else {
+            setError('Account not found or incorrect PIN')
+          }
           setLoading(false)
           return
         }
+        failRef.current = { count: 0, lockedUntil: 0 }
         login(userData)
         navigate('/dashboard')
       } else {

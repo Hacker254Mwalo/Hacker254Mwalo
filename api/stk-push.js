@@ -10,16 +10,54 @@
  *   PAYKIT_STK_URL           — Paykit STK push URL (get from Paykit docs)
  */
 
+// Simple in-memory rate limiter (resets on cold start — sufficient for serverless)
+const rateLimitMap = new Map()
+const RATE_LIMIT_WINDOW_MS = 60_000 // 1 minute
+const RATE_LIMIT_MAX = 5 // max 5 STK pushes per phone per minute
+
+function isRateLimited(phone) {
+  const now = Date.now()
+  const entry = rateLimitMap.get(phone) || { count: 0, start: now }
+  if (now - entry.start > RATE_LIMIT_WINDOW_MS) {
+    rateLimitMap.set(phone, { count: 1, start: now })
+    return false
+  }
+  if (entry.count >= RATE_LIMIT_MAX) return true
+  rateLimitMap.set(phone, { count: entry.count + 1, start: entry.start })
+  return false
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' })
   }
 
   const { phone, amount } = req.body || {}
+
+  // ── Input validation ──────────────────────────────────────────────────────
   if (!phone || !amount) {
     return res.status(400).json({ error: 'phone and amount are required' })
   }
 
+  // Normalize phone before rate-limit check
+  let normalPhone = String(phone).replace(/\s/g, '')
+  if (normalPhone.startsWith('+')) normalPhone = normalPhone.slice(1)
+  if (normalPhone.startsWith('0')) normalPhone = '254' + normalPhone.slice(1)
+
+  if (!/^2547\d{8}$|^2541\d{8}$/.test(normalPhone)) {
+    return res.status(400).json({ error: 'Invalid Kenyan phone number' })
+  }
+
+  const numAmount = Math.ceil(Number(amount))
+  if (!Number.isFinite(numAmount) || numAmount < 10 || numAmount > 150000) {
+    return res.status(400).json({ error: 'Amount must be between KSh 10 and KSh 150,000' })
+  }
+
+  if (isRateLimited(normalPhone)) {
+    return res.status(429).json({ error: 'Too many requests. Please wait a minute and try again.' })
+  }
+
+  // ── Credentials check ─────────────────────────────────────────────────────
   const consumerKey = process.env.PAYKIT_CONSUMER_KEY
   const consumerSecret = process.env.PAYKIT_CONSUMER_SECRET
   const passkey = process.env.PAYKIT_PASSKEY
@@ -43,19 +81,14 @@ export default async function handler(req, res) {
     const accessToken = authData.access_token
 
     if (!accessToken) {
-      return res.status(500).json({ error: 'Failed to get access token from Paykit', detail: authData })
+      return res.status(500).json({ error: 'Failed to get access token from Paykit' })
     }
 
     // Step 2: Generate STK password (Base64 of shortcode + passkey + timestamp)
     const timestamp = new Date().toISOString().replace(/[^0-9]/g, '').slice(0, 14)
     const password = Buffer.from(shortcode + passkey + timestamp).toString('base64')
 
-    // Step 3: Normalize phone to 254XXXXXXXXX
-    let normalPhone = String(phone).replace(/\s/g, '')
-    if (normalPhone.startsWith('+')) normalPhone = normalPhone.slice(1)
-    if (normalPhone.startsWith('0')) normalPhone = '254' + normalPhone.slice(1)
-
-    // Step 4: Initiate STK Push
+    // Step 3: Initiate STK Push
     const stkRes = await fetch(stkUrl, {
       method: 'POST',
       headers: {
@@ -67,7 +100,7 @@ export default async function handler(req, res) {
         Password: password,
         Timestamp: timestamp,
         TransactionType: 'CustomerPayBillOnline',
-        Amount: Math.ceil(Number(amount)),
+        Amount: numAmount,
         PartyA: normalPhone,
         PartyB: shortcode,
         PhoneNumber: normalPhone,
@@ -93,6 +126,6 @@ export default async function handler(req, res) {
     })
   } catch (err) {
     console.error('STK Push error:', err)
-    return res.status(500).json({ error: 'STK Push failed: ' + err.message })
+    return res.status(500).json({ error: 'STK Push failed. Please try again.' })
   }
 }
