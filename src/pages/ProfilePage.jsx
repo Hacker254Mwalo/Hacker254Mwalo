@@ -7,13 +7,15 @@ function DepositModal({ user, onClose, onPending }) {
   const [amount, setAmount] = useState('')
   const [loading, setLoading] = useState(false)
   const [sent, setSent] = useState(false)
-  const [error, setError] = useState('')
+  const [manualMode, setManualMode] = useState(false)
+  const [txCode, setTxCode] = useState('')
+  const [txLoading, setTxLoading] = useState(false)
+  const [txError, setTxError] = useState('')
 
   async function initiateStkPush() {
     const amt = parseInt(amount)
-    if (!amt || amt < 100) { setError('Minimum deposit is KSh 100'); return }
+    if (!amt || amt < 100) return
     setLoading(true)
-    setError('')
 
     try {
       const res = await fetch('/api/stk-push', {
@@ -32,12 +34,30 @@ function DepositModal({ user, onClose, onPending }) {
         setSent(true)
         onPending()
       } else {
-        setError(data.message || data.error || 'STK Push failed. Try again.')
+        // STK failed — switch to manual mode silently
+        setManualMode(true)
       }
-    } catch (err) {
-      setError('Network error. Please try again.')
+    } catch {
+      // Network or config error — switch to manual mode silently
+      setManualMode(true)
     }
     setLoading(false)
+  }
+
+  async function submitManualCode() {
+    const code = txCode.trim()
+    if (!code) { setTxError('Please enter your M-Pesa transaction code.'); return }
+    const amt = parseInt(amount)
+    setTxLoading(true)
+    setTxError('')
+    try {
+      await addDeposit(user.phone, { amount: amt, mpesaCode: code })
+      setSent(true)
+      onPending()
+    } catch {
+      setTxError('Failed to save code. Please try again.')
+    }
+    setTxLoading(false)
   }
 
   return (
@@ -47,50 +67,88 @@ function DepositModal({ user, onClose, onPending }) {
 
         {!sent ? (
           <>
-            <p className="text-gray-400 text-sm mb-4">
-              Enter the amount and we'll send an M-Pesa prompt to <span className="text-white font-semibold">{user.phone}</span>
-            </p>
+            {!manualMode ? (
+              <>
+                <p className="text-gray-400 text-sm mb-4">
+                  Enter the amount and we'll send an M-Pesa prompt to <span className="text-white font-semibold">{user.phone}</span>
+                </p>
 
-            <div className="mb-4">
-              <label className="text-xs text-gray-400 mb-1 block">Amount (KSh)</label>
-              <input
-                className="input-field"
-                placeholder="e.g. 1000"
-                type="number"
-                min="100"
-                value={amount}
-                onChange={e => setAmount(e.target.value)}
-              />
-            </div>
+                <div className="mb-4">
+                  <label className="text-xs text-gray-400 mb-1 block">Amount (KSh)</label>
+                  <input
+                    className="input-field"
+                    placeholder="e.g. 1000"
+                    type="number"
+                    min="100"
+                    value={amount}
+                    onChange={e => setAmount(e.target.value)}
+                  />
+                </div>
 
-            {error && (
-              <div className="bg-red-900/40 border border-red-700 text-red-300 text-sm rounded-lg px-4 py-3 mb-4">
-                {error}
-              </div>
+                <div className="bg-gray-800 rounded-xl p-3 mb-4 text-xs text-gray-400">
+                  <p>Paybill: <span className="text-white font-bold">{MPESA_PAYBILL}</span></p>
+                  <p>Account: <span className="text-white font-bold">21210</span></p>
+                </div>
+
+                <div className="flex gap-3">
+                  <button onClick={onClose} className="btn-secondary flex-1">Cancel</button>
+                  <button
+                    onClick={initiateStkPush}
+                    disabled={loading || !amount || parseInt(amount) < 100}
+                    className="btn-primary flex-1"
+                  >
+                    {loading ? 'Sending...' : 'Pay Now'}
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="bg-yellow-900/30 border border-yellow-700/50 rounded-xl p-4 mb-4 text-sm text-yellow-200">
+                  STK Prompt unavailable. Please pay manually via M-Pesa Paybill:{' '}
+                  <span className="font-bold text-white">4091165</span> | Account:{' '}
+                  <span className="font-bold text-white">21210</span> and paste your transaction code below.
+                </div>
+
+                <div className="mb-4">
+                  <label className="text-xs text-gray-400 mb-1 block">Enter M-Pesa Transaction Code (e.g., QRL7...)</label>
+                  <input
+                    className="input-field font-mono tracking-widest uppercase"
+                    placeholder="e.g. QRL7ABCDEF"
+                    type="text"
+                    value={txCode}
+                    onChange={e => { setTxCode(e.target.value.toUpperCase()); setTxError('') }}
+                  />
+                </div>
+
+                {txError && (
+                  <div className="bg-red-900/40 border border-red-700 text-red-300 text-sm rounded-lg px-4 py-3 mb-4">
+                    {txError}
+                  </div>
+                )}
+
+                <div className="flex gap-3">
+                  <button onClick={onClose} className="btn-secondary flex-1">Cancel</button>
+                  <button
+                    onClick={submitManualCode}
+                    disabled={txLoading || !txCode.trim()}
+                    className="btn-primary flex-1"
+                  >
+                    {txLoading ? 'Saving...' : 'Submit Code'}
+                  </button>
+                </div>
+              </>
             )}
-
-            <div className="bg-gray-800 rounded-xl p-3 mb-4 text-xs text-gray-400">
-              <p>Paybill: <span className="text-white font-bold">{MPESA_PAYBILL}</span></p>
-              <p>Account: <span className="text-white font-bold">21210</span></p>
-            </div>
-
-            <div className="flex gap-3">
-              <button onClick={onClose} className="btn-secondary flex-1">Cancel</button>
-              <button
-                onClick={initiateStkPush}
-                disabled={loading || !amount || parseInt(amount) < 100}
-                className="btn-primary flex-1"
-              >
-                {loading ? 'Sending...' : 'Pay Now'}
-              </button>
-            </div>
           </>
         ) : (
           <>
             <div className="text-center py-6">
-              <p className="text-5xl mb-3">📲</p>
-              <p className="text-green-400 font-bold text-lg mb-2">M-Pesa Prompt Sent!</p>
-              <p className="text-gray-400 text-sm">Check your phone and enter your M-Pesa PIN to complete the deposit.</p>
+              <p className="text-5xl mb-3">{manualMode ? '✅' : '📲'}</p>
+              <p className="text-green-400 font-bold text-lg mb-2">{manualMode ? 'Code Submitted!' : 'M-Pesa Prompt Sent!'}</p>
+              <p className="text-gray-400 text-sm">
+                {manualMode
+                  ? 'Your transaction code has been saved for admin review.'
+                  : 'Check your phone and enter your M-Pesa PIN to complete the deposit.'}
+              </p>
               <p className="text-yellow-400 text-xs mt-3">⏳ Your deposit will appear as <strong>Pending</strong> until admin approves it.</p>
             </div>
             <button onClick={onClose} className="btn-primary w-full">Done</button>

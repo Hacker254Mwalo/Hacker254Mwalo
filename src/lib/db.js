@@ -153,13 +153,13 @@ export async function addInvestment(userPhone, investment) {
 }
 
 // ── Deposits ─────────────────────────────────────────────────────────────────
-export async function addDeposit(userPhone, { amount, checkoutId }) {
+export async function addDeposit(userPhone, { amount, checkoutId, mpesaCode }) {
   if (!isSupabaseConfigured) {
     return { id: Date.now(), user_phone: userPhone, amount, status: 'pending', created_at: new Date().toISOString() }
   }
   const { data, error } = await supabase
     .from('deposits')
-    .insert({ user_phone: userPhone, amount, checkout_id: checkoutId || null, status: 'pending' })
+    .insert({ user_phone: userPhone, amount, checkout_id: checkoutId || null, mpesa_receipt: mpesaCode || null, status: 'pending' })
     .select()
     .single()
   if (error) throw error

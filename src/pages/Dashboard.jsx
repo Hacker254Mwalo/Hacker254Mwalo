@@ -243,27 +243,12 @@ function PromoCodeModal({ userPhone, onClose, onCredit }) {
   )
 }
 
-function AirtimeModal({ onClose }) {
-  return (
-    <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="card max-w-sm w-full text-center" onClick={e => e.stopPropagation()}>
-        <div className="w-16 h-16 rounded-full bg-blue-900/40 border border-blue-700 flex items-center justify-center text-3xl mx-auto mb-4">📶</div>
-        <h3 className="text-xl font-bold mb-2">Buy Airtime</h3>
-        <p className="text-gray-400 text-sm mb-1">This feature is coming soon!</p>
-        <p className="text-gray-500 text-xs mb-6">We're working hard to bring you instant airtime top-ups directly from your balance. Stay tuned!</p>
-        <button onClick={onClose} className="btn-primary w-full">Got it!</button>
-      </div>
-    </div>
-  )
-}
-
 export default function Dashboard() {
   const { user, updateUser } = useAuth()
   const navigate = useNavigate()
   const [showSpin, setShowSpin] = useState(false)
   const [showLoan, setShowLoan] = useState(false)
   const [showPromo, setShowPromo] = useState(false)
-  const [showAirtime, setShowAirtime] = useState(false)
   const [toast, setToast] = useState('')
   const [investments, setInvestments] = useState([])
 
@@ -324,7 +309,6 @@ export default function Dashboard() {
       {showSpin && <SpinModal onClose={() => setShowSpin(false)} onResult={handleSpinResult} />}
       {showLoan && <LoanModal userPhone={user?.phone} onClose={() => setShowLoan(false)} />}
       {showPromo && <PromoCodeModal userPhone={user?.phone} onClose={() => setShowPromo(false)} onCredit={handlePromoCredit} />}
-      {showAirtime && <AirtimeModal onClose={() => setShowAirtime(false)} />}
 
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
@@ -415,10 +399,10 @@ export default function Dashboard() {
         <p className="text-xs text-gray-500 uppercase tracking-wider font-semibold mb-3">Quick Services</p>
         <div className="grid grid-cols-3 gap-3">
 
-          {/* Buy Airtime — active, no badge */}
+          {/* Buy Airtime — shows Coming Soon toast */}
           <div
             className="card flex flex-col items-center gap-2 cursor-pointer transition-all active:scale-95 hover:border-blue-700 hover:bg-blue-950/20"
-            onClick={() => setShowAirtime(true)}
+            onClick={() => showToast('Coming Soon 📶')}
           >
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 to-cyan-600 flex items-center justify-center text-xl">📶</div>
             <p className="font-semibold text-xs text-center">Buy Airtime</p>
@@ -430,7 +414,7 @@ export default function Dashboard() {
             onClick={() => setShowPromo(true)}
           >
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-green-600 to-teal-600 flex items-center justify-center text-xl">🎟️</div>
-            <p className="font-semibold text-xs text-center">Promo Code</p>
+            <p className="font-semibold text-xs text-center">Pay Bills</p>
           </div>
 
           {/* Request Loan — fully functional */}
