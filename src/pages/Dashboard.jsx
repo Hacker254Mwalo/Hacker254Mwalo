@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { canClaimLoginBonus, setLastLoginBonus, canSpin, setLastSpin, isSpinDay } from '../lib/storage'
 import { getInvestments, updateUserBalance } from '../lib/db'
-import { LOGIN_BONUS } from '../lib/plans'
 
 const SPIN_PRIZES = [50, 100, 200, 0, 150, 75, 300, 0, 250, 500]
 
@@ -87,16 +86,19 @@ export default function Dashboard() {
     setTimeout(() => setToast(''), 3000)
   }
 
+  const dailyProfit = activeInvestments.reduce((sum, inv) => sum + (inv.dailyReturn || 0), 0)
+  const loginBonus = Math.max(1, Math.floor(dailyProfit * 0.01))
+
   async function claimLoginBonus() {
     if (!canClaimLoginBonus(user.id)) {
       showToast('Daily bonus already claimed today!')
       return
     }
-    const newBalance = (user.balance || 0) + LOGIN_BONUS
+    const newBalance = (user.balance || 0) + loginBonus
     updateUser({ balance: newBalance })
     await updateUserBalance(user.phone || user.id, newBalance).catch(() => {})
     setLastLoginBonus(user.id)
-    showToast(`+KSh ${LOGIN_BONUS} Daily Login Bonus claimed! 🎉`)
+    showToast(`+KSh ${loginBonus} Daily Bonus claimed! 🎉`)
   }
 
   async function handleSpinResult(prize) {
@@ -165,7 +167,7 @@ export default function Dashboard() {
           <span className="text-3xl">🎁</span>
           <p className="font-semibold text-sm text-center">Daily Bonus</p>
           <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${loginBonusAvailable ? 'bg-green-800 text-green-300' : 'bg-gray-800 text-gray-400'}`}>
-            {loginBonusAvailable ? '+KSh 50' : 'Claimed'}
+            {loginBonusAvailable ? `+KSh ${loginBonus}` : 'Claimed'}
           </span>
         </div>
 
@@ -178,6 +180,36 @@ export default function Dashboard() {
           <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${spinAvailable ? 'bg-yellow-800 text-yellow-300' : 'bg-gray-800 text-gray-400'}`}>
             {spinAvailable ? 'Spin Now!' : isSpinDay() ? 'Used Today' : 'Mon & Fri'}
           </span>
+        </div>
+      </div>
+
+      {/* Quick Services */}
+      <div className="grid grid-cols-3 gap-3 mb-6">
+        <div
+          className="card flex flex-col items-center gap-2 cursor-pointer transition-transform active:scale-95"
+          onClick={() => showToast('🚀 Buy Airtime — Coming Soon!')}
+        >
+          <span className="text-2xl">📶</span>
+          <p className="font-semibold text-xs text-center">Buy Airtime</p>
+          <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-blue-900 text-blue-300">Soon</span>
+        </div>
+
+        <div
+          className="card flex flex-col items-center gap-2 cursor-pointer transition-transform active:scale-95"
+          onClick={() => showToast('🚀 Pay Bills — Coming Soon!')}
+        >
+          <span className="text-2xl">🧾</span>
+          <p className="font-semibold text-xs text-center">Pay Bills</p>
+          <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-blue-900 text-blue-300">Soon</span>
+        </div>
+
+        <div
+          className="card flex flex-col items-center gap-2 cursor-pointer transition-transform active:scale-95"
+          onClick={() => showToast('🚀 Loan Feature — Coming Soon!')}
+        >
+          <span className="text-2xl">🏦</span>
+          <p className="font-semibold text-xs text-center">Request Loan</p>
+          <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-purple-900 text-purple-300">Soon</span>
         </div>
       </div>
 
@@ -212,6 +244,23 @@ export default function Dashboard() {
             ))}
           </div>
         </div>
+      )}
+
+      {/* Chat Support */}
+      {import.meta.env.VITE_ADMIN_PHONE && (
+        <a
+          href={`https://wa.me/${import.meta.env.VITE_ADMIN_PHONE.replace(/\D/g, '')}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="card mb-6 flex items-center gap-4 cursor-pointer transition-transform active:scale-95 ring-2 ring-green-500/30 no-underline"
+        >
+          <span className="text-3xl">💬</span>
+          <div className="flex-1">
+            <p className="font-semibold">Chat Support</p>
+            <p className="text-gray-400 text-sm">Talk to us on WhatsApp</p>
+          </div>
+          <span className="text-xs bg-green-800 text-green-300 px-3 py-1 rounded-full font-medium">Live</span>
+        </a>
       )}
     </div>
   )

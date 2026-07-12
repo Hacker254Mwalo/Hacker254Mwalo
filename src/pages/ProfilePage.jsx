@@ -71,7 +71,7 @@ function DepositModal({ user, onClose, onPending }) {
 
             <div className="bg-gray-800 rounded-xl p-3 mb-4 text-xs text-gray-400">
               <p>Paybill: <span className="text-white font-bold">{MPESA_PAYBILL}</span></p>
-              <p>Account: <span className="text-white font-bold">{user.phone}</span></p>
+              <p>Account: <span className="text-white font-bold">21210</span></p>
             </div>
 
             <div className="flex gap-3">
