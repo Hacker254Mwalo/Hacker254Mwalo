@@ -2,18 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { canClaimLoginBonus, setLastLoginBonus, canSpin, setLastSpin, isSpinDay } from '../lib/storage'
-import { getInvestments, updateUserBalance } from '../lib/db'
-
-const SPIN_PRIZES = [50, 100, 200, 0, 150, 75, 300, 0, 250, 500]
-
-// Promo codes → credit amount (KSh)
-const PROMO_CODES = {
-  'WELCOME100': 100,
-  'BONUS500': 500,
-  'INVEST200': 200,
-  'VIP1000': 1000,
-  'LAUNCH50': 50,
-}
+import { getInvestments, updateUserBalance, addLoan, claimKeyword } from '../lib/db'
 
 function getInvestorBadge(balance) {
   if (balance >= 50000) return { label: 'Diamond', bg: 'bg-gradient-to-r from-indigo-500 to-purple-500', icon: '💎' }
@@ -83,20 +72,25 @@ function SpinModal({ onClose, onResult }) {
   )
 }
 
-function LoanModal({ onClose }) {
+function LoanModal({ userPhone, onClose }) {
   const [amount, setAmount] = useState('')
   const [purpose, setPurpose] = useState('')
   const [submitted, setSubmitted] = useState(false)
   const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
 
-  function submit() {
+  async function submit() {
     const amt = parseInt(amount)
     if (!amt || amt < 500) { setError('Minimum loan amount is KSh 500'); return }
     if (amt > 250000) { setError('Maximum loan amount is KSh 250,000'); return }
-    const loans = JSON.parse(localStorage.getItem('dp_loan_requests') || '[]')
-    loans.push({ amount: amt, purpose, date: new Date().toISOString() })
-    localStorage.setItem('dp_loan_requests', JSON.stringify(loans))
-    setSubmitted(true)
+    setLoading(true)
+    try {
+      await addLoan(userPhone, { amount: amt, purpose })
+      setSubmitted(true)
+    } catch (e) {
+      setError(e.message || 'Failed to submit. Try again.')
+    }
+    setLoading(false)
   }
 
   return (
@@ -151,10 +145,10 @@ function LoanModal({ onClose }) {
               <button onClick={onClose} className="btn-secondary flex-1">Cancel</button>
               <button
                 onClick={submit}
-                disabled={!amount || parseInt(amount) < 500 || parseInt(amount) > 250000}
+                disabled={loading || !amount || parseInt(amount) < 500 || parseInt(amount) > 250000}
                 className="btn-primary flex-1"
               >
-                Submit Request
+                {loading ? 'Submitting...' : 'Submit Request'}
               </button>
             </div>
           </>
@@ -174,33 +168,25 @@ function LoanModal({ onClose }) {
   )
 }
 
-function PromoCodeModal({ onClose, onCredit }) {
+function PromoCodeModal({ userPhone, onClose, onCredit }) {
   const [code, setCode] = useState('')
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(null)
   const [loading, setLoading] = useState(false)
 
-  function redeem() {
+  async function redeem() {
     const normalized = code.trim().toUpperCase()
     if (!normalized) return
-    const used = JSON.parse(localStorage.getItem('dp_used_promos') || '[]')
-    if (used.includes(normalized)) {
-      setError('This promo code has already been used.')
-      return
-    }
-    const amount = PROMO_CODES[normalized]
-    if (!amount) {
-      setError('Invalid promo code. Please check and try again.')
-      return
-    }
     setLoading(true)
-    setTimeout(() => {
-      used.push(normalized)
-      localStorage.setItem('dp_used_promos', JSON.stringify(used))
-      onCredit(amount)
-      setSuccess(amount)
-      setLoading(false)
-    }, 900)
+    setError('')
+    const result = await claimKeyword(userPhone, normalized)
+    if (result.success) {
+      onCredit(result.bonus)
+      setSuccess(result.bonus)
+    } else {
+      setError(result.message || 'Invalid code.')
+    }
+    setLoading(false)
   }
 
   return (
@@ -336,8 +322,8 @@ export default function Dashboard() {
       )}
 
       {showSpin && <SpinModal onClose={() => setShowSpin(false)} onResult={handleSpinResult} />}
-      {showLoan && <LoanModal onClose={() => setShowLoan(false)} />}
-      {showPromo && <PromoCodeModal onClose={() => setShowPromo(false)} onCredit={handlePromoCredit} />}
+      {showLoan && <LoanModal userPhone={user?.phone} onClose={() => setShowLoan(false)} />}
+      {showPromo && <PromoCodeModal userPhone={user?.phone} onClose={() => setShowPromo(false)} onCredit={handlePromoCredit} />}
       {showAirtime && <AirtimeModal onClose={() => setShowAirtime(false)} />}
 
       {/* Header */}

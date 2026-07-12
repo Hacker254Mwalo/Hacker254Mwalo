@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
-import { updateUserBalance, getReferrals, generateReferralCode, addDeposit } from '../lib/db'
+import { updateUserBalance, getReferrals, generateReferralCode, addDeposit, addWithdrawal } from '../lib/db'
 import { MPESA_PAYBILL, WITHDRAWAL_FEE } from '../lib/plans'
 
 function DepositModal({ user, onClose, onPending }) {
@@ -208,12 +208,14 @@ export default function ProfilePage() {
     })
   }
 
-  async function handleWithdraw(amount) {
+  async function handleWithdraw(amount, mpesaPhone) {
     const fee = Math.floor(amount * WITHDRAWAL_FEE)
+    const netAmount = amount - fee
     const newBalance = (user.balance || 0) - amount
     updateUser({ balance: newBalance })
     await updateUserBalance(user.phone || user.id, newBalance).catch(() => {})
-    showToast(`✅ Withdrawal of KSh ${(amount - fee).toLocaleString()} initiated! (Fee: KSh ${fee})`)
+    await addWithdrawal(user.phone || user.id, { amount, fee, netAmount, mpesaPhone }).catch(() => {})
+    showToast(`✅ Withdrawal of KSh ${netAmount.toLocaleString()} initiated! (Fee: KSh ${fee})`)
   }
 
   const adminPhone = import.meta.env.VITE_ADMIN_PHONE

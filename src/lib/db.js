@@ -236,15 +236,221 @@ export async function addReferralCommission(referrerPhone, { referredPhone, refe
     commission,
     plan_name: planName,
   })
-  const { data: referrer } = await supabase
-    .from('users')
-    .select('balance')
-    .eq('phone', referrerPhone)
-    .single()
+  const { data: referrer } = await supabase.from('users').select('balance').eq('phone', referrerPhone).single()
   if (referrer) {
-    await supabase
-      .from('users')
-      .update({ balance: Number(referrer.balance) + commission })
-      .eq('phone', referrerPhone)
+    await supabase.from('users').update({ balance: Number(referrer.balance) + commission }).eq('phone', referrerPhone)
   }
 }
+
+// ── Withdrawals ───────────────────────────────────────────────────────────────
+export async function addWithdrawal(userPhone, { amount, fee, netAmount, mpesaPhone }) {
+  if (!isSupabaseConfigured) return
+  const { data, error } = await supabase
+    .from('withdrawals')
+    .insert({ user_phone: userPhone, amount, fee, net_amount: netAmount, mpesa_phone: mpesaPhone, status: 'pending' })
+    .select()
+    .single()
+  if (error) throw error
+  return data
+}
+
+export async function getAllWithdrawals() {
+  if (!isSupabaseConfigured) return []
+  const { data } = await supabase
+    .from('withdrawals')
+    .select('*, users!user_phone(name, phone)')
+    .order('created_at', { ascending: false })
+  return data || []
+}
+
+export async function approveWithdrawal(id) {
+  if (!isSupabaseConfigured) return
+  await supabase.from('withdrawals').update({ status: 'approved' }).eq('id', id)
+}
+
+export async function rejectWithdrawal(id, userPhone, amount) {
+  if (!isSupabaseConfigured) return
+  await supabase.from('withdrawals').update({ status: 'rejected' }).eq('id', id)
+  const { data: u } = await supabase.from('users').select('balance').eq('phone', userPhone).single()
+  if (u) {
+    await supabase.from('users').update({ balance: Number(u.balance) + Number(amount) }).eq('phone', userPhone)
+  }
+}
+
+// ── Loans ─────────────────────────────────────────────────────────────────────
+export async function addLoan(userPhone, { amount, purpose }) {
+  if (!isSupabaseConfigured) {
+    const loans = JSON.parse(localStorage.getItem('dp_loan_requests') || '[]')
+    loans.push({ id: Date.now().toString(), user_phone: userPhone, amount, purpose: purpose || null, status: 'pending', created_at: new Date().toISOString() })
+    localStorage.setItem('dp_loan_requests', JSON.stringify(loans))
+    return
+  }
+  const { data, error } = await supabase
+    .from('loans')
+    .insert({ user_phone: userPhone, amount, purpose: purpose || null, status: 'pending' })
+    .select()
+    .single()
+  if (error) throw error
+  return data
+}
+
+export async function getAllLoans() {
+  if (!isSupabaseConfigured) {
+    return JSON.parse(localStorage.getItem('dp_loan_requests') || '[]')
+  }
+  const { data } = await supabase
+    .from('loans')
+    .select('*, users!user_phone(name, phone)')
+    .order('created_at', { ascending: false })
+  return data || []
+}
+
+export async function approveLoan(id, userPhone, amount) {
+  if (!isSupabaseConfigured) {
+    const loans = JSON.parse(localStorage.getItem('dp_loan_requests') || '[]')
+    localStorage.setItem('dp_loan_requests', JSON.stringify(loans.map(l => l.id === id ? { ...l, status: 'approved' } : l)))
+    local.saveUser(userPhone, { balance: (local.getUser(userPhone)?.balance || 0) + Number(amount) })
+    return
+  }
+  await supabase.from('loans').update({ status: 'approved' }).eq('id', id)
+  const { data: u } = await supabase.from('users').select('balance').eq('phone', userPhone).single()
+  if (u) {
+    await supabase.from('users').update({ balance: Number(u.balance) + Number(amount) }).eq('phone', userPhone)
+  }
+}
+
+export async function rejectLoan(id) {
+  if (!isSupabaseConfigured) {
+    const loans = JSON.parse(localStorage.getItem('dp_loan_requests') || '[]')
+    localStorage.setItem('dp_loan_requests', JSON.stringify(loans.map(l => l.id === id ? { ...l, status: 'rejected' } : l)))
+    return
+  }
+  await supabase.from('loans').update({ status: 'rejected' }).eq('id', id)
+}
+
+// ── Admin: User Management ────────────────────────────────────────────────────
+export async function getAllUsers() {
+  if (!isSupabaseConfigured) {
+    return Object.values(local.getUsers()).map(u => ({
+      phone: u.phone, name: u.name, balance: Number(u.balance || 0),
+      bonus_balance: Number(u.bonus_balance || 0), created_at: u.created_at,
+    }))
+  }
+  const { data } = await supabase
+    .from('users')
+    .select('phone, name, balance, bonus_balance, is_admin, created_at')
+    .order('created_at', { ascending: false })
+  return data || []
+}
+
+export async function adminSetBalance(phone, balance) {
+  if (!isSupabaseConfigured) { local.saveUser(phone, { balance }); return }
+  await supabase.from('users').update({ balance }).eq('phone', phone)
+}
+
+export async function adminSetBonusBalance(phone, bonusBalance) {
+  if (!isSupabaseConfigured) { local.saveUser(phone, { bonus_balance: bonusBalance }); return }
+  await supabase.from('users').update({ bonus_balance: bonusBalance }).eq('phone', phone)
+}
+
+// ── Keywords ──────────────────────────────────────────────────────────────────
+export async function getKeywords() {
+  if (!isSupabaseConfigured) {
+    return JSON.parse(localStorage.getItem('dp_admin_keywords') || '[]')
+  }
+  const { data } = await supabase.from('keywords').select('*').order('created_at', { ascending: false })
+  return data || []
+}
+
+export async function createKeyword({ code, minBonus, maxBonus, maxClaims }) {
+  if (!isSupabaseConfigured) {
+    const keywords = JSON.parse(localStorage.getItem('dp_admin_keywords') || '[]')
+    if (keywords.find(k => k.code.toUpperCase() === code.toUpperCase())) throw new Error('Code already exists')
+    const kw = { id: Date.now().toString(), code: code.toUpperCase(), min_bonus: minBonus, max_bonus: maxBonus, max_claims: maxClaims, claim_count: 0, active: true, created_at: new Date().toISOString() }
+    keywords.unshift(kw)
+    localStorage.setItem('dp_admin_keywords', JSON.stringify(keywords))
+    return kw
+  }
+  const { data, error } = await supabase
+    .from('keywords')
+    .insert({ code: code.toUpperCase(), min_bonus: minBonus, max_bonus: maxBonus, max_claims: maxClaims, active: true })
+    .select().single()
+  if (error) throw error
+  return data
+}
+
+export async function toggleKeyword(id, active) {
+  if (!isSupabaseConfigured) {
+    const keywords = JSON.parse(localStorage.getItem('dp_admin_keywords') || '[]')
+    localStorage.setItem('dp_admin_keywords', JSON.stringify(keywords.map(k => k.id === String(id) ? { ...k, active } : k)))
+    return
+  }
+  await supabase.from('keywords').update({ active }).eq('id', id)
+}
+
+export async function claimKeyword(userPhone, code) {
+  // Returns { success: bool, bonus?: number, message?: string }
+  if (!isSupabaseConfigured) {
+    const keywords = JSON.parse(localStorage.getItem('dp_admin_keywords') || '[]')
+    const kw = keywords.find(k => k.code === code.trim().toUpperCase())
+    if (!kw) return { success: false, message: 'Invalid keyword code.' }
+    if (!kw.active) return { success: false, message: 'This keyword is no longer active.' }
+    if (kw.claim_count >= kw.max_claims) return { success: false, message: 'All slots for this keyword have been claimed.' }
+    const claims = JSON.parse(localStorage.getItem('dp_kw_claims') || '{}')
+    if (claims[kw.id]?.includes(userPhone)) return { success: false, message: 'You have already claimed this keyword.' }
+    const bonus = Math.floor(Math.random() * (Number(kw.max_bonus) - Number(kw.min_bonus) + 1)) + Number(kw.min_bonus)
+    kw.claim_count++
+    localStorage.setItem('dp_admin_keywords', JSON.stringify(keywords.map(k => k.id === kw.id ? kw : k)))
+    if (!claims[kw.id]) claims[kw.id] = []
+    claims[kw.id].push(userPhone)
+    localStorage.setItem('dp_kw_claims', JSON.stringify(claims))
+    const u = local.getUser(userPhone)
+    if (u) local.saveUser(userPhone, { balance: Number(u.balance || 0) + bonus })
+    return { success: true, bonus }
+  }
+  const { data: kw, error: kwErr } = await supabase.from('keywords').select('*').ilike('code', code.trim()).single()
+  if (kwErr || !kw) return { success: false, message: 'Invalid keyword code.' }
+  if (!kw.active) return { success: false, message: 'This keyword is no longer active.' }
+  if (kw.claim_count >= kw.max_claims) return { success: false, message: 'All slots for this keyword have been claimed.' }
+  const { data: existing } = await supabase.from('keyword_claims').select('id').eq('keyword_id', kw.id).eq('user_phone', userPhone).maybeSingle()
+  if (existing) return { success: false, message: 'You have already claimed this keyword.' }
+  const bonus = Math.floor(Math.random() * (Number(kw.max_bonus) - Number(kw.min_bonus) + 1)) + Number(kw.min_bonus)
+  const { error: claimErr } = await supabase.from('keyword_claims').insert({ keyword_id: kw.id, user_phone: userPhone, bonus_amount: bonus })
+  if (claimErr) return { success: false, message: 'Failed to record claim. Please try again.' }
+  await supabase.from('keywords').update({ claim_count: kw.claim_count + 1 }).eq('id', kw.id)
+  const { data: u } = await supabase.from('users').select('balance').eq('phone', userPhone).single()
+  if (u) await supabase.from('users').update({ balance: Number(u.balance) + bonus }).eq('phone', userPhone)
+  return { success: true, bonus }
+}
+
+// ── Support / Live Chat ───────────────────────────────────────────────────────
+export async function getSupportMessages(userPhone) {
+  if (!isSupabaseConfigured) return []
+  const { data } = await supabase
+    .from('support_messages')
+    .select('*')
+    .eq('user_phone', userPhone)
+    .order('created_at', { ascending: true })
+  return data || []
+}
+
+export async function getAllSupportThreads() {
+  if (!isSupabaseConfigured) return []
+  const { data } = await supabase
+    .from('support_messages')
+    .select('user_phone, message, sender_type, created_at')
+    .order('created_at', { ascending: false })
+  if (!data) return []
+  const map = {}
+  data.forEach(m => {
+    if (!map[m.user_phone]) map[m.user_phone] = { userPhone: m.user_phone, messages: [], lastAt: m.created_at }
+    map[m.user_phone].messages.push(m)
+  })
+  return Object.values(map).map(t => ({ ...t, messages: t.messages.reverse() }))
+}
+
+export async function sendSupportMessage(userPhone, message, senderType = 'user') {
+  if (!isSupabaseConfigured) return
+  await supabase.from('support_messages').insert({ user_phone: userPhone, message, sender_type: senderType })
+}
+
