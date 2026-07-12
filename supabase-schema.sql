@@ -14,14 +14,15 @@ create table if not exists public.users (
   created_at    timestamptz not null default now()
 );
 
--- Deposits table (pending until admin approves)
+-- Deposits table (pending until admin approves, or auto-approved via callback)
 create table if not exists public.deposits (
-  id           uuid primary key default gen_random_uuid(),
-  user_phone   text not null references public.users(phone),
-  amount       numeric not null,
-  checkout_id  text,
-  status       text not null default 'pending', -- pending | approved | rejected
-  created_at   timestamptz not null default now()
+  id             uuid primary key default gen_random_uuid(),
+  user_phone     text not null references public.users(phone),
+  amount         numeric not null,
+  checkout_id    text,
+  mpesa_receipt  text,                              -- M-Pesa transaction receipt (from callback)
+  status         text not null default 'pending',   -- pending | approved | rejected
+  created_at     timestamptz not null default now()
 );
 
 -- Investments table
@@ -59,3 +60,7 @@ create policy "anon_all" on public.users       for all to anon using (true) with
 create policy "anon_all" on public.deposits    for all to anon using (true) with check (true);
 create policy "anon_all" on public.investments for all to anon using (true) with check (true);
 create policy "anon_all" on public.referrals   for all to anon using (true) with check (true);
+
+-- ── Migration: add mpesa_receipt column if upgrading an existing database ────
+alter table public.deposits add column if not exists mpesa_receipt text;
+

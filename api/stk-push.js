@@ -1,13 +1,16 @@
 /**
- * Vercel Serverless Function: M-Pesa STK Push via Paykit
+ * Vercel Serverless Function: M-Pesa STK Push via PayKit Sandbox
  *
  * Required environment variables in Vercel:
- *   PAYKIT_CONSUMER_KEY      — from Paykit dashboard
- *   PAYKIT_CONSUMER_SECRET   — from Paykit dashboard
- *   PAYKIT_PASSKEY           — from Paykit dashboard
- *   PAYKIT_SHORTCODE         — your M-Pesa Paybill/Till number (e.g. 4091165)
- *   PAYKIT_AUTH_URL          — Paykit OAuth token URL (get from Paykit docs)
- *   PAYKIT_STK_URL           — Paykit STK push URL (get from Paykit docs)
+ *   PAYKIT_CONSUMER_KEY      — from PayKit dashboard
+ *   PAYKIT_CONSUMER_SECRET   — from PayKit dashboard
+ *   PAYKIT_PASSKEY           — from PayKit dashboard
+ *   PAYKIT_SHORTCODE         — Sandbox: 174379  |  Production: your Paybill (e.g. 4091165)
+ *   PAYKIT_BASE_URL          — Sandbox: https://api.sandbox.paykit.africa
+ *                              Production: https://api.paykit.co.ke
+ *
+ * OAuth endpoint  : {PAYKIT_BASE_URL}/oauth/v1/generate?grant_type=client_credentials
+ * STK Push endpoint: {PAYKIT_BASE_URL}/v1/collection/stkpush
  */
 
 // Simple in-memory rate limiter (resets on cold start — sufficient for serverless)
@@ -58,16 +61,19 @@ export default async function handler(req, res) {
   }
 
   // ── Credentials check ─────────────────────────────────────────────────────
-  const consumerKey = process.env.PAYKIT_CONSUMER_KEY
+  const consumerKey    = process.env.PAYKIT_CONSUMER_KEY
   const consumerSecret = process.env.PAYKIT_CONSUMER_SECRET
-  const passkey = process.env.PAYKIT_PASSKEY
-  const shortcode = process.env.PAYKIT_SHORTCODE || '4091165'
-  const authUrl = process.env.PAYKIT_AUTH_URL
-  const stkUrl = process.env.PAYKIT_STK_URL
+  const passkey        = process.env.PAYKIT_PASSKEY
+  const shortcode      = process.env.PAYKIT_SHORTCODE || '174379'
 
-  if (!consumerKey || !consumerSecret || !passkey || !authUrl || !stkUrl) {
+  // Support both legacy PAYKIT_AUTH_URL/PAYKIT_STK_URL and new PAYKIT_BASE_URL
+  const baseUrl = process.env.PAYKIT_BASE_URL || 'https://api.sandbox.paykit.africa'
+  const authUrl = process.env.PAYKIT_AUTH_URL  || `${baseUrl}/oauth/v1/generate?grant_type=client_credentials`
+  const stkUrl  = process.env.PAYKIT_STK_URL   || `${baseUrl}/v1/collection/stkpush`
+
+  if (!consumerKey || !consumerSecret || !passkey) {
     return res.status(500).json({
-      error: 'Paykit credentials not configured. Set PAYKIT_CONSUMER_KEY, PAYKIT_CONSUMER_SECRET, PAYKIT_PASSKEY, PAYKIT_AUTH_URL, PAYKIT_STK_URL in Vercel environment variables.',
+      error: 'PayKit credentials not configured. Set PAYKIT_CONSUMER_KEY, PAYKIT_CONSUMER_SECRET, PAYKIT_PASSKEY in Vercel environment variables.',
     })
   }
 
@@ -104,7 +110,7 @@ export default async function handler(req, res) {
         PartyA: normalPhone,
         PartyB: shortcode,
         PhoneNumber: normalPhone,
-        CallBackURL: 'https://' + (process.env.VERCEL_URL || 'localhost:3000') + '/api/stk-callback',
+        CallBackURL: process.env.PAYKIT_CALLBACK_URL || ('https://' + (process.env.VERCEL_URL || 'localhost:3000') + '/api/stk-callback'),
         AccountReference: 'DUMIROPAY',
         TransactionDesc: 'Dumiropay Deposit',
       }),
