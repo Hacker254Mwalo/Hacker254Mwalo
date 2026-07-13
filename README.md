@@ -1,12 +1,50 @@
-- 👋 Hi, I’m @Hacker254Mwalo
-- 👀 I’m interested in ...
-- 🌱 I’m currently learning ...
-- 💞️ I’m looking to collaborate on ...
-- 📫 How to reach me ...
-- 😄 Pronouns: ...
-- ⚡ Fun fact: ...
+# Dumiropay — Kenya's Premier Investment Platform
 
-<!---
-Hacker254Mwalo/Hacker254Mwalo is a ✨ special ✨ repository because its `README.md` (this file) appears on your GitHub profile.
-You can click the Preview link to take a look at your changes.
---->
+A modern React + Vite + Tailwind CSS investment platform for Kenya, featuring M-Pesa integration, referral system, and daily returns.
+
+## 🚀 Features
+
+- **Dark Premium UI** — Red/pink accent theme, fully responsive
+- **Phone Authentication** — Register/Login with Kenyan phone number + PIN
+- **Dashboard** — Balance display, daily login bonus (+KSh 50), Lucky Spin (Mon & Fri)
+- **Investment Plans** — 10 plans from KSh 200 to KSh 45,000 @ 3% daily / 90-day duration
+- **M-Pesa Recharge** — Paybill **4091165**
+- **Withdrawal** — 8% processing fee
+- **Referral System** — 10% Level 1 & 4% Level 2 commission on first deposit
+- **Investment History** — Full portfolio tracking with risk disclaimer
+- **LocalStorage** — Demo data persistence (Supabase-ready via env vars)
+
+## 🛠 Tech Stack
+
+- **React 19** + **Vite 8**
+- **Tailwind CSS v4** (`@tailwindcss/vite`)
+- **React Router v7**
+- **Supabase** (optional — configure via `.env`)
+
+## 📦 Setup
+
+```bash
+npm install
+npm run dev
+```
+
+## ⚙️ Environment Variables (Optional)
+
+Copy `.env.example` to `.env` and add your Supabase credentials:
+
+```
+VITE_SUPABASE_URL=https://your-project.supabase.co
+VITE_SUPABASE_ANON_KEY=your-anon-key
+```
+
+Without these, the app runs fully on **localStorage**.
+
+## 📱 M-Pesa Recharge
+
+- Lipa na M-Pesa → Paybill
+- Business No: **4091165**
+- Account No: Your phone number
+
+## ⚠️ Risk Disclaimer
+
+This is a **demo platform**. All investment returns shown are illustrative only. Never invest money you cannot afford to lose.
