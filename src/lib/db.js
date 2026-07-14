@@ -46,16 +46,21 @@ function dbInvToApp(row) {
     status: row.status,
     date: row.created_at,
   }
+
+  function isNoRowsError(error) {
+    return !!error && (error.code === 'PGRST116' || error.code === 'PGRST205')
+  }
 }
 
 // ── Users ────────────────────────────────────────────────────────────────────
 export async function getUser(phone) {
   if (!isSupabaseConfigured) return local.getUser(phone)
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from('users')
     .select('*')
     .eq('phone', phone)
-    .single()
+    .maybeSingle()
+  if (error && !isNoRowsError(error)) throw error
   return data ? dbUserToApp(data) : null
 }
 
@@ -92,11 +97,12 @@ export async function verifyUser(phone, pin) {
     if (u.pin_hash !== pinHash) return null
     return u
   }
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from('users')
     .select('*')
     .eq('phone', phone)
-    .single()
+    .maybeSingle()
+  if (error && !isNoRowsError(error)) throw error
   if (!data) return null
   const pinHash = await hashPin(pin)
   if (data.pin_hash !== pinHash) return null
@@ -113,11 +119,12 @@ export async function updateUserBalance(phone, balance) {
 
 export async function findUserByReferralCode(code) {
   if (!isSupabaseConfigured) return local.findUserByReferralCode(code)
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from('users')
     .select('*')
     .eq('referral_code', code)
-    .single()
+    .maybeSingle()
+  if (error && !isNoRowsError(error)) throw error
   return data ? dbUserToApp(data) : null
 }
 
@@ -453,4 +460,3 @@ export async function sendSupportMessage(userPhone, message, senderType = 'user'
   if (!isSupabaseConfigured) return
   await supabase.from('support_messages').insert({ user_phone: userPhone, message, sender_type: senderType })
 }
-

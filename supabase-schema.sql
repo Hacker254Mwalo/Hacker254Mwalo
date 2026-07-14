@@ -3,6 +3,8 @@
 -- Run this in: Supabase Dashboard → SQL Editor → New Query
 -- ============================================================
 
+create extension if not exists pgcrypto;
+
 -- Users table (phone is primary key, PIN stored as SHA-256 hash)
 create table if not exists public.users (
   phone         text primary key,
@@ -121,18 +123,40 @@ alter table public.keywords          enable row level security;
 alter table public.keyword_claims    enable row level security;
 alter table public.support_messages  enable row level security;
 
-create policy "anon_all" on public.users             for all to anon using (true) with check (true);
-create policy "anon_all" on public.deposits          for all to anon using (true) with check (true);
-create policy "anon_all" on public.withdrawals       for all to anon using (true) with check (true);
-create policy "anon_all" on public.loans             for all to anon using (true) with check (true);
-create policy "anon_all" on public.investments       for all to anon using (true) with check (true);
-create policy "anon_all" on public.referrals         for all to anon using (true) with check (true);
-create policy "anon_all" on public.keywords          for all to anon using (true) with check (true);
-create policy "anon_all" on public.keyword_claims    for all to anon using (true) with check (true);
-create policy "anon_all" on public.support_messages  for all to anon using (true) with check (true);
+grant usage on schema public to anon, authenticated;
+grant all on table
+  public.users,
+  public.deposits,
+  public.withdrawals,
+  public.loans,
+  public.investments,
+  public.referrals,
+  public.keywords,
+  public.keyword_claims,
+  public.support_messages
+to anon, authenticated;
+
+drop policy if exists "anon_all" on public.users;
+drop policy if exists "anon_all" on public.deposits;
+drop policy if exists "anon_all" on public.withdrawals;
+drop policy if exists "anon_all" on public.loans;
+drop policy if exists "anon_all" on public.investments;
+drop policy if exists "anon_all" on public.referrals;
+drop policy if exists "anon_all" on public.keywords;
+drop policy if exists "anon_all" on public.keyword_claims;
+drop policy if exists "anon_all" on public.support_messages;
+
+create policy "anon_all" on public.users             for all to anon, authenticated using (true) with check (true);
+create policy "anon_all" on public.deposits          for all to anon, authenticated using (true) with check (true);
+create policy "anon_all" on public.withdrawals       for all to anon, authenticated using (true) with check (true);
+create policy "anon_all" on public.loans             for all to anon, authenticated using (true) with check (true);
+create policy "anon_all" on public.investments       for all to anon, authenticated using (true) with check (true);
+create policy "anon_all" on public.referrals         for all to anon, authenticated using (true) with check (true);
+create policy "anon_all" on public.keywords          for all to anon, authenticated using (true) with check (true);
+create policy "anon_all" on public.keyword_claims    for all to anon, authenticated using (true) with check (true);
+create policy "anon_all" on public.support_messages  for all to anon, authenticated using (true) with check (true);
 
 -- ── Incremental migration helpers (safe to re-run) ───────────────────────────
 alter table public.deposits add column if not exists mpesa_receipt text;
 alter table public.users    add column if not exists bonus_balance numeric not null default 0;
 alter table public.users    add column if not exists is_admin boolean not null default false;
-
