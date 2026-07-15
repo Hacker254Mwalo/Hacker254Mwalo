@@ -49,6 +49,38 @@ export function addReferral(referrerId, referralData) {
   localStorage.setItem('dp_referrals', JSON.stringify(all))
 }
 
+export function getWithdrawals(userId) {
+  try {
+    const all = JSON.parse(localStorage.getItem('dp_withdrawals') || '{}')
+    return all[userId] || []
+  } catch { return [] }
+}
+
+export function addWithdrawal(userId, withdrawal) {
+  const all = JSON.parse(localStorage.getItem('dp_withdrawals') || '{}')
+  if (!all[userId]) all[userId] = []
+  const w = { ...withdrawal, id: Date.now().toString(), date: new Date().toISOString() }
+  all[userId].unshift(w)
+  localStorage.setItem('dp_withdrawals', JSON.stringify(all))
+  return w
+}
+
+export function getDeposits(userId) {
+  try {
+    const all = JSON.parse(localStorage.getItem('dp_deposits') || '{}')
+    return all[userId] || []
+  } catch { return [] }
+}
+
+export function addDeposit(userId, deposit) {
+  const all = JSON.parse(localStorage.getItem('dp_deposits') || '{}')
+  if (!all[userId]) all[userId] = []
+  const d = { ...deposit, id: Date.now().toString(), date: new Date().toISOString() }
+  all[userId].unshift(d)
+  localStorage.setItem('dp_deposits', JSON.stringify(all))
+  return d
+}
+
 export function getLastLoginBonus(userId) {
   try {
     const all = JSON.parse(localStorage.getItem('dp_login_bonus') || '{}')

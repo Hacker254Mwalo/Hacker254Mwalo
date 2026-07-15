@@ -162,7 +162,7 @@ export async function addInvestment(userPhone, investment) {
 // ── Deposits ─────────────────────────────────────────────────────────────────
 export async function addDeposit(userPhone, { amount, checkoutId, mpesaCode }) {
   if (!isSupabaseConfigured) {
-    return { id: Date.now(), user_phone: userPhone, amount, status: 'pending', created_at: new Date().toISOString() }
+    return local.addDeposit(userPhone, { amount, checkoutId, mpesaCode, status: 'pending' })
   }
   const { data, error } = await supabase
     .from('deposits')
@@ -174,7 +174,7 @@ export async function addDeposit(userPhone, { amount, checkoutId, mpesaCode }) {
 }
 
 export async function getDeposits(userPhone) {
-  if (!isSupabaseConfigured) return []
+  if (!isSupabaseConfigured) return local.getDeposits(userPhone)
   const { data } = await supabase
     .from('deposits')
     .select('*')
@@ -266,6 +266,16 @@ export async function getAllWithdrawals() {
   const { data } = await supabase
     .from('withdrawals')
     .select('*, users!user_phone(name, phone)')
+    .order('created_at', { ascending: false })
+  return data || []
+}
+
+export async function getWithdrawals(userPhone) {
+  if (!isSupabaseConfigured) return local.getWithdrawals(userPhone)
+  const { data } = await supabase
+    .from('withdrawals')
+    .select('*')
+    .eq('user_phone', userPhone)
     .order('created_at', { ascending: false })
   return data || []
 }

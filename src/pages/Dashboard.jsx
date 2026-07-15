@@ -11,19 +11,21 @@ function getInvestorBadge(balance) {
   return { label: 'Bronze', bg: 'bg-gradient-to-r from-orange-500 to-amber-600', icon: '🥉' }
 }
 
-function SpinModal({ onClose, onResult }) {
+const SPIN_PRIZES = [0, 0.005, 0.01, 0.02, 0.03, 0.04]
+
+function SpinModal({ onClose, onResult, totalReturns }) {
   const [spinning, setSpinning] = useState(false)
   const [result, setResult] = useState(null)
   const [angle, setAngle] = useState(0)
+  const prizes = SPIN_PRIZES.map(p => p === 0 ? 0 : Math.floor(p * totalReturns))
 
   function spin() {
     if (spinning) return
     setSpinning(true)
-    const prize = SPIN_PRIZES[Math.floor(Math.random() * SPIN_PRIZES.length)]
-    const spins = 5
-    const prizeIdx = SPIN_PRIZES.indexOf(prize)
-    const segAngle = 360 / SPIN_PRIZES.length
-    const targetAngle = 360 * spins + (360 - prizeIdx * segAngle - segAngle / 2)
+    const prize = prizes[Math.floor(Math.random() * prizes.length)]
+    const prizeIdx = prizes.indexOf(prize)
+    const segAngle = 360 / prizes.length
+    const targetAngle = 360 * 5 + (360 - prizeIdx * segAngle - segAngle / 2)
     setAngle(prev => prev + targetAngle)
     setTimeout(() => {
       setResult(prize)
@@ -36,7 +38,8 @@ function SpinModal({ onClose, onResult }) {
     <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4" onClick={onClose}>
       <div className="card max-w-sm w-full" onClick={e => e.stopPropagation()}>
         <h3 className="text-xl font-bold text-center mb-2">🎰 Lucky Spin</h3>
-        <p className="text-gray-400 text-sm text-center mb-6">Available every Monday & Friday</p>
+        <p className="text-gray-400 text-sm text-center mb-1">Available every Monday & Friday</p>
+        <p className="text-yellow-400 text-xs text-center mb-6">Win up to 4% of your total returns!</p>
 
         <div className="relative mx-auto w-48 h-48 mb-6">
           <div
@@ -44,9 +47,9 @@ function SpinModal({ onClose, onResult }) {
             style={{ transform: `rotate(${angle}deg)`, transition: spinning ? 'transform 3.5s cubic-bezier(0.17, 0.67, 0.12, 0.99)' : 'none' }}
           >
             <div className="grid grid-cols-2 gap-1 text-xs text-center text-white font-bold">
-              {SPIN_PRIZES.slice(0, 4).map((p, i) => (
+              {prizes.slice(0, 4).map((p, i) => (
                 <div key={i} className="bg-black/30 rounded p-1 w-16 h-10 flex items-center justify-center">
-                  {p === 0 ? 'Try Again' : `+${p}`}
+                  {p === 0 ? 'Try Again' : `+${p.toLocaleString()}`}
                 </div>
               ))}
             </div>
@@ -56,7 +59,7 @@ function SpinModal({ onClose, onResult }) {
 
         {result !== null && (
           <div className={`text-center mb-4 text-lg font-bold ${result > 0 ? 'text-green-400' : 'text-gray-400'}`}>
-            {result > 0 ? `🎉 You won KSh ${result}!` : '😔 Better luck next time!'}
+            {result > 0 ? `🎉 You won KSh ${result.toLocaleString()}!` : '😔 Better luck next time!'}
           </div>
         )}
 
@@ -393,8 +396,18 @@ export default function Dashboard() {
 
   const activeInvestments = investments.filter(i => i.status === 'active')
   const dailyProfit = activeInvestments.reduce((sum, inv) => sum + (inv.dailyReturn || 0), 0)
-  const loginBonus = Math.max(1, Math.floor(dailyProfit * 0.01))
+  const totalReturns = investments.reduce((sum, inv) => sum + Number(inv.totalReturn || 0), 0)
+  const loginBonus = Math.max(1, Math.floor(dailyProfit * 0.02))
   const badge = getInvestorBadge(user?.balance || 0)
+
+  useEffect(() => {
+    if (!user || !canClaimLoginBonus(user.id)) return
+    const newBalance = (user.balance || 0) + loginBonus
+    updateUser({ balance: newBalance })
+    updateUserBalance(user.phone || user.id, newBalance).catch(() => {})
+    setLastLoginBonus(user.id)
+    showToast(`+KSh ${loginBonus} Daily Bonus claimed! 🎉`)
+  }, [user, loginBonus, showToast, updateUser])
 
   async function claimLoginBonus() {
     if (!canClaimLoginBonus(user.id)) {
@@ -448,7 +461,7 @@ export default function Dashboard() {
         </div>
       )}
 
-      {showSpin && <SpinModal onClose={() => setShowSpin(false)} onResult={handleSpinResult} />}
+      {showSpin && <SpinModal onClose={() => setShowSpin(false)} onResult={handleSpinResult} totalReturns={totalReturns} />}
       {showLoan && <LoanModal userPhone={user?.phone} onClose={() => setShowLoan(false)} />}
       {showPromo && <PromoCodeModal userPhone={user?.phone} onClose={() => setShowPromo(false)} onCredit={handlePromoCredit} />}
       {showContactAdmin && (
@@ -598,7 +611,7 @@ export default function Dashboard() {
           <span className="text-3xl">🎰</span>
           <p className="font-semibold text-sm text-center">Lucky Spin</p>
           <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${spinAvailable ? 'bg-yellow-800 text-yellow-300' : 'bg-gray-800 text-gray-400'}`}>
-            {spinAvailable ? 'Spin Now!' : isSpinDay() ? 'Used Today' : 'Mon & Fri'}
+            {spinAvailable ? `Win up to KSh ${Math.floor(totalReturns * 0.04).toLocaleString()}` : isSpinDay() ? 'Used Today' : 'Mon & Fri'}
           </span>
         </div>
       </div>
