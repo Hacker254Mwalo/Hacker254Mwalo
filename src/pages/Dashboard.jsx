@@ -5,10 +5,10 @@ import { canClaimLoginBonus, setLastLoginBonus, canSpin, setLastSpin, isSpinDay 
 import { getInvestments, updateUserBalance, addLoan, claimKeyword, getAllLoans, getSupportMessages, sendSupportMessage } from '../lib/db'
 
 function getInvestorBadge(balance) {
-  if (balance >= 50000) return { label: 'Diamond', bg: 'bg-gradient-to-r from-indigo-500 to-purple-500', icon: '💎' }
-  if (balance >= 20000) return { label: 'Gold', bg: 'bg-gradient-to-r from-yellow-400 to-amber-500', icon: '🥇' }
-  if (balance >= 5000) return { label: 'Silver', bg: 'bg-gradient-to-r from-gray-300 to-gray-500', icon: '🥈' }
-  return { label: 'Bronze', bg: 'bg-gradient-to-r from-orange-500 to-amber-600', icon: '🥉' }
+  if (balance >= 50000) return { label: 'Diamond', icon: '💎' }
+  if (balance >= 20000) return { label: 'Gold', icon: '🥇' }
+  if (balance >= 5000) return { label: 'Silver', icon: '🥈' }
+  return { label: 'Bronze', icon: '🥉' }
 }
 
 const SPIN_PRIZES = [0, 0.005, 0.01, 0.02, 0.03, 0.04]
@@ -39,11 +39,11 @@ function SpinModal({ onClose, onResult, totalReturns }) {
       <div className="card max-w-sm w-full" onClick={e => e.stopPropagation()}>
         <h3 className="text-xl font-bold text-center mb-2">🎰 Lucky Spin</h3>
         <p className="text-gray-400 text-sm text-center mb-1">Available every Monday & Friday</p>
-        <p className="text-yellow-400 text-xs text-center mb-6">Win up to 4% of your total returns!</p>
+        <p className="text-[#D4AF37] text-xs text-center mb-6">Win up to 4% of your total returns!</p>
 
         <div className="relative mx-auto w-48 h-48 mb-6">
           <div
-            className="w-full h-full rounded-full border-4 border-red-500 flex items-center justify-center bg-gradient-to-br from-red-900 to-pink-900 transition-transform"
+            className="w-full h-full rounded-full border-4 border-[#D4AF37] flex items-center justify-center bg-[#111] transition-transform"
             style={{ transform: `rotate(${angle}deg)`, transition: spinning ? 'transform 3.5s cubic-bezier(0.17, 0.67, 0.12, 0.99)' : 'none' }}
           >
             <div className="grid grid-cols-2 gap-1 text-xs text-center text-white font-bold">
@@ -54,11 +54,11 @@ function SpinModal({ onClose, onResult, totalReturns }) {
               ))}
             </div>
           </div>
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1 text-2xl">▼</div>
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1 text-2xl text-[#D4AF37]">▼</div>
         </div>
 
         {result !== null && (
-          <div className={`text-center mb-4 text-lg font-bold ${result > 0 ? 'text-green-400' : 'text-gray-400'}`}>
+          <div className={`text-center mb-4 text-lg font-bold ${result > 0 ? 'text-[#D4AF37]' : 'text-gray-400'}`}>
             {result > 0 ? `🎉 You won KSh ${result.toLocaleString()}!` : '😔 Better luck next time!'}
           </div>
         )}
@@ -100,10 +100,10 @@ function LoanModal({ userPhone, onClose }) {
     <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4" onClick={onClose}>
       <div className="card max-w-sm w-full" onClick={e => e.stopPropagation()}>
         <div className="flex items-center gap-3 mb-4">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-600 to-indigo-600 flex items-center justify-center text-xl">🏦</div>
+          <div className="w-10 h-10 rounded-xl bg-[#0a0a0a] border border-[#1a1a1a] flex items-center justify-center text-xl text-[#D4AF37]">🏦</div>
           <div>
             <h3 className="text-lg font-bold">Request a Loan</h3>
-            <p className="text-gray-400 text-xs">Quick approval • 24hrs review</p>
+            <p className="text-gray-500 text-xs">Quick approval • 24hrs review</p>
           </div>
         </div>
 
@@ -111,7 +111,7 @@ function LoanModal({ userPhone, onClose }) {
           <>
             <div className="space-y-4 mb-4">
               <div>
-                <label className="text-xs text-gray-400 mb-1 block">Loan Amount (KSh)</label>
+                <label className="text-xs text-gray-500 mb-1 block">Loan Amount (KSh)</label>
                 <input
                   className="input-field"
                   type="number"
@@ -123,7 +123,7 @@ function LoanModal({ userPhone, onClose }) {
                 />
               </div>
               <div>
-                <label className="text-xs text-gray-400 mb-1 block">Purpose <span className="text-gray-600">(optional)</span></label>
+                <label className="text-xs text-gray-500 mb-1 block">Purpose <span className="text-gray-600">(optional)</span></label>
                 <input
                   className="input-field"
                   type="text"
@@ -135,21 +135,21 @@ function LoanModal({ userPhone, onClose }) {
             </div>
 
             {error && (
-              <div className="bg-red-900/40 border border-red-700 text-red-300 text-xs rounded-lg px-3 py-2 mb-4">{error}</div>
+              <div className="bg-red-900/20 border border-red-900/40 text-red-400 text-xs rounded-lg px-3 py-2 mb-4">{error}</div>
             )}
 
-            <div className="bg-gray-800/60 border border-gray-700 rounded-xl p-3 mb-4 space-y-1.5 text-xs text-gray-400">
+            <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-xl p-3 mb-4 space-y-1.5 text-xs text-gray-500">
               <p>📌 Min: <span className="text-white font-semibold">KSh 500</span> · Max: <span className="text-white font-semibold">KSh 250,000</span></p>
               <p>📌 Repayment deducted from investment earnings</p>
               <p>📌 Admin approves within 24 hours</p>
             </div>
 
             <div className="flex gap-3">
-              <button onClick={onClose} className="btn-secondary flex-1">Cancel</button>
+              <button onClick={onClose} className="btn-secondary flex-1 text-sm">Cancel</button>
               <button
                 onClick={submit}
                 disabled={loading || !amount || parseInt(amount) < 500 || parseInt(amount) > 250000}
-                className="btn-primary flex-1"
+                className="btn-primary flex-1 text-sm"
               >
                 {loading ? 'Submitting...' : 'Submit Request'}
               </button>
@@ -157,13 +157,13 @@ function LoanModal({ userPhone, onClose }) {
           </>
         ) : (
           <div className="text-center py-4">
-            <div className="w-16 h-16 rounded-full bg-green-900/40 border border-green-700 flex items-center justify-center text-3xl mx-auto mb-4">✅</div>
-            <p className="text-green-400 font-bold text-lg mb-2">Request Submitted!</p>
+            <div className="w-16 h-16 rounded-full bg-[#D4AF37]/10 border border-[#D4AF37]/30 flex items-center justify-center text-3xl mx-auto mb-4 text-[#D4AF37]">✅</div>
+            <p className="text-[#D4AF37] font-bold text-lg mb-2">Request Submitted!</p>
             <p className="text-gray-400 text-sm mb-1">
               Loan of <span className="text-white font-bold">KSh {parseInt(amount).toLocaleString()}</span> submitted.
             </p>
             <p className="text-gray-500 text-xs mb-6">Admin will review and disburse within 24 hours.</p>
-            <button onClick={onClose} className="btn-primary w-full">Done</button>
+            <button onClick={onClose} className="btn-primary w-full text-sm">Done</button>
           </div>
         )}
       </div>
@@ -196,10 +196,10 @@ function PromoCodeModal({ userPhone, onClose, onCredit }) {
     <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4" onClick={onClose}>
       <div className="card max-w-sm w-full" onClick={e => e.stopPropagation()}>
         <div className="flex items-center gap-3 mb-4">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-green-600 to-teal-600 flex items-center justify-center text-xl">🎟️</div>
+          <div className="w-10 h-10 rounded-xl bg-[#0a0a0a] border border-[#1a1a1a] flex items-center justify-center text-xl text-[#D4AF37]">🎟️</div>
           <div>
             <h3 className="text-lg font-bold">Redeem Promo Code</h3>
-            <p className="text-gray-400 text-xs">Instant account credit</p>
+            <p className="text-gray-500 text-xs">Instant account credit</p>
           </div>
         </div>
 
@@ -207,7 +207,7 @@ function PromoCodeModal({ userPhone, onClose, onCredit }) {
           <>
             <p className="text-gray-400 text-sm mb-4">Enter a valid promo code to get free KSh credited to your account.</p>
             <div className="mb-4">
-              <label className="text-xs text-gray-400 mb-1 block">Promo Code</label>
+              <label className="text-xs text-gray-500 mb-1 block">Promo Code</label>
               <input
                 className="input-field font-mono uppercase tracking-widest text-lg text-center"
                 type="text"
@@ -220,25 +220,25 @@ function PromoCodeModal({ userPhone, onClose, onCredit }) {
             </div>
 
             {error && (
-              <div className="bg-red-900/40 border border-red-700 text-red-300 text-xs rounded-lg px-3 py-2 mb-4">{error}</div>
+              <div className="bg-red-900/20 border border-red-900/40 text-red-400 text-xs rounded-lg px-3 py-2 mb-4">{error}</div>
             )}
 
             <div className="flex gap-3">
-              <button onClick={onClose} className="btn-secondary flex-1">Cancel</button>
-              <button onClick={redeem} disabled={!code || loading} className="btn-primary flex-1">
+              <button onClick={onClose} className="btn-secondary flex-1 text-sm">Cancel</button>
+              <button onClick={redeem} disabled={!code || loading} className="btn-primary flex-1 text-sm">
                 {loading ? 'Checking...' : 'Redeem'}
               </button>
             </div>
           </>
         ) : (
           <div className="text-center py-4">
-            <div className="w-16 h-16 rounded-full bg-yellow-900/40 border border-yellow-600 flex items-center justify-center text-3xl mx-auto mb-4">🎉</div>
-            <p className="text-green-400 font-bold text-lg mb-1">Code Redeemed!</p>
+            <div className="w-16 h-16 rounded-full bg-[#D4AF37]/10 border border-[#D4AF37]/30 flex items-center justify-center text-3xl mx-auto mb-4 text-[#D4AF37]">🎉</div>
+            <p className="text-[#D4AF37] font-bold text-lg mb-1">Code Redeemed!</p>
             <p className="text-gray-400 text-sm mb-1">
               <span className="text-white font-bold text-2xl">KSh {success.toLocaleString()}</span>
             </p>
             <p className="text-gray-500 text-xs mb-6">has been credited to your account.</p>
-            <button onClick={onClose} className="btn-primary w-full">Awesome! 🚀</button>
+            <button onClick={onClose} className="btn-primary w-full text-sm">Awesome! 🚀</button>
           </div>
         )}
       </div>
@@ -251,10 +251,10 @@ function ContactAdminModal({ onClose, messages, onSend, reply, setReply, sending
     <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4" onClick={onClose}>
       <div className="card max-w-lg w-full max-h-[80vh] flex flex-col" onClick={e => e.stopPropagation()}>
         <div className="flex items-center gap-3 mb-4">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-green-600 to-emerald-600 flex items-center justify-center text-xl">💬</div>
+          <div className="w-10 h-10 rounded-xl bg-[#0a0a0a] border border-[#1a1a1a] flex items-center justify-center text-xl text-[#D4AF37]">💬</div>
           <div>
             <h3 className="text-lg font-bold">Contact Admin</h3>
-            <p className="text-gray-400 text-xs">We typically reply within a few minutes</p>
+            <p className="text-gray-500 text-xs">We typically reply within a few minutes</p>
           </div>
         </div>
 
@@ -264,9 +264,9 @@ function ContactAdminModal({ onClose, messages, onSend, reply, setReply, sending
           ) : (
             messages.map((m, i) => (
               <div key={i} className={`flex ${m.sender_type === 'admin' ? 'justify-end' : 'justify-start'}`}>
-                <div className={`max-w-[80%] px-3 py-2 rounded-2xl text-sm ${m.sender_type === 'admin' ? 'bg-gradient-to-r from-red-700 to-pink-700 text-white rounded-tr-none' : 'bg-gray-800 text-gray-200 rounded-tl-none'}`}>
+                <div className={`max-w-[80%] px-3 py-2 rounded-2xl text-sm ${m.sender_type === 'admin' ? 'bg-[#D4AF37] text-black rounded-tr-none' : 'bg-[#0a0a0a] border border-[#1a1a1a] text-gray-200 rounded-tl-none'}`}>
                   <p>{m.message}</p>
-                  <p className={`text-xs mt-1 ${m.sender_type === 'admin' ? 'text-red-200' : 'text-gray-500'}`}>
+                  <p className={`text-xs mt-1 ${m.sender_type === 'admin' ? 'text-black/60' : 'text-gray-500'}`}>
                     {new Date(m.created_at).toLocaleTimeString('en-KE', { hour: '2-digit', minute: '2-digit' })}
                   </p>
                 </div>
@@ -278,7 +278,7 @@ function ContactAdminModal({ onClose, messages, onSend, reply, setReply, sending
 
         <form onSubmit={onSend} className="flex gap-2">
           <input
-            className="flex-1 bg-gray-800 border border-gray-700 text-white placeholder-gray-500 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-red-500"
+            className="flex-1 bg-[#0a0a0a] border border-[#1a1a1a] text-white placeholder-gray-500 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#D4AF37] transition-colors"
             placeholder="Type your message..."
             value={reply}
             onChange={e => setReply(e.target.value)}
@@ -461,9 +461,9 @@ export default function Dashboard() {
   const loginBonusAvailable = user && canClaimLoginBonus(user.id)
 
   return (
-    <div className="pt-4 md:pt-20 pb-24 md:pb-8 px-4 max-w-2xl mx-auto">
+    <div className="pt-4 md:pt-20 pb-24 md:pb-8 px-5 md:px-6 max-w-2xl mx-auto">
       {toast && (
-        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-green-800 border border-green-600 text-white px-6 py-3 rounded-xl shadow-lg text-sm font-medium animate-bounce">
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-[#111] border border-[#D4AF37] text-[#D4AF37] px-6 py-3 rounded-xl shadow-2xl text-sm font-medium">
           {toast}
         </div>
       )}
@@ -484,29 +484,27 @@ export default function Dashboard() {
       )}
 
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-8">
         <div>
-          <p className="text-gray-400 text-sm">Welcome back,</p>
-          <div className="flex items-center gap-2 flex-wrap">
-            <h2 className="text-xl font-bold">{user?.name?.split(' ')[0] || 'User'} 👋</h2>
-            <span className={`inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full text-white ${badge.bg}`}>
-              {badge.icon} {badge.label}
-            </span>
+          <p className="text-gray-500 text-sm mb-0.5">Welcome back,</p>
+          <div className="flex items-center gap-2">
+            <h2 className="text-lg font-bold text-white">{user?.name?.split(' ')[0] || 'User'}</h2>
+            <span className="text-xs text-[#D4AF37] font-medium">{badge.icon} {badge.label}</span>
           </div>
         </div>
         <div className="flex items-center gap-3">
           <button
             onClick={() => setShowNotifications(s => !s)}
-            className="relative w-11 h-11 rounded-full bg-gray-800 flex items-center justify-center text-xl hover:bg-gray-700 transition-colors"
+            className="relative w-10 h-10 rounded-full bg-[#0a0a0a] border border-[#1a1a1a] flex items-center justify-center text-lg hover:border-[#D4AF37]/40 transition-colors"
           >
             🔔
             {notifications.filter(n => !n.read).length > 0 && (
-              <span className="absolute -top-0.5 -right-0.5 bg-red-500 text-white text-[10px] font-bold rounded-full w-5 h-5 flex items-center justify-center">
+              <span className="absolute -top-0.5 -right-0.5 bg-[#D4AF37] text-black text-[10px] font-bold rounded-full w-5 h-5 flex items-center justify-center">
                 {notifications.filter(n => !n.read).length}
               </span>
             )}
           </button>
-          <div className="w-11 h-11 rounded-full bg-gradient-to-br from-red-600 to-pink-600 flex items-center justify-center font-bold text-lg ring-2 ring-red-500/30">
+          <div className="w-10 h-10 rounded-full bg-[#0a0a0a] border border-[#1a1a1a] flex items-center justify-center font-bold text-sm text-[#D4AF37]">
             {user?.name?.[0]?.toUpperCase() || 'U'}
           </div>
         </div>
@@ -516,7 +514,7 @@ export default function Dashboard() {
       {showNotifications && (
         <div className="mb-6 card max-h-80 overflow-y-auto">
           <div className="flex items-center justify-between mb-3">
-            <h3 className="font-semibold text-sm">Notifications</h3>
+            <h3 className="font-semibold text-sm text-white">Notifications</h3>
             {notifications.length > 0 && (
               <button
                 onClick={() => {
@@ -524,7 +522,7 @@ export default function Dashboard() {
                   setNotifications(updated)
                   saveNotifications(updated)
                 }}
-                className="text-xs text-gray-400 hover:text-white transition-colors"
+                className="text-xs text-gray-500 hover:text-[#D4AF37] transition-colors"
               >
                 Mark all read
               </button>
@@ -544,7 +542,7 @@ export default function Dashboard() {
                       saveNotifications(updated)
                     }
                   }}
-                  className={`p-3 rounded-xl cursor-pointer transition-colors ${n.read ? 'bg-gray-800/50 text-gray-400' : 'bg-gray-800 text-white'}`}
+                  className={`p-3 rounded-xl cursor-pointer transition-colors ${n.read ? 'bg-[#0a0a0a] text-gray-500' : 'bg-[#0a0a0a] border border-[#1a1a1a] text-white'}`}
                 >
                   <p className="text-sm">{n.message}</p>
                   <p className="text-[10px] text-gray-500 mt-1">{new Date(n.createdAt).toLocaleString()}</p>
@@ -555,171 +553,144 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Balance Card */}
-      <div className="relative overflow-hidden balance-gradient rounded-2xl p-6 mb-6">
-        {/* Shimmer sweep effect */}
-        <div className="balance-shimmer" />
-
-        {/* Floating golden coins */}
-        <div className="coin-particle" />
-        <div className="coin-particle" />
-        <div className="coin-particle" />
-        <div className="coin-particle" />
-        <div className="coin-particle" />
-
-        {/* Sparkle particles */}
-        <div className="sparkle-particle">✦</div>
-        <div className="sparkle-particle">✦</div>
-        <div className="sparkle-particle">✦</div>
-        <div className="sparkle-particle">✦</div>
-        <div className="sparkle-particle">✦</div>
-
-        {/* Floating money symbols */}
-        <div className="money-symbol">💵</div>
-        <div className="money-symbol">💰</div>
-        <div className="money-symbol">💸</div>
-        <div className="money-symbol">🪙</div>
-
-        {/* Subtle money tree background element */}
-        <div className="money-tree-bg">🌳</div>
+      {/* Hero Balance Card */}
+      <div className="relative overflow-hidden balance-gradient rounded-2xl p-6 md:p-8 mb-8">
+        <div className="hero-chart-bg" />
 
         <div className="relative z-10">
-          <p className="text-gray-400 text-xs uppercase tracking-wider mb-1">Total Balance</p>
-          <p className="text-4xl font-black text-white mb-1 balance-text-glow">
+          <p className="text-gray-500 text-xs uppercase tracking-widest mb-2 font-medium">Total Balance</p>
+          <p className="text-5xl md:text-6xl font-black text-white mb-1 tracking-tight">
             KSh {(user?.balance || 0).toLocaleString()}
           </p>
           {dailyProfit > 0 && (
-            <p className="text-green-400 text-sm font-medium mb-4">
+            <p className="text-[#D4AF37] text-sm font-medium mb-6">
               +KSh {dailyProfit.toLocaleString()}/day earning
             </p>
           )}
-          <div className="flex gap-3 mt-4">
-            <button onClick={() => navigate('/profile')} className="btn-primary text-sm py-2 px-5 flex-1">
+          <div className="flex gap-3 mt-2">
+            <button onClick={() => navigate('/profile')} className="btn-primary text-sm py-2.5 px-6 flex-1">
               + Deposit
             </button>
-            <button onClick={() => navigate('/profile')} className="btn-secondary text-sm py-2 px-5 flex-1">
+            <button onClick={() => navigate('/profile')} className="btn-secondary text-sm py-2.5 px-6 flex-1">
               Withdraw
             </button>
           </div>
         </div>
       </div>
 
-      {/* Stats Row */}
+      {/* Stats Row — Minimal, no borders */}
       {activeInvestments.length > 0 && (
-        <div className="grid grid-cols-3 gap-3 mb-6">
-          <div className="bg-gray-900 border border-gray-800 rounded-xl p-3 text-center">
-            <p className="text-green-400 font-bold text-base">KSh {dailyProfit.toLocaleString()}</p>
-            <p className="text-gray-500 text-xs mt-0.5">Daily Profit</p>
+        <div className="grid grid-cols-3 gap-6 mb-8">
+          <div className="bank-stat">
+            <p className="bank-stat-value text-[#D4AF37]">KSh {dailyProfit.toLocaleString()}</p>
+            <p className="bank-stat-label">Daily Profit</p>
           </div>
-          <div className="bg-gray-900 border border-gray-800 rounded-xl p-3 text-center">
-            <p className="text-blue-400 font-bold text-base">{activeInvestments.length}</p>
-            <p className="text-gray-500 text-xs mt-0.5">Active Plans</p>
+          <div className="bank-stat">
+            <p className="bank-stat-value text-white">{activeInvestments.length}</p>
+            <p className="bank-stat-label">Active Plans</p>
           </div>
-          <div className="bg-gray-900 border border-gray-800 rounded-xl p-3 text-center">
-            <p className="text-yellow-400 font-bold text-base">KSh {totalExpectedEarnings.toLocaleString()}</p>
-            <p className="text-gray-500 text-xs mt-0.5">Expected Earnings</p>
+          <div className="bank-stat">
+            <p className="bank-stat-value text-white">KSh {totalExpectedEarnings.toLocaleString()}</p>
+            <p className="bank-stat-label">Expected Earnings</p>
           </div>
         </div>
       )}
 
-      {/* Bonus & Spin */}
-      <div className="grid grid-cols-2 gap-4 mb-6">
-        <div
-          className={`card flex flex-col items-center gap-2 cursor-pointer transition-all active:scale-95 hover:border-green-700 ${loginBonusAvailable ? 'ring-2 ring-green-500/40' : 'opacity-60'}`}
+      {/* Actions — Gold outlined buttons */}
+      <div className="grid grid-cols-2 gap-4 mb-8">
+        <button
           onClick={claimLoginBonus}
+          disabled={!loginBonusAvailable}
+          className={`gold-outline-btn py-4 px-5 ${!loginBonusAvailable ? 'opacity-40 cursor-not-allowed' : ''}`}
         >
-          <span className="text-3xl">🎁</span>
-          <p className="font-semibold text-sm text-center">Daily Bonus</p>
-          <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${loginBonusAvailable ? 'bg-green-800 text-green-300' : 'bg-gray-800 text-gray-400'}`}>
+          <span className="text-2xl mb-1">🎁</span>
+          <span className="text-sm font-semibold text-[#D4AF37]">Daily Bonus</span>
+          <span className="text-xs text-[#D4AF37]/70 mt-0.5">
             {loginBonusAvailable ? `+KSh ${loginBonus}` : 'Claimed'}
           </span>
-        </div>
+        </button>
 
-        <div
-          className={`card flex flex-col items-center gap-2 cursor-pointer transition-all active:scale-95 hover:border-yellow-700 ${spinAvailable ? 'ring-2 ring-yellow-500/40' : 'opacity-60'}`}
+        <button
           onClick={() => { if (spinAvailable) setShowSpin(true) }}
+          disabled={!spinAvailable}
+          className={`gold-outline-btn py-4 px-5 ${!spinAvailable ? 'opacity-40 cursor-not-allowed' : ''}`}
         >
-          <span className="text-3xl">🎰</span>
-          <p className="font-semibold text-sm text-center">Lucky Spin</p>
-          <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${spinAvailable ? 'bg-yellow-800 text-yellow-300' : 'bg-gray-800 text-gray-400'}`}>
+          <span className="text-2xl mb-1">🎰</span>
+          <span className="text-sm font-semibold text-[#D4AF37]">Lucky Spin</span>
+          <span className="text-xs text-[#D4AF37]/70 mt-0.5">
             {spinAvailable ? `Win up to KSh ${Math.floor(totalReturns * 0.04).toLocaleString()}` : isSpinDay() ? 'Used Today' : 'Mon & Fri'}
           </span>
-        </div>
+        </button>
       </div>
 
-      {/* Quick Services */}
+      {/* Quick Services — Premium square cards */}
       <div className="mb-2">
-        <p className="text-xs text-gray-500 uppercase tracking-wider font-semibold mb-3">Quick Services</p>
+        <p className="text-xs text-gray-500 uppercase tracking-widest font-semibold mb-4">Quick Services</p>
         <div className="grid grid-cols-3 gap-3">
-
-          {/* Buy Airtime — shows Coming Soon toast */}
           <div
-            className="card flex flex-col items-center gap-2 cursor-pointer transition-all active:scale-95 hover:border-blue-700 hover:bg-blue-950/20"
+            className="premium-square-card"
             onClick={() => showToast('Coming Soon 📶')}
           >
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 to-cyan-600 flex items-center justify-center text-xl">📶</div>
-            <p className="font-semibold text-xs text-center">Buy Airtime</p>
+            <div className="icon-wrap text-[#D4AF37]">📶</div>
+            <p className="font-semibold text-xs text-center text-gray-300">Buy Airtime</p>
           </div>
 
-          {/* Pay Bills — opens promo code modal */}
           <div
-            className="card flex flex-col items-center gap-2 cursor-pointer transition-all active:scale-95 hover:border-teal-700 hover:bg-teal-950/20"
+            className="premium-square-card"
             onClick={() => setShowPromo(true)}
           >
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-green-600 to-teal-600 flex items-center justify-center text-xl">🎟️</div>
-            <p className="font-semibold text-xs text-center">Pay Bills</p>
+            <div className="icon-wrap text-[#D4AF37]">🎟️</div>
+            <p className="font-semibold text-xs text-center text-gray-300">Pay Bills</p>
           </div>
 
-          {/* Request Loan — fully functional */}
           <div
-            className="card flex flex-col items-center gap-2 cursor-pointer transition-all active:scale-95 hover:border-purple-700 hover:bg-purple-950/20"
+            className="premium-square-card"
             onClick={() => setShowLoan(true)}
           >
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-600 to-indigo-600 flex items-center justify-center text-xl">🏦</div>
-            <p className="font-semibold text-xs text-center">Request Loan</p>
+            <div className="icon-wrap text-[#D4AF37]">🏦</div>
+            <p className="font-semibold text-xs text-center text-gray-300">Request Loan</p>
           </div>
 
-          {/* Contact Admin */}
           <div
-            className="card flex flex-col items-center gap-2 cursor-pointer transition-all active:scale-95 hover:border-green-700 hover:bg-green-950/20"
+            className="premium-square-card"
             onClick={() => setShowContactAdmin(true)}
           >
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-green-600 to-emerald-600 flex items-center justify-center text-xl">💬</div>
-            <p className="font-semibold text-xs text-center">Contact Admin</p>
+            <div className="icon-wrap text-[#D4AF37]">💬</div>
+            <p className="font-semibold text-xs text-center text-gray-300">Contact Admin</p>
           </div>
         </div>
       </div>
 
       {/* Invest CTA */}
-      <div className="card mb-6 mt-6 flex items-center justify-between bg-gradient-to-r from-gray-900 to-gray-800 border-red-900/40 hover:border-red-700/60 transition-colors">
+      <div className="mb-6 mt-8 p-5 flex items-center justify-between bg-[#0a0a0a] border border-[#1a1a1a] hover:border-[#D4AF37]/30 transition-colors rounded-2xl">
         <div>
-          <p className="font-bold">Start Investing</p>
-          <p className="text-gray-400 text-sm">3% daily returns • 90 days</p>
+          <p className="font-bold text-white">Start Investing</p>
+          <p className="text-gray-500 text-sm">3% daily returns • 90 days</p>
         </div>
-        <button onClick={() => navigate('/plans')} className="btn-primary text-sm py-2 px-5 whitespace-nowrap">
+        <button onClick={() => navigate('/plans')} className="btn-primary text-sm py-2.5 px-5 whitespace-nowrap">
           Invest Now →
         </button>
       </div>
 
       {/* Active Investments */}
       {activeInvestments.length > 0 && (
-        <div className="card mb-6">
-          <h3 className="font-semibold mb-3 flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+        <div className="mb-6">
+          <h3 className="font-semibold mb-4 flex items-center gap-2 text-white">
+            <span className="w-1.5 h-1.5 rounded-full bg-[#D4AF37] animate-pulse"></span>
             Active Investments
           </h3>
           <div className="space-y-3">
             {activeInvestments.slice(0, 3).map(inv => {
               const expectedEarnings = Number(inv.totalReturn || 0)
               return (
-                <div key={inv.id} className="flex items-center justify-between bg-gray-800 rounded-xl px-4 py-3">
+                <div key={inv.id} className="flex items-center justify-between bg-[#0a0a0a] border border-[#1a1a1a] rounded-xl px-4 py-3.5 hover:border-[#D4AF37]/20 transition-colors">
                   <div>
-                    <p className="font-medium text-sm">{inv.planName}</p>
-                    <p className="text-gray-400 text-xs">KSh {Number(inv.amount).toLocaleString()}</p>
+                    <p className="font-medium text-sm text-white">{inv.planName}</p>
+                    <p className="text-gray-500 text-xs">KSh {Number(inv.amount).toLocaleString()}</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-green-400 text-sm font-semibold">+KSh {Number(inv.dailyReturn || 0).toLocaleString()}/day</p>
-                    <p className="text-yellow-400 text-xs">Expected: KSh {expectedEarnings.toLocaleString()}</p>
+                    <p className="text-[#D4AF37] text-sm font-semibold">+KSh {Number(inv.dailyReturn || 0).toLocaleString()}/day</p>
+                    <p className="text-gray-500 text-xs">Expected: KSh {expectedEarnings.toLocaleString()}</p>
                   </div>
                 </div>
               )
@@ -734,14 +705,14 @@ export default function Dashboard() {
           href={`https://wa.me/${import.meta.env.VITE_ADMIN_PHONE.replace(/\D/g, '')}`}
           target="_blank"
           rel="noopener noreferrer"
-          className="card mb-6 flex items-center gap-4 cursor-pointer transition-all active:scale-95 ring-2 ring-green-500/30 hover:ring-green-500/50 no-underline"
+          className="mb-6 p-4 flex items-center gap-4 cursor-pointer transition-all active:scale-95 border border-[#1a1a1a] hover:border-[#D4AF37]/30 rounded-2xl no-underline"
         >
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-green-600 to-emerald-600 flex items-center justify-center text-xl flex-shrink-0">💬</div>
+          <div className="w-10 h-10 rounded-xl bg-[#0a0a0a] border border-[#1a1a1a] flex items-center justify-center text-xl text-[#D4AF37] flex-shrink-0">💬</div>
           <div className="flex-1">
-            <p className="font-semibold">Chat Support</p>
-            <p className="text-gray-400 text-sm">Talk to us on WhatsApp</p>
+            <p className="font-semibold text-white text-sm">Chat Support</p>
+            <p className="text-gray-500 text-xs">Talk to us on WhatsApp</p>
           </div>
-          <span className="text-xs bg-green-800 text-green-300 px-3 py-1 rounded-full font-medium flex-shrink-0">Live</span>
+          <span className="text-xs text-[#D4AF37] font-medium flex-shrink-0">Live</span>
         </a>
       )}
     </div>
