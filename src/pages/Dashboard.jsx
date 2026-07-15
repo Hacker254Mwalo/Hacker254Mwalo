@@ -257,6 +257,32 @@ export default function Dashboard() {
 
   const userPhone = user?.phone || user?.id
 
+  const showToast = useCallback((msg) => {
+    setToast(msg)
+    setTimeout(() => setToast(''), 3000)
+  }, [])
+
+  const loadNotifications = useCallback(() => {
+    if (!userPhone) return []
+    try {
+      const stored = localStorage.getItem(`dp_notifications_${userPhone}`)
+      return stored ? JSON.parse(stored) : []
+    } catch { return [] }
+  }, [userPhone])
+
+  const saveNotifications = useCallback((notifs) => {
+    if (!userPhone) return
+    localStorage.setItem(`dp_notifications_${userPhone}`, JSON.stringify(notifs))
+  }, [userPhone])
+
+  const addNotification = useCallback((message, type = 'info') => {
+    setNotifications(prev => {
+      const updated = [{ id: Date.now(), message, type, read: false, createdAt: new Date().toISOString() }, ...prev]
+      saveNotifications(updated)
+      return updated
+    })
+  }, [saveNotifications])
+
   useEffect(() => {
     if (!user) return
     getInvestments(user.phone || user.id).then(setInvestments).catch(() => {})
@@ -295,32 +321,6 @@ export default function Dashboard() {
   const dailyProfit = activeInvestments.reduce((sum, inv) => sum + (inv.dailyReturn || 0), 0)
   const loginBonus = Math.max(1, Math.floor(dailyProfit * 0.01))
   const badge = getInvestorBadge(user?.balance || 0)
-
-  const showToast = useCallback((msg) => {
-    setToast(msg)
-    setTimeout(() => setToast(''), 3000)
-  }, [])
-
-  const loadNotifications = useCallback(() => {
-    if (!userPhone) return []
-    try {
-      const stored = localStorage.getItem(`dp_notifications_${userPhone}`)
-      return stored ? JSON.parse(stored) : []
-    } catch { return [] }
-  }, [userPhone])
-
-  const saveNotifications = useCallback((notifs) => {
-    if (!userPhone) return
-    localStorage.setItem(`dp_notifications_${userPhone}`, JSON.stringify(notifs))
-  }, [userPhone])
-
-  const addNotification = useCallback((message, type = 'info') => {
-    setNotifications(prev => {
-      const updated = [{ id: Date.now(), message, type, read: false, createdAt: new Date().toISOString() }, ...prev]
-      saveNotifications(updated)
-      return updated
-    })
-  }, [saveNotifications])
 
   async function claimLoginBonus() {
     if (!canClaimLoginBonus(user.id)) {
