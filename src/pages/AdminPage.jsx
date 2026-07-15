@@ -472,6 +472,13 @@ function SupportTab({ showToast }) {
   }
   useEffect(() => { loadThreads() }, [])
 
+  // Refresh threads periodically when not using Supabase realtime
+  useEffect(() => {
+    if (isSupabaseConfigured) return
+    const interval = setInterval(loadThreads, 5000)
+    return () => clearInterval(interval)
+  }, [])
+
   // Load messages for selected thread and subscribe to realtime
   useEffect(() => {
     if (!activePhone) return
@@ -504,18 +511,9 @@ function SupportTab({ showToast }) {
       await sendSupportMessage(activePhone, reply.trim(), 'admin')
       setMessages(prev => [...prev, { user_phone: activePhone, message: reply.trim(), sender_type: 'admin', created_at: new Date().toISOString() }])
       setReply('')
+      if (!isSupabaseConfigured) loadThreads()
     } catch (er) { showToast('❌ ' + er.message) }
     setSending(false)
-  }
-
-  if (!isSupabaseConfigured) {
-    return (
-      <div className="card text-center py-10">
-        <p className="text-4xl mb-3">⚡</p>
-        <p className="text-gray-400 text-sm">Live Support requires Supabase to be configured.</p>
-        <p className="text-gray-600 text-xs mt-1">Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in your environment.</p>
-      </div>
-    )
   }
 
   return (

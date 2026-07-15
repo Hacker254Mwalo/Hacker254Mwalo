@@ -432,7 +432,7 @@ export async function claimKeyword(userPhone, code) {
 
 // ── Support / Live Chat ───────────────────────────────────────────────────────
 export async function getSupportMessages(userPhone) {
-  if (!isSupabaseConfigured) return []
+  if (!isSupabaseConfigured) return local.getSupportMessages(userPhone)
   const { data } = await supabase
     .from('support_messages')
     .select('*')
@@ -442,7 +442,7 @@ export async function getSupportMessages(userPhone) {
 }
 
 export async function getAllSupportThreads() {
-  if (!isSupabaseConfigured) return []
+  if (!isSupabaseConfigured) return local.getAllSupportThreads()
   const { data } = await supabase
     .from('support_messages')
     .select('user_phone, message, sender_type, created_at')
@@ -457,6 +457,6 @@ export async function getAllSupportThreads() {
 }
 
 export async function sendSupportMessage(userPhone, message, senderType = 'user') {
-  if (!isSupabaseConfigured) return
+  if (!isSupabaseConfigured) { local.sendSupportMessage(userPhone, message, senderType); return }
   await supabase.from('support_messages').insert({ user_phone: userPhone, message, sender_type: senderType })
 }

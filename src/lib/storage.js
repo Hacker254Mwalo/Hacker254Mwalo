@@ -105,3 +105,37 @@ export function findUserByReferralCode(code) {
   const users = getUsers()
   return Object.values(users).find(u => u.referralCode === code) || null
 }
+
+// ── Support / Live Chat ───────────────────────────────────────────────────────
+export function getSupportMessages(userPhone) {
+  try {
+    const all = JSON.parse(localStorage.getItem('dp_support_messages') || '{}')
+    return (all[userPhone] || []).sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
+  } catch { return [] }
+}
+
+export function getAllSupportThreads() {
+  try {
+    const all = JSON.parse(localStorage.getItem('dp_support_messages') || '{}')
+    const threads = []
+    Object.entries(all).forEach(([userPhone, messages]) => {
+      if (messages.length === 0) return
+      const sorted = messages.sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
+      threads.push({ userPhone, messages: sorted, lastAt: sorted[sorted.length - 1].created_at })
+    })
+    return threads.sort((a, b) => new Date(b.lastAt) - new Date(a.lastAt))
+  } catch { return [] }
+}
+
+export function sendSupportMessage(userPhone, message, senderType = 'user') {
+  const all = JSON.parse(localStorage.getItem('dp_support_messages') || '{}')
+  if (!all[userPhone]) all[userPhone] = []
+  all[userPhone].push({
+    id: Date.now().toString() + Math.random().toString(36).slice(2, 6),
+    user_phone: userPhone,
+    message,
+    sender_type: senderType,
+    created_at: new Date().toISOString(),
+  })
+  localStorage.setItem('dp_support_messages', JSON.stringify(all))
+}

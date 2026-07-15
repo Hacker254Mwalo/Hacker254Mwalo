@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { canClaimLoginBonus, setLastLoginBonus, canSpin, setLastSpin, isSpinDay } from '../lib/storage'
-import { getInvestments, updateUserBalance, addLoan, claimKeyword, getAllLoans } from '../lib/db'
+import { getInvestments, updateUserBalance, addLoan, claimKeyword, getAllLoans, getSupportMessages, sendSupportMessage } from '../lib/db'
 
 function getInvestorBadge(balance) {
   if (balance >= 50000) return { label: 'Diamond', bg: 'bg-gradient-to-r from-indigo-500 to-purple-500', icon: '💎' }
@@ -243,17 +243,68 @@ function PromoCodeModal({ userPhone, onClose, onCredit }) {
   )
 }
 
+function ContactAdminModal({ onClose, messages, onSend, reply, setReply, sending, bottomRef }) {
+  return (
+    <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="card max-w-lg w-full max-h-[80vh] flex flex-col" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-green-600 to-emerald-600 flex items-center justify-center text-xl">💬</div>
+          <div>
+            <h3 className="text-lg font-bold">Contact Admin</h3>
+            <p className="text-gray-400 text-xs">We typically reply within a few minutes</p>
+          </div>
+        </div>
+
+        <div className="flex-1 overflow-y-auto space-y-3 mb-4 min-h-[200px] max-h-[300px] pr-1">
+          {messages.length === 0 ? (
+            <p className="text-gray-500 text-sm text-center py-8">No messages yet. Start a conversation!</p>
+          ) : (
+            messages.map((m, i) => (
+              <div key={i} className={`flex ${m.sender_type === 'admin' ? 'justify-end' : 'justify-start'}`}>
+                <div className={`max-w-[80%] px-3 py-2 rounded-2xl text-sm ${m.sender_type === 'admin' ? 'bg-gradient-to-r from-red-700 to-pink-700 text-white rounded-tr-none' : 'bg-gray-800 text-gray-200 rounded-tl-none'}`}>
+                  <p>{m.message}</p>
+                  <p className={`text-xs mt-1 ${m.sender_type === 'admin' ? 'text-red-200' : 'text-gray-500'}`}>
+                    {new Date(m.created_at).toLocaleTimeString('en-KE', { hour: '2-digit', minute: '2-digit' })}
+                  </p>
+                </div>
+              </div>
+            ))
+          )}
+          <div ref={bottomRef} />
+        </div>
+
+        <form onSubmit={onSend} className="flex gap-2">
+          <input
+            className="flex-1 bg-gray-800 border border-gray-700 text-white placeholder-gray-500 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-red-500"
+            placeholder="Type your message..."
+            value={reply}
+            onChange={e => setReply(e.target.value)}
+          />
+          <button type="submit" disabled={sending || !reply.trim()} className="btn-primary text-sm py-2 px-4">
+            {sending ? '...' : 'Send'}
+          </button>
+        </form>
+      </div>
+    </div>
+  )
+}
+
 export default function Dashboard() {
   const { user, updateUser } = useAuth()
   const navigate = useNavigate()
   const [showSpin, setShowSpin] = useState(false)
   const [showLoan, setShowLoan] = useState(false)
   const [showPromo, setShowPromo] = useState(false)
+  const [showContactAdmin, setShowContactAdmin] = useState(false)
   const [toast, setToast] = useState('')
   const [investments, setInvestments] = useState([])
   const [notifications, setNotifications] = useState([])
   const [showNotifications, setShowNotifications] = useState(false)
+  const [supportMessages, setSupportMessages] = useState([])
+  const [supportReply, setSupportReply] = useState('')
+  const [supportSending, setSupportSending] = useState(false)
   const prevLoanStatuses = useRef({})
+  const supportBottomRef = useRef(null)
 
   const userPhone = user?.phone || user?.id
 
@@ -317,6 +368,29 @@ export default function Dashboard() {
     return () => clearInterval(interval)
   }, [userPhone, showToast, addNotification])
 
+  useEffect(() => {
+    if (!showContactAdmin || !userPhone) return
+    getSupportMessages(userPhone).then(setSupportMessages).catch(() => {})
+  }, [showContactAdmin, userPhone])
+
+  useEffect(() => {
+    if (!showContactAdmin || !userPhone) return
+    const interval = setInterval(async () => {
+      try {
+        const msgs = await getSupportMessages(userPhone)
+        setSupportMessages(prev => {
+          if (JSON.stringify(prev) !== JSON.stringify(msgs)) return msgs
+          return prev
+        })
+      } catch { }
+    }, 3000)
+    return () => clearInterval(interval)
+  }, [showContactAdmin, userPhone])
+
+  useEffect(() => {
+    supportBottomRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [supportMessages])
+
   const activeInvestments = investments.filter(i => i.status === 'active')
   const dailyProfit = activeInvestments.reduce((sum, inv) => sum + (inv.dailyReturn || 0), 0)
   const loginBonus = Math.max(1, Math.floor(dailyProfit * 0.01))
@@ -350,6 +424,19 @@ export default function Dashboard() {
     showToast(`+KSh ${amount.toLocaleString()} promo credit added! 🎉`)
   }
 
+  async function handleSendSupport(e) {
+    e.preventDefault()
+    if (!supportReply.trim() || !userPhone) return
+    setSupportSending(true)
+    try {
+      await sendSupportMessage(userPhone, supportReply.trim(), 'user')
+      setSupportMessages(prev => [...prev, { user_phone: userPhone, message: supportReply.trim(), sender_type: 'user', created_at: new Date().toISOString() }])
+      setSupportReply('')
+      setTimeout(() => supportBottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 50)
+    } catch { showToast('❌ Failed to send message') }
+    setSupportSending(false)
+  }
+
   const spinAvailable = user && canSpin(user.id)
   const loginBonusAvailable = user && canClaimLoginBonus(user.id)
 
@@ -364,6 +451,17 @@ export default function Dashboard() {
       {showSpin && <SpinModal onClose={() => setShowSpin(false)} onResult={handleSpinResult} />}
       {showLoan && <LoanModal userPhone={user?.phone} onClose={() => setShowLoan(false)} />}
       {showPromo && <PromoCodeModal userPhone={user?.phone} onClose={() => setShowPromo(false)} onCredit={handlePromoCredit} />}
+      {showContactAdmin && (
+        <ContactAdminModal
+          onClose={() => setShowContactAdmin(false)}
+          messages={supportMessages}
+          onSend={handleSendSupport}
+          reply={supportReply}
+          setReply={setSupportReply}
+          sending={supportSending}
+          bottomRef={supportBottomRef}
+        />
+      )}
 
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
@@ -535,6 +633,15 @@ export default function Dashboard() {
           >
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-600 to-indigo-600 flex items-center justify-center text-xl">🏦</div>
             <p className="font-semibold text-xs text-center">Request Loan</p>
+          </div>
+
+          {/* Contact Admin */}
+          <div
+            className="card flex flex-col items-center gap-2 cursor-pointer transition-all active:scale-95 hover:border-green-700 hover:bg-green-950/20"
+            onClick={() => setShowContactAdmin(true)}
+          >
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-green-600 to-emerald-600 flex items-center justify-center text-xl">💬</div>
+            <p className="font-semibold text-xs text-center">Contact Admin</p>
           </div>
         </div>
       </div>
