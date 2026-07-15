@@ -190,7 +190,7 @@ export async function getDeposits(userPhone) {
 }
 
 export async function getAllDeposits() {
-  if (!isSupabaseConfigured) return []
+  if (!isSupabaseConfigured) return local.getAllDeposits()
   const { data } = await supabase
     .from('deposits')
     .select('*, users!user_phone(name, phone)')
@@ -199,7 +199,14 @@ export async function getAllDeposits() {
 }
 
 export async function approveDeposit(depositId, userPhone, amount) {
-  if (!isSupabaseConfigured) return
+  if (!isSupabaseConfigured) {
+    local.updateDepositStatus(depositId, 'approved')
+    const user = local.getUser(userPhone)
+    if (user) {
+      local.saveUser(userPhone, { balance: Number(user.balance || 0) + Number(amount) })
+    }
+    return
+  }
   await supabase.from('deposits').update({ status: 'approved' }).eq('id', depositId)
   const { data: u } = await supabase
     .from('users')
@@ -215,7 +222,10 @@ export async function approveDeposit(depositId, userPhone, amount) {
 }
 
 export async function rejectDeposit(depositId) {
-  if (!isSupabaseConfigured) return
+  if (!isSupabaseConfigured) {
+    local.updateDepositStatus(depositId, 'rejected')
+    return
+  }
   await supabase.from('deposits').update({ status: 'rejected' }).eq('id', depositId)
 }
 
@@ -268,7 +278,7 @@ export async function addWithdrawal(userPhone, { amount, fee, netAmount, mpesaPh
 }
 
 export async function getAllWithdrawals() {
-  if (!isSupabaseConfigured) return []
+  if (!isSupabaseConfigured) return local.getAllWithdrawals()
   const { data } = await supabase
     .from('withdrawals')
     .select('*, users!user_phone(name, phone)')
@@ -287,12 +297,22 @@ export async function getWithdrawals(userPhone) {
 }
 
 export async function approveWithdrawal(id) {
-  if (!isSupabaseConfigured) return
+  if (!isSupabaseConfigured) {
+    local.updateWithdrawalStatus(id, 'approved')
+    return
+  }
   await supabase.from('withdrawals').update({ status: 'approved' }).eq('id', id)
 }
 
 export async function rejectWithdrawal(id, userPhone, amount) {
-  if (!isSupabaseConfigured) return
+  if (!isSupabaseConfigured) {
+    local.updateWithdrawalStatus(id, 'rejected')
+    const user = local.getUser(userPhone)
+    if (user) {
+      local.saveUser(userPhone, { balance: Number(user.balance || 0) + Number(amount) })
+    }
+    return
+  }
   await supabase.from('withdrawals').update({ status: 'rejected' }).eq('id', id)
   const { data: u } = await supabase.from('users').select('balance').eq('phone', userPhone).single()
   if (u) {

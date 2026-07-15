@@ -253,8 +253,8 @@ export default function ProfilePage() {
 
   const refCode = user ? (user.referralCode || generateReferralCode(user.phone)) : ''
   const refLink = `${window.location.origin}/login?ref=${refCode}`
-  const totalL1 = referrals.filter(r => r.level === 1).reduce((s, r) => s + r.commission, 0)
-  const totalL2 = referrals.filter(r => r.level === 2).reduce((s, r) => s + r.commission, 0)
+  const totalL1 = referrals.filter(r => r.level === 1).reduce((s, r) => s + Number(r.commission || 0), 0)
+  const totalL2 = referrals.filter(r => r.level === 2).reduce((s, r) => s + Number(r.commission || 0), 0)
   const mustChangePw = user?.must_change_password
 
   useEffect(() => {

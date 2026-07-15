@@ -59,10 +59,10 @@ export default function HistoryPage() {
     prevWithdrawalStatuses.current = newWithStatuses
   }, [deposits, withdrawals, showToast])
 
-  const totalInvested = investments.reduce((s, i) => s + Number(i.amount), 0)
-  const totalExpectedReturn = investments.reduce((s, i) => s + Number(i.totalReturn), 0)
+  const totalInvested = investments.reduce((s, i) => s + Number(i.amount || 0), 0)
+  const totalExpectedReturn = investments.reduce((s, i) => s + Number(i.totalReturn || 0), 0)
   const activeInvestments = investments.filter(i => i.status === 'active')
-  const todayInterest = activeInvestments.reduce((s, i) => s + Number(i.dailyReturn), 0)
+  const todayInterest = activeInvestments.reduce((s, i) => s + Number(i.dailyReturn || 0), 0)
 
   const combinedLedger = [
     ...deposits.map(d => ({ ...d, type: 'deposit' })),

@@ -81,6 +81,44 @@ export function addDeposit(userId, deposit) {
   return d
 }
 
+export function getAllDeposits() {
+  try {
+    const all = JSON.parse(localStorage.getItem('dp_deposits') || '{}')
+    const result = []
+    Object.entries(all).forEach(([userId, deposits]) => {
+      deposits.forEach(d => result.push({ ...d, user_phone: userId, created_at: d.date || d.created_at }))
+    })
+    return result.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+  } catch { return [] }
+}
+
+export function updateDepositStatus(depositId, status) {
+  const all = JSON.parse(localStorage.getItem('dp_deposits') || '{}')
+  Object.keys(all).forEach(userId => {
+    all[userId] = all[userId].map(d => d.id === depositId ? { ...d, status } : d)
+  })
+  localStorage.setItem('dp_deposits', JSON.stringify(all))
+}
+
+export function getAllWithdrawals() {
+  try {
+    const all = JSON.parse(localStorage.getItem('dp_withdrawals') || '{}')
+    const result = []
+    Object.entries(all).forEach(([userId, withdrawals]) => {
+      withdrawals.forEach(w => result.push({ ...w, user_phone: userId, created_at: w.date || w.created_at }))
+    })
+    return result.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+  } catch { return [] }
+}
+
+export function updateWithdrawalStatus(withdrawalId, status) {
+  const all = JSON.parse(localStorage.getItem('dp_withdrawals') || '{}')
+  Object.keys(all).forEach(userId => {
+    all[userId] = all[userId].map(w => w.id === withdrawalId ? { ...w, status } : w)
+  })
+  localStorage.setItem('dp_withdrawals', JSON.stringify(all))
+}
+
 export function getLastLoginBonus(userId) {
   try {
     const all = JSON.parse(localStorage.getItem('dp_login_bonus') || '{}')
