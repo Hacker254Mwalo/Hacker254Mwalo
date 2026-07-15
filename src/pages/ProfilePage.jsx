@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
-import { updateUserBalance, getReferrals, generateReferralCode, addDeposit, addWithdrawal } from '../lib/db'
+import { updateUserBalance, getReferrals, generateReferralCode, addDeposit, addWithdrawal, changePassword } from '../lib/db'
+import { canChangePassword, recordPasswordChangeAttempt } from '../lib/storage'
 import { MPESA_PAYBILL, WITHDRAWAL_FEE } from '../lib/plans'
 
 function DepositModal({ user, onClose, onPending }) {
@@ -241,13 +242,20 @@ export default function ProfilePage() {
   const [showDeposit, setShowDeposit] = useState(false)
   const [showWithdraw, setShowWithdraw] = useState(false)
   const [toast, setToast] = useState('')
-  const [copied, setCopied] = useState(false)
+  const [copied, _setCopied] = useState(false)
   const [referrals, setReferrals] = useState([])
+  const [showPwForm, setShowPwForm] = useState(false)
+  const [currentPw, setCurrentPw] = useState('')
+  const [newPw, setNewPw] = useState('')
+  const [confirmPw, setConfirmPw] = useState('')
+  const [pwError, setPwError] = useState('')
+  const [pwLoading, setPwLoading] = useState(false)
 
   const refCode = user ? (user.referralCode || generateReferralCode(user.phone)) : ''
   const refLink = `${window.location.origin}/login?ref=${refCode}`
   const totalL1 = referrals.filter(r => r.level === 1).reduce((s, r) => s + r.commission, 0)
   const totalL2 = referrals.filter(r => r.level === 2).reduce((s, r) => s + r.commission, 0)
+  const mustChangePw = user?.must_change_password
 
   useEffect(() => {
     if (!user) return
@@ -261,9 +269,36 @@ export default function ProfilePage() {
 
   function copyLink() {
     navigator.clipboard.writeText(refLink).then(() => {
-      setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
+      _setCopied(true)
+      setTimeout(() => _setCopied(false), 2000)
     })
+  }
+
+  async function handleChangePassword(e) {
+    e.preventDefault()
+    setPwError('')
+    if (!currentPw || !newPw || !confirmPw) { setPwError('All fields are required'); return }
+    if (newPw !== confirmPw) { setPwError('New passwords do not match'); return }
+    if (newPw.length < 4) { setPwError('PIN must be at least 4 digits'); return }
+    if (newPw === currentPw) { setPwError('New PIN must be different from current'); return }
+
+    const rate = canChangePassword(user.phone || user.id)
+    if (!rate.allowed) { setPwError('Too many attempts. Please try again later.'); return }
+
+    setPwLoading(true)
+    recordPasswordChangeAttempt(user.phone || user.id)
+    try {
+      await changePassword(user.phone || user.id, currentPw, newPw)
+      updateUser({ must_change_password: false })
+      setCurrentPw('')
+      setNewPw('')
+      setConfirmPw('')
+      setShowPwForm(false)
+      showToast('✅ Password updated successfully!')
+    } catch (err) {
+      setPwError(err.message || 'Failed to update password')
+    }
+    setPwLoading(false)
   }
 
   async function handleWithdraw(amount, mpesaPhone) {
@@ -379,6 +414,85 @@ export default function ProfilePage() {
           </div>
         ) : (
           <p className="text-center text-gray-500 text-sm py-4">No referrals yet. Share your code to earn!</p>
+        )}
+      </div>
+
+      {mustChangePw && (
+        <div className="card mb-6 border-yellow-700 bg-yellow-900/20">
+          <div className="flex items-center gap-2 mb-2">
+            <span className="text-2xl">⚠️</span>
+            <p className="font-bold text-yellow-400">Temporary Password</p>
+          </div>
+          <p className="text-gray-300 text-sm mb-4">You are using a temporary password. Please change it immediately to secure your account.</p>
+          <button onClick={() => setShowPwForm(true)} className="btn-primary w-full text-sm py-2.5">Change Password Now</button>
+        </div>
+      )}
+
+      <div className="card mb-6">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h3 className="font-bold text-lg">🔒 Security</h3>
+            <p className="text-gray-400 text-xs">Manage your password</p>
+          </div>
+          {!showPwForm && !mustChangePw && (
+            <button onClick={() => setShowPwForm(true)} className="text-xs bg-gray-800 hover:bg-gray-700 text-white px-3 py-1.5 rounded-lg transition-colors">
+              Change Password
+            </button>
+          )}
+        </div>
+
+        {showPwForm && (
+          <form onSubmit={handleChangePassword} className="space-y-3">
+            <div>
+              <label className="text-xs text-gray-400 mb-1 block">Current PIN</label>
+              <input
+                className="input-field"
+                type="password"
+                inputMode="numeric"
+                maxLength={6}
+                placeholder="Enter current PIN"
+                value={currentPw}
+                onChange={e => setCurrentPw(e.target.value.replace(/\D/g, ''))}
+              />
+            </div>
+            <div>
+              <label className="text-xs text-gray-400 mb-1 block">New PIN (4–6 digits)</label>
+              <input
+                className="input-field"
+                type="password"
+                inputMode="numeric"
+                maxLength={6}
+                placeholder="Enter new PIN"
+                value={newPw}
+                onChange={e => setNewPw(e.target.value.replace(/\D/g, ''))}
+              />
+            </div>
+            <div>
+              <label className="text-xs text-gray-400 mb-1 block">Confirm New PIN</label>
+              <input
+                className="input-field"
+                type="password"
+                inputMode="numeric"
+                maxLength={6}
+                placeholder="Repeat new PIN"
+                value={confirmPw}
+                onChange={e => setConfirmPw(e.target.value.replace(/\D/g, ''))}
+              />
+            </div>
+
+            {pwError && (
+              <div className="bg-red-900/40 border border-red-700 text-red-300 text-sm rounded-lg px-4 py-3">
+                {pwError}
+              </div>
+            )}
+
+            <div className="flex gap-2">
+              <button type="button" onClick={() => { setShowPwForm(false); setPwError('') }} className="btn-secondary flex-1 text-sm py-2">Cancel</button>
+              <button type="submit" disabled={pwLoading} className="btn-primary flex-1 text-sm py-2">
+                {pwLoading ? 'Updating...' : 'Update Password'}
+              </button>
+            </div>
+          </form>
         )}
       </div>
 

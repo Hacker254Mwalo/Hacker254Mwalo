@@ -171,3 +171,87 @@ export function sendSupportMessage(userPhone, message, senderType = 'user') {
   })
   localStorage.setItem('dp_support_messages', JSON.stringify(all))
 }
+
+// ── Password Reset ────────────────────────────────────────────────────────────
+export function getPasswordResetRequests() {
+  try { return JSON.parse(localStorage.getItem('dp_password_resets') || '[]') } catch { return [] }
+}
+
+export function addPasswordResetRequest(request) {
+  const requests = getPasswordResetRequests()
+  requests.push({ ...request, id: Date.now().toString(), created_at: new Date().toISOString() })
+  localStorage.setItem('dp_password_resets', JSON.stringify(requests))
+}
+
+export function updatePasswordResetRequest(id, updates) {
+  const requests = getPasswordResetRequests()
+  const idx = requests.findIndex(r => r.id === id)
+  if (idx >= 0) {
+    requests[idx] = { ...requests[idx], ...updates }
+    localStorage.setItem('dp_password_resets', JSON.stringify(requests))
+  }
+}
+
+export function getPasswordResetRequestsByPhone(phone) {
+  return getPasswordResetRequests().filter(r => r.user_phone === phone)
+}
+
+export function getPasswordResetRateLimitKey(phone) {
+  return `dp_pw_reset_${phone}`
+}
+
+export function canRequestPasswordReset(phone) {
+  const key = getPasswordResetRateLimitKey(phone)
+  try {
+    const data = JSON.parse(localStorage.getItem(key) || '{"count":0,"resetAt":0}')
+    const now = Date.now()
+    if (now > data.resetAt) return { allowed: true, remaining: 3 }
+    const remaining = 3 - data.count
+    return { allowed: remaining > 0, remaining }
+  } catch { return { allowed: true, remaining: 3 } }
+}
+
+export function recordPasswordResetRequest(phone) {
+  const key = getPasswordResetRateLimitKey(phone)
+  const hour = 3600000
+  try {
+    const data = JSON.parse(localStorage.getItem(key) || '{"count":0,"resetAt":0}')
+    const now = Date.now()
+    if (now > data.resetAt) {
+      localStorage.setItem(key, JSON.stringify({ count: 1, resetAt: now + hour }))
+    } else {
+      data.count += 1
+      localStorage.setItem(key, JSON.stringify(data))
+    }
+  } catch { }
+}
+
+export function getPasswordChangeRateLimitKey(phone) {
+  return `dp_pw_change_${phone}`
+}
+
+export function canChangePassword(phone) {
+  const key = getPasswordChangeRateLimitKey(phone)
+  try {
+    const data = JSON.parse(localStorage.getItem(key) || '{"count":0,"resetAt":0}')
+    const now = Date.now()
+    if (now > data.resetAt) return { allowed: true, remaining: 5 }
+    const remaining = 5 - data.count
+    return { allowed: remaining > 0, remaining }
+  } catch { return { allowed: true, remaining: 5 } }
+}
+
+export function recordPasswordChangeAttempt(phone) {
+  const key = getPasswordChangeRateLimitKey(phone)
+  const fifteenMinutes = 900000
+  try {
+    const data = JSON.parse(localStorage.getItem(key) || '{"count":0,"resetAt":0}')
+    const now = Date.now()
+    if (now > data.resetAt) {
+      localStorage.setItem(key, JSON.stringify({ count: 1, resetAt: now + fifteenMinutes }))
+    } else {
+      data.count += 1
+      localStorage.setItem(key, JSON.stringify(data))
+    }
+  } catch { }
+}

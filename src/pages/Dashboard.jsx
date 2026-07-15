@@ -311,6 +311,12 @@ export default function Dashboard() {
 
   const userPhone = user?.phone || user?.id
 
+  useEffect(() => {
+    if (user?.must_change_password) {
+      navigate('/profile')
+    }
+  }, [user, navigate])
+
   const showToast = useCallback((msg) => {
     setToast(msg)
     setTimeout(() => setToast(''), 3000)

@@ -32,6 +32,8 @@ function dbUserToApp(row) {
     referralCode: row.referral_code,
     referredBy: row.referred_by,
     createdAt: row.created_at,
+    pin_hash: row.pin_hash,
+    must_change_password: row.must_change_password || false,
   }
 }
 
@@ -469,4 +471,76 @@ export async function getAllSupportThreads() {
 export async function sendSupportMessage(userPhone, message, senderType = 'user') {
   if (!isSupabaseConfigured) { local.sendSupportMessage(userPhone, message, senderType); return }
   await supabase.from('support_messages').insert({ user_phone: userPhone, message, sender_type: senderType })
+}
+
+// ── Password Reset ─────────────────────────────────────────────────────────────
+export async function createPasswordResetRequest(userPhone) {
+  if (!isSupabaseConfigured) {
+    local.addPasswordResetRequest({ user_phone: userPhone, status: 'pending' })
+    return { success: true }
+  }
+  const { data, error } = await supabase
+    .from('password_reset_requests')
+    .insert({ user_phone: userPhone, status: 'pending' })
+    .select()
+    .single()
+  if (error) throw error
+  return data
+}
+
+export async function getPasswordResetRequests() {
+  if (!isSupabaseConfigured) return local.getPasswordResetRequests()
+  const { data } = await supabase
+    .from('password_reset_requests')
+    .select('*')
+    .order('created_at', { ascending: false })
+  return data || []
+}
+
+export async function getPasswordResetRequestsByPhone(userPhone) {
+  if (!isSupabaseConfigured) return local.getPasswordResetRequestsByPhone(userPhone)
+  const { data } = await supabase
+    .from('password_reset_requests')
+    .select('*')
+    .eq('user_phone', userPhone)
+    .order('created_at', { ascending: false })
+  return data || []
+}
+
+export async function updatePasswordResetRequest(id, updates) {
+  if (!isSupabaseConfigured) {
+    local.updatePasswordResetRequest(id, updates)
+    return
+  }
+  await supabase.from('password_reset_requests').update(updates).eq('id', id)
+}
+
+export async function adminResetPassword(userPhone, newPin) {
+  const pinHash = await hashPin(newPin)
+  if (!isSupabaseConfigured) {
+    local.saveUser(userPhone, { pin_hash: pinHash, must_change_password: true })
+    return
+  }
+  await supabase.from('users').update({ pin_hash: pinHash, must_change_password: true }).eq('phone', userPhone)
+}
+
+export async function changePassword(userPhone, currentPin, newPin) {
+  const user = await getUser(userPhone)
+  if (!user) throw new Error('User not found')
+  const currentHash = await hashPin(currentPin)
+  if (user.pin_hash !== currentHash) throw new Error('Current PIN is incorrect')
+  const newHash = await hashPin(newPin)
+  if (!isSupabaseConfigured) {
+    local.saveUser(userPhone, { pin_hash: newHash, must_change_password: false })
+    return
+  }
+  await supabase.from('users').update({ pin_hash: newHash, must_change_password: false }).eq('phone', userPhone)
+}
+
+export async function clearMustChangePassword(userPhone) {
+  if (!isSupabaseConfigured) {
+    local.saveUser(userPhone, { must_change_password: false })
+    return
+  }
+  await supabase.from('users').update({ must_change_password: false }).eq('phone', userPhone)
 }

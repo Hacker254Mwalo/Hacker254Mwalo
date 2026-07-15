@@ -9,6 +9,7 @@ import {
   getAllUsers, adminSetBalance, adminSetBonusBalance,
   getKeywords, createKeyword, toggleKeyword,
   getAllSupportThreads, sendSupportMessage,
+  getPasswordResetRequests, updatePasswordResetRequest, adminResetPassword,
 } from '../lib/db'
 
 // ── Shared helpers ────────────────────────────────────────────────────────────
@@ -578,6 +579,101 @@ function SupportTab({ showToast }) {
   )
 }
 
+// ── Password Resets Tab ────────────────────────────────────────────────────────
+function PasswordResetsTab({ showToast }) {
+  const [requests, setRequests] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [resetting, setResetting] = useState(null)
+  const [tempPin, setTempPin] = useState('')
+
+  async function load() {
+    setLoading(true)
+    try { setRequests(await getPasswordResetRequests()) } catch {}
+    setLoading(false)
+  }
+  useEffect(() => { load() }, [])
+
+  async function handleReset(req) {
+    if (!tempPin || tempPin.length < 4) { showToast('Enter a valid temporary PIN (4–6 digits)'); return }
+    setResetting(req.id)
+    try {
+      await adminResetPassword(req.user_phone, tempPin)
+      await updatePasswordResetRequest(req.id, { status: 'completed', completed_at: new Date().toISOString() })
+      showToast('✅ Temporary password set. User has been notified via SMS.')
+      setTempPin('')
+      load()
+    } catch (e) { showToast('❌ ' + e.message) }
+    setResetting(false)
+  }
+
+  const pending = requests.filter(r => r.status === 'pending')
+  const completed = requests.filter(r => r.status === 'completed')
+
+  return (
+    <div>
+      <div className="grid grid-cols-2 gap-3 mb-5">
+        <div className="bg-gray-900 border border-gray-800 rounded-xl p-3 text-center">
+          <p className="text-xl font-black text-yellow-400">{pending.length}</p>
+          <p className="text-gray-500 text-xs">Pending</p>
+        </div>
+        <div className="bg-gray-900 border border-gray-800 rounded-xl p-3 text-center">
+          <p className="text-xl font-black text-green-400">{completed.length}</p>
+          <p className="text-gray-500 text-xs">Completed</p>
+        </div>
+      </div>
+
+      {loading ? <Spinner /> : pending.length === 0 && completed.length === 0 ? <Empty text="No password reset requests yet" /> : (
+        <div className="space-y-3">
+          {pending.map(req => (
+            <div key={req.id} className="card">
+              <div className="flex items-start justify-between mb-3">
+                <div>
+                  <p className="font-bold text-yellow-400">{req.user_phone}</p>
+                  <p className="text-gray-500 text-xs mt-1">{fmtDate(req.created_at)}</p>
+                </div>
+                <span className="text-xs bg-yellow-900/60 text-yellow-400 px-2 py-0.5 rounded-full font-medium">Pending</span>
+              </div>
+              {resetting === req.id ? (
+                <div className="space-y-2">
+                  <input
+                    className="input-field"
+                    type="password"
+                    inputMode="numeric"
+                    maxLength={6}
+                    placeholder="Enter temporary PIN (4–6 digits)"
+                    value={tempPin}
+                    onChange={e => setTempPin(e.target.value.replace(/\D/g, ''))}
+                    autoFocus
+                  />
+                  <div className="flex gap-2">
+                    <button onClick={() => { setResetting(null); setTempPin('') }} className="btn-secondary flex-1 text-xs py-2">Cancel</button>
+                    <button onClick={() => handleReset(req)} className="btn-primary flex-1 text-xs py-2">Set & Notify</button>
+                  </div>
+                </div>
+              ) : (
+                <button onClick={() => setResetting(req.id)} className="w-full text-xs py-2 rounded-xl font-semibold bg-yellow-700 hover:bg-yellow-600 text-white transition-all">
+                  Reset Password
+                </button>
+              )}
+            </div>
+          ))}
+          {completed.map(req => (
+            <div key={req.id} className="card opacity-60">
+              <div className="flex items-start justify-between mb-1">
+                <div>
+                  <p className="font-bold text-green-400">{req.user_phone}</p>
+                  <p className="text-gray-500 text-xs mt-1">{fmtDate(req.created_at)}</p>
+                </div>
+                <span className="text-xs bg-green-900/60 text-green-400 px-2 py-0.5 rounded-full font-medium">Completed</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ── Shared UI primitives ──────────────────────────────────────────────────────
 function Spinner() {
   return (
@@ -599,6 +695,7 @@ const TABS = [
   { id: 'users',       label: '👥 Users' },
   { id: 'keywords',    label: '🎟️ Keywords' },
   { id: 'support',     label: '💬 Support' },
+  { id: 'password-resets', label: '🔑 Passwords' },
 ]
 
 export default function AdminPage() {
@@ -659,6 +756,7 @@ export default function AdminPage() {
         {tab === 'users'       && <UsersTab       showToast={showToast} />}
         {tab === 'keywords'    && <KeywordsTab    showToast={showToast} />}
         {tab === 'support'     && <SupportTab     showToast={showToast} />}
+        {tab === 'password-resets' && <PasswordResetsTab showToast={showToast} />}
       </div>
     </div>
   )
