@@ -403,6 +403,7 @@ export default function Dashboard() {
   const activeInvestments = investments.filter(i => i.status === 'active')
   const dailyProfit = activeInvestments.reduce((sum, inv) => sum + (inv.dailyReturn || 0), 0)
   const totalReturns = investments.reduce((sum, inv) => sum + Number(inv.totalReturn || 0), 0)
+  const totalExpectedEarnings = activeInvestments.reduce((sum, inv) => sum + Number(inv.totalReturn || 0), 0)
   const loginBonus = Math.max(1, Math.floor(dailyProfit * 0.02))
   const badge = getInvestorBadge(user?.balance || 0)
 
@@ -615,8 +616,8 @@ export default function Dashboard() {
             <p className="text-gray-500 text-xs mt-0.5">Active Plans</p>
           </div>
           <div className="bg-gray-900 border border-gray-800 rounded-xl p-3 text-center">
-            <p className="text-yellow-400 font-bold text-base">3%</p>
-            <p className="text-gray-500 text-xs mt-0.5">Daily Rate</p>
+            <p className="text-yellow-400 font-bold text-base">KSh {totalExpectedEarnings.toLocaleString()}</p>
+            <p className="text-gray-500 text-xs mt-0.5">Expected Earnings</p>
           </div>
         </div>
       )}
@@ -708,18 +709,21 @@ export default function Dashboard() {
             Active Investments
           </h3>
           <div className="space-y-3">
-            {activeInvestments.slice(0, 3).map(inv => (
-              <div key={inv.id} className="flex items-center justify-between bg-gray-800 rounded-xl px-4 py-3">
-                <div>
-                  <p className="font-medium text-sm">{inv.planName}</p>
-                  <p className="text-gray-400 text-xs">KSh {inv.amount.toLocaleString()}</p>
+            {activeInvestments.slice(0, 3).map(inv => {
+              const expectedEarnings = Number(inv.totalReturn || 0)
+              return (
+                <div key={inv.id} className="flex items-center justify-between bg-gray-800 rounded-xl px-4 py-3">
+                  <div>
+                    <p className="font-medium text-sm">{inv.planName}</p>
+                    <p className="text-gray-400 text-xs">KSh {Number(inv.amount).toLocaleString()}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-green-400 text-sm font-semibold">+KSh {Number(inv.dailyReturn || 0).toLocaleString()}/day</p>
+                    <p className="text-yellow-400 text-xs">Expected: KSh {expectedEarnings.toLocaleString()}</p>
+                  </div>
                 </div>
-                <div className="text-right">
-                  <p className="text-green-400 text-sm font-semibold">+KSh {inv.dailyReturn}/day</p>
-                  <p className="text-gray-400 text-xs">3% daily</p>
-                </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
         </div>
       )}
