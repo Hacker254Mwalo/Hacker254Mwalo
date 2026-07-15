@@ -24,12 +24,12 @@ export default function Navbar() {
   return (
     <>
       {/* Desktop top bar */}
-      <nav className="hidden md:flex fixed top-0 left-0 right-0 z-50 bg-[#111]/90 backdrop-blur border-b border-[#1a1a1a] px-6 py-3 items-center justify-between">
+      <nav className="hidden md:flex fixed top-0 left-0 right-0 z-50 bg-gray-950/90 backdrop-blur border-b border-gray-800 px-6 py-3 items-center justify-between">
         <div className="flex items-center gap-2">
-          <span className="text-2xl font-black text-[#D4AF37]">
+          <span className="text-2xl font-black bg-gradient-to-r from-red-500 to-pink-500 bg-clip-text text-transparent">
             Dumiropay
           </span>
-          <span className="text-xs bg-[#D4AF37] text-black px-2 py-0.5 rounded-full font-semibold">KE</span>
+          <span className="text-xs bg-red-600 text-white px-2 py-0.5 rounded-full">KE</span>
         </div>
         <div className="flex items-center gap-1">
           {links.map(l => (
@@ -38,7 +38,7 @@ export default function Navbar() {
               to={l.to}
               className={({ isActive }) =>
                 `px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  isActive ? 'text-[#D4AF37] bg-[#D4AF37]/10' : 'text-gray-500 hover:text-white hover:bg-[#0a0a0a]'
+                  isActive ? 'bg-red-600 text-white' : 'text-gray-400 hover:text-white hover:bg-gray-800'
                 }`
               }
             >
@@ -46,7 +46,7 @@ export default function Navbar() {
             </NavLink>
           ))}
           {isAdmin && (
-            <NavLink to="/admin" className="ml-1 px-3 py-1.5 text-xs bg-[#D4AF37] hover:bg-[#E5C04B] text-black rounded-lg font-semibold transition-colors">
+            <NavLink to="/admin" className="ml-1 px-3 py-1.5 text-xs bg-yellow-600 hover:bg-yellow-500 text-white rounded-lg font-semibold transition-colors">
               Admin
             </NavLink>
           )}
@@ -55,27 +55,27 @@ export default function Navbar() {
               href={`https://wa.me/${waPhone}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="ml-2 px-3 py-2 rounded-lg text-sm font-medium border border-[#D4AF37] text-[#D4AF37] hover:bg-[#D4AF37]/10 transition-colors flex items-center gap-1.5"
+              className="ml-2 px-3 py-2 rounded-lg text-sm font-medium bg-green-600 hover:bg-green-500 text-white transition-colors flex items-center gap-1.5"
             >
               <span className="text-base">💬</span>
               <span className="hidden lg:inline">Message</span>
             </a>
           )}
-          <button onClick={handleLogout} className="ml-2 px-4 py-2 text-sm text-gray-500 hover:text-red-400 rounded-lg hover:bg-[#0a0a0a] transition-colors">
+          <button onClick={handleLogout} className="ml-2 px-4 py-2 text-sm text-gray-400 hover:text-red-400 rounded-lg hover:bg-gray-800 transition-colors">
             Logout
           </button>
         </div>
       </nav>
 
       {/* Mobile bottom nav */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-[#111]/90 backdrop-blur border-t border-[#1a1a1a] flex">
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-gray-950 border-t border-gray-800 flex">
         {links.map(l => (
           <NavLink
             key={l.to}
             to={l.to}
             className={({ isActive }) =>
               `flex-1 flex flex-col items-center py-3 text-xs font-medium transition-colors ${
-                isActive ? 'text-[#D4AF37]' : 'text-gray-500'
+                isActive ? 'text-red-400' : 'text-gray-500'
               }`
             }
           >

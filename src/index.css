@@ -3,75 +3,331 @@
 @layer base {
   :root {
     color-scheme: dark;
-    --bank-black: #111111;
-    --bank-gold: #D4AF37;
-    --bank-gold-dim: rgba(212, 175, 55, 0.15);
-    --bank-gold-glow: rgba(212, 175, 55, 0.05);
   }
   body {
-    @apply bg-[#111] text-white min-h-screen;
+    @apply bg-gray-950 text-white min-h-screen;
     font-family: 'Inter', system-ui, sans-serif;
   }
 }
 
 @layer components {
   .card {
-    @apply bg-[#111] border border-[#1a1a1a] rounded-2xl p-5;
+    @apply bg-gray-900 border border-gray-800 rounded-2xl p-5;
   }
   .btn-primary {
-    @apply bg-gradient-to-r from-[#D4AF37] to-[#B8960C] hover:from-[#E5C04B] hover:to-[#C9A820] text-black font-semibold py-3 px-6 rounded-xl transition-all duration-200 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply bg-gradient-to-r from-red-600 to-pink-600 hover:from-red-500 hover:to-pink-500 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-200 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed;
   }
   .btn-secondary {
-    @apply bg-transparent border border-[#D4AF37] text-[#D4AF37] hover:bg-[#D4AF37]/10 font-semibold py-3 px-6 rounded-xl transition-all duration-200 active:scale-95;
+    @apply bg-gray-800 hover:bg-gray-700 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-200 active:scale-95 border border-gray-700;
   }
   .input-field {
-    @apply w-full bg-[#0a0a0a] border border-[#1a1a1a] text-white placeholder-gray-500 rounded-xl px-4 py-3 focus:outline-none focus:border-[#D4AF37] focus:ring-1 focus:ring-[#D4AF37]/30 transition-colors;
+    @apply w-full bg-gray-800 border border-gray-700 text-white placeholder-gray-500 rounded-xl px-4 py-3 focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition-colors;
   }
   .balance-gradient {
-    background: #111;
-    border: 1px solid var(--bank-gold-dim);
-    box-shadow: 0 0 40px var(--bank-gold-glow);
+    background: linear-gradient(135deg, #1A0000 0%, #000 100%);
+    border: 1px solid rgba(218, 165, 32, 0.15);
+    box-shadow: 0 0 30px rgba(218, 165, 32, 0.05), inset 0 0 60px rgba(0, 0, 0, 0.4);
   }
 
-  .hero-chart-bg {
+  .coin-particle {
     position: absolute;
-    inset: 0;
-    opacity: 0.06;
+    border-radius: 50%;
+    background: radial-gradient(circle at 30% 30%, #FFD700, #B8860B);
+    box-shadow: 0 0 10px rgba(255, 215, 0, 0.4), inset -2px -2px 4px rgba(0,0,0,0.3);
+    animation: floatUp 6s ease-in-out infinite;
+    opacity: 0.7;
     pointer-events: none;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 200' fill='none'%3E%3Cpath d='M0 200 L0 120 Q50 100 100 80 T200 60 T300 40 T400 20 L400 200 Z' stroke='%23D4AF37' stroke-width='1'/%3E%3Cpath d='M0 200 L0 140 Q50 120 100 100 T200 80 T300 60 T400 40 L400 200 Z' stroke='%23D4AF37' stroke-width='0.5' opacity='0.5'/%3E%3Cpath d='M0 200 L0 160 Q50 140 100 120 T200 100 T300 80 T400 60 L400 200 Z' stroke='%23D4AF37' stroke-width='0.5' opacity='0.3'/%3E%3C/svg%3E");
-    background-repeat: no-repeat;
-    background-position: bottom;
-    background-size: cover;
   }
 
-  .bank-stat {
-    @apply text-center py-2;
-  }
-  .bank-stat-value {
-    @apply text-xl font-black text-white;
-  }
-  .bank-stat-label {
-    @apply text-xs text-gray-500 mt-0.5;
-  }
-
-  .gold-outline-btn {
-    @apply border border-[#D4AF37] text-[#D4AF37] hover:bg-[#D4AF37]/10 font-semibold rounded-xl transition-all duration-200 active:scale-95 flex flex-col items-center gap-1.5;
+  .coin-particle:nth-child(1) {
+    left: 8%;
+    bottom: -20px;
+    animation-delay: 0s;
+    width: 26px;
+    height: 26px;
+    animation-duration: 7s;
   }
 
-  .premium-square-card {
-    @apply bg-[#111] border border-[#1a1a1a] rounded-2xl flex flex-col items-center justify-center gap-2 cursor-pointer transition-all duration-200 active:scale-95 hover:border-[#D4AF37]/40 aspect-square;
-  }
-  .premium-square-card .icon-wrap {
-    @apply w-12 h-12 rounded-xl bg-[#0a0a0a] border border-[#1a1a1a] flex items-center justify-center text-2xl;
-  }
-  .premium-square-card:hover .icon-wrap {
-    @apply border-[#D4AF37]/40;
+  .coin-particle:nth-child(2) {
+    left: 22%;
+    bottom: -28px;
+    animation-delay: 0.8s;
+    width: 20px;
+    height: 20px;
+    animation-duration: 6s;
   }
 
-  .nav-link-bank {
-    @apply text-gray-500 hover:text-[#D4AF37] transition-colors;
+  .coin-particle:nth-child(3) {
+    left: 38%;
+    bottom: -22px;
+    animation-delay: 1.6s;
+    width: 30px;
+    height: 30px;
+    animation-duration: 7.5s;
   }
-  .nav-link-bank-active {
-    @apply text-[#D4AF37];
+
+  .coin-particle:nth-child(4) {
+    left: 55%;
+    bottom: -32px;
+    animation-delay: 2.4s;
+    width: 18px;
+    height: 18px;
+    animation-duration: 5.5s;
+  }
+
+  .coin-particle:nth-child(5) {
+    left: 68%;
+    bottom: -18px;
+    animation-delay: 3.2s;
+    width: 24px;
+    height: 24px;
+    animation-duration: 8s;
+  }
+
+  .coin-particle:nth-child(6) {
+    left: 82%;
+    bottom: -26px;
+    animation-delay: 4s;
+    width: 22px;
+    height: 22px;
+    animation-duration: 6.5s;
+  }
+
+  .coin-particle:nth-child(7) {
+    left: 92%;
+    bottom: -34px;
+    animation-delay: 4.8s;
+    width: 16px;
+    height: 16px;
+    animation-duration: 7.2s;
+  }
+
+  .sparkle-particle {
+    position: absolute;
+    color: #FFD700;
+    animation: sparkle 3s ease-in-out infinite;
+    pointer-events: none;
+    text-shadow: 0 0 6px rgba(255, 215, 0, 0.6);
+  }
+
+  .sparkle-particle:nth-child(8) {
+    left: 15%;
+    top: 15%;
+    animation-delay: 0s;
+    font-size: 12px;
+  }
+
+  .sparkle-particle:nth-child(9) {
+    left: 75%;
+    top: 25%;
+    animation-delay: 0.4s;
+    font-size: 16px;
+  }
+
+  .sparkle-particle:nth-child(10) {
+    left: 35%;
+    top: 55%;
+    animation-delay: 0.8s;
+    font-size: 10px;
+  }
+
+  .sparkle-particle:nth-child(11) {
+    left: 88%;
+    top: 68%;
+    animation-delay: 1.2s;
+    font-size: 14px;
+  }
+
+  .sparkle-particle:nth-child(12) {
+    left: 8%;
+    top: 78%;
+    animation-delay: 1.6s;
+    font-size: 11px;
+  }
+
+  .sparkle-particle:nth-child(13) {
+    left: 55%;
+    top: 12%;
+    animation-delay: 2s;
+    font-size: 13px;
+  }
+
+  .sparkle-particle:nth-child(14) {
+    left: 45%;
+    top: 85%;
+    animation-delay: 2.4s;
+    font-size: 9px;
+  }
+
+  .sparkle-particle:nth-child(15) {
+    left: 65%;
+    top: 45%;
+    animation-delay: 2.8s;
+    font-size: 15px;
+  }
+
+  .money-symbol {
+    position: absolute;
+    animation: floatSymbol 8s ease-in-out infinite;
+    pointer-events: none;
+    opacity: 0.08;
+    font-size: 40px;
+  }
+
+  .money-symbol:nth-child(16) {
+    left: 5%;
+    top: 10%;
+    animation-delay: 0s;
+  }
+
+  .money-symbol:nth-child(17) {
+    right: 10%;
+    top: 50%;
+    animation-delay: 1.5s;
+  }
+
+  .money-symbol:nth-child(18) {
+    left: 30%;
+    bottom: 20%;
+    animation-delay: 3s;
+  }
+
+  .money-symbol:nth-child(19) {
+    right: 25%;
+    top: 15%;
+    animation-delay: 4.5s;
+  }
+
+  .money-symbol:nth-child(20) {
+    left: 60%;
+    top: 75%;
+    animation-delay: 6s;
+  }
+
+  .money-symbol:nth-child(21) {
+    right: 40%;
+    bottom: 30%;
+    animation-delay: 7.5s;
+  }
+
+  .orb {
+    position: absolute;
+    border-radius: 50%;
+    pointer-events: none;
+    animation: orbFloat 10s ease-in-out infinite;
+  }
+
+  .orb:nth-child(22) {
+    width: 120px;
+    height: 120px;
+    background: radial-gradient(circle, rgba(239, 68, 68, 0.08), transparent 70%);
+    top: 10%;
+    right: -20px;
+    animation-delay: 0s;
+  }
+
+  .orb:nth-child(23) {
+    width: 100px;
+    height: 100px;
+    background: radial-gradient(circle, rgba(236, 72, 153, 0.06), transparent 70%);
+    bottom: 15%;
+    left: -15px;
+    animation-delay: 3s;
+  }
+
+  .orb:nth-child(24) {
+    width: 80px;
+    height: 80px;
+    background: radial-gradient(circle, rgba(255, 215, 0, 0.04), transparent 70%);
+    top: 50%;
+    left: 50%;
+    animation-delay: 6s;
+  }
+
+  @keyframes floatUp {
+    0%, 100% {
+      transform: translateY(0) rotate(0deg) scale(1);
+      opacity: 0.7;
+    }
+    25% {
+      transform: translateY(-35px) rotate(100deg) scale(1.15);
+      opacity: 0.9;
+    }
+    50% {
+      transform: translateY(-75px) rotate(200deg) scale(0.85);
+      opacity: 0.4;
+    }
+    75% {
+      transform: translateY(-35px) rotate(300deg) scale(1.1);
+      opacity: 0.6;
+    }
+  }
+
+  @keyframes sparkle {
+    0%, 100% {
+      transform: scale(0) rotate(0deg);
+      opacity: 0;
+    }
+    50% {
+      transform: scale(1) rotate(180deg);
+      opacity: 1;
+    }
+  }
+
+  @keyframes floatSymbol {
+    0%, 100% {
+      transform: translateY(0) rotate(-15deg);
+      opacity: 0.06;
+    }
+    50% {
+      transform: translateY(-25px) rotate(15deg);
+      opacity: 0.14;
+    }
+  }
+
+  @keyframes orbFloat {
+    0%, 100% {
+      transform: translate(0, 0) scale(1);
+      opacity: 0.6;
+    }
+    33% {
+      transform: translate(10px, -15px) scale(1.1);
+      opacity: 0.8;
+    }
+    66% {
+      transform: translate(-8px, 10px) scale(0.9);
+      opacity: 0.5;
+    }
+  }
+
+  .balance-shimmer {
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 60%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 215, 0, 0.04), transparent);
+    animation: shimmer 4s ease-in-out infinite;
+    pointer-events: none;
+  }
+
+  @keyframes shimmer {
+    0% { left: -100%; }
+    100% { left: 200%; }
+  }
+
+  .balance-text-glow {
+    text-shadow: 0 0 20px rgba(255, 215, 0, 0.15), 0 0 40px rgba(255, 215, 0, 0.05);
+  }
+
+  .money-tree-bg {
+    position: absolute;
+    right: -10px;
+    bottom: -20px;
+    font-size: 120px;
+    opacity: 0.06;
+    transform: rotate(-15deg);
+    pointer-events: none;
+    filter: grayscale(100%);
   }
 }
