@@ -556,9 +556,15 @@ export default function Dashboard() {
 
       {/* Balance Card */}
       <div className="relative overflow-hidden balance-gradient rounded-2xl p-6 mb-6">
-        <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -translate-y-12 translate-x-12" />
-        <div className="absolute bottom-0 left-0 w-20 h-20 bg-white/5 rounded-full translate-y-8 -translate-x-6" />
-        <div className="relative">
+        {/* Floating golden coins */}
+        <div className="coin-particle" />
+        <div className="coin-particle" />
+        <div className="coin-particle" />
+
+        {/* Subtle money tree background element */}
+        <div className="money-tree-bg">🌳</div>
+
+        <div className="relative z-10">
           <p className="text-gray-400 text-xs uppercase tracking-wider mb-1">Total Balance</p>
           <p className="text-4xl font-black text-white mb-1">
             KSh {(user?.balance || 0).toLocaleString()}
