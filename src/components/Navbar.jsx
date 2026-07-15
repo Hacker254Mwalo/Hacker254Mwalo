@@ -7,6 +7,7 @@ export default function Navbar() {
 
   const adminPhone = import.meta.env.VITE_ADMIN_PHONE
   const isAdmin = user && adminPhone && user.phone === adminPhone
+  const waPhone = adminPhone ? adminPhone.replace(/\D/g, '') : ''
 
   function handleLogout() {
     logout()
@@ -44,14 +45,25 @@ export default function Navbar() {
               {l.label}
             </NavLink>
           ))}
-          <button onClick={handleLogout} className="ml-2 px-4 py-2 text-sm text-gray-400 hover:text-red-400 rounded-lg hover:bg-gray-800 transition-colors">
-            Logout
-          </button>
           {isAdmin && (
             <NavLink to="/admin" className="ml-1 px-3 py-1.5 text-xs bg-yellow-600 hover:bg-yellow-500 text-white rounded-lg font-semibold transition-colors">
               Admin
             </NavLink>
           )}
+          {user && waPhone && (
+            <a
+              href={`https://wa.me/${waPhone}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="ml-2 px-3 py-2 rounded-lg text-sm font-medium bg-green-600 hover:bg-green-500 text-white transition-colors flex items-center gap-1.5"
+            >
+              <span className="text-base">💬</span>
+              <span className="hidden lg:inline">Message</span>
+            </a>
+          )}
+          <button onClick={handleLogout} className="ml-2 px-4 py-2 text-sm text-gray-400 hover:text-red-400 rounded-lg hover:bg-gray-800 transition-colors">
+            Logout
+          </button>
         </div>
       </nav>
 
@@ -71,6 +83,17 @@ export default function Navbar() {
             {l.label}
           </NavLink>
         ))}
+        {user && waPhone && (
+          <a
+            href={`https://wa.me/${waPhone}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex-1 flex flex-col items-center py-3 text-xs font-medium text-gray-500"
+          >
+            <span className="text-xl mb-0.5">💬</span>
+            Message
+          </a>
+        )}
       </nav>
     </>
   )

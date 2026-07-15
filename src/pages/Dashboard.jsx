@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { canClaimLoginBonus, setLastLoginBonus, canSpin, setLastSpin, isSpinDay } from '../lib/storage'
-import { getInvestments, updateUserBalance, addLoan, claimKeyword } from '../lib/db'
+import { getInvestments, updateUserBalance, addLoan, claimKeyword, getAllLoans } from '../lib/db'
 
 function getInvestorBadge(balance) {
   if (balance >= 50000) return { label: 'Diamond', bg: 'bg-gradient-to-r from-indigo-500 to-purple-500', icon: '💎' }
@@ -251,21 +251,76 @@ export default function Dashboard() {
   const [showPromo, setShowPromo] = useState(false)
   const [toast, setToast] = useState('')
   const [investments, setInvestments] = useState([])
+  const [notifications, setNotifications] = useState([])
+  const [showNotifications, setShowNotifications] = useState(false)
+  const prevLoanStatuses = useRef({})
+
+  const userPhone = user?.phone || user?.id
 
   useEffect(() => {
     if (!user) return
     getInvestments(user.phone || user.id).then(setInvestments).catch(() => {})
   }, [user])
 
+  useEffect(() => {
+    if (!user) return
+    const stored = loadNotifications()
+    setNotifications(stored)
+  }, [user, loadNotifications])
+
+  useEffect(() => {
+    if (!userPhone) return
+    const interval = setInterval(async () => {
+      try {
+        const loans = await getAllLoans()
+        const userLoans = loans.filter(l => l.user_phone === userPhone || l.userPhone === userPhone)
+        const currentStatuses = {}
+        userLoans.forEach(l => {
+          currentStatuses[l.id] = l.status
+          const prev = prevLoanStatuses.current[l.id]
+          if (prev === 'pending' && (l.status === 'approved' || l.status === 'rejected')) {
+            const statusLabel = l.status === 'approved' ? 'Approved' : 'Rejected'
+            const emoji = l.status === 'approved' ? '✅' : '❌'
+            addNotification(`${emoji} Your loan of KSh ${Number(l.amount).toLocaleString()} has been ${statusLabel}.`, l.status)
+            showToast(`${emoji} Loan ${statusLabel}!`)
+          }
+        })
+        prevLoanStatuses.current = currentStatuses
+      } catch { }
+    }, 30000)
+    return () => clearInterval(interval)
+  }, [userPhone, showToast, addNotification])
+
   const activeInvestments = investments.filter(i => i.status === 'active')
   const dailyProfit = activeInvestments.reduce((sum, inv) => sum + (inv.dailyReturn || 0), 0)
   const loginBonus = Math.max(1, Math.floor(dailyProfit * 0.01))
   const badge = getInvestorBadge(user?.balance || 0)
 
-  function showToast(msg) {
+  const showToast = useCallback((msg) => {
     setToast(msg)
     setTimeout(() => setToast(''), 3000)
-  }
+  }, [])
+
+  const loadNotifications = useCallback(() => {
+    if (!userPhone) return []
+    try {
+      const stored = localStorage.getItem(`dp_notifications_${userPhone}`)
+      return stored ? JSON.parse(stored) : []
+    } catch { return [] }
+  }, [userPhone])
+
+  const saveNotifications = useCallback((notifs) => {
+    if (!userPhone) return
+    localStorage.setItem(`dp_notifications_${userPhone}`, JSON.stringify(notifs))
+  }, [userPhone])
+
+  const addNotification = useCallback((message, type = 'info') => {
+    setNotifications(prev => {
+      const updated = [{ id: Date.now(), message, type, read: false, createdAt: new Date().toISOString() }, ...prev]
+      saveNotifications(updated)
+      return updated
+    })
+  }, [saveNotifications])
 
   async function claimLoginBonus() {
     if (!canClaimLoginBonus(user.id)) {
@@ -321,10 +376,66 @@ export default function Dashboard() {
             </span>
           </div>
         </div>
-        <div className="w-11 h-11 rounded-full bg-gradient-to-br from-red-600 to-pink-600 flex items-center justify-center font-bold text-lg ring-2 ring-red-500/30">
-          {user?.name?.[0]?.toUpperCase() || 'U'}
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setShowNotifications(s => !s)}
+            className="relative w-11 h-11 rounded-full bg-gray-800 flex items-center justify-center text-xl hover:bg-gray-700 transition-colors"
+          >
+            🔔
+            {notifications.filter(n => !n.read).length > 0 && (
+              <span className="absolute -top-0.5 -right-0.5 bg-red-500 text-white text-[10px] font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                {notifications.filter(n => !n.read).length}
+              </span>
+            )}
+          </button>
+          <div className="w-11 h-11 rounded-full bg-gradient-to-br from-red-600 to-pink-600 flex items-center justify-center font-bold text-lg ring-2 ring-red-500/30">
+            {user?.name?.[0]?.toUpperCase() || 'U'}
+          </div>
         </div>
       </div>
+
+      {/* Notifications Dropdown */}
+      {showNotifications && (
+        <div className="mb-6 card max-h-80 overflow-y-auto">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="font-semibold text-sm">Notifications</h3>
+            {notifications.length > 0 && (
+              <button
+                onClick={() => {
+                  const updated = notifications.map(n => ({ ...n, read: true }))
+                  setNotifications(updated)
+                  saveNotifications(updated)
+                }}
+                className="text-xs text-gray-400 hover:text-white transition-colors"
+              >
+                Mark all read
+              </button>
+            )}
+          </div>
+          {notifications.length === 0 ? (
+            <p className="text-gray-500 text-sm text-center py-4">No notifications yet</p>
+          ) : (
+            <div className="space-y-2">
+              {notifications.map(n => (
+                <div
+                  key={n.id}
+                  onClick={() => {
+                    if (!n.read) {
+                      const updated = notifications.map(notif => notif.id === n.id ? { ...notif, read: true } : notif)
+                      setNotifications(updated)
+                      saveNotifications(updated)
+                    }
+                  }}
+                  className={`p-3 rounded-xl cursor-pointer transition-colors ${n.read ? 'bg-gray-800/50 text-gray-400' : 'bg-gray-800 text-white'}`}
+                >
+                  <p className="text-sm">{n.message}</p>
+                  <p className="text-[10px] text-gray-500 mt-1">{new Date(n.createdAt).toLocaleString()}</p>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Balance Card */}
       <div className="relative overflow-hidden balance-gradient rounded-2xl p-6 mb-6">
