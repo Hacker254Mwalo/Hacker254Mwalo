@@ -593,6 +593,10 @@ function PasswordResetsTab({ showToast }) {
   }
   useEffect(() => { load() }, [])
 
+  useEffect(() => {
+    if (!resetting) setTempPin('')
+  }, [resetting])
+
   async function handleReset(req) {
     if (!tempPin || tempPin.length < 4) { showToast('Enter a valid temporary PIN (4–6 digits)'); return }
     setResetting(req.id)
@@ -710,7 +714,7 @@ export default function AdminPage() {
   useEffect(() => {
     if (!user) { navigate('/login'); return }
     if (!isAdmin) { navigate('/dashboard') }
-  }, [user])
+  }, [user, isAdmin, navigate])
 
   function showToast(msg) {
     setToast(msg)

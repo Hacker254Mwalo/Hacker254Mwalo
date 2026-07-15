@@ -23,6 +23,10 @@ export function generateReferralCode(phone) {
   return 'DUM' + String(phone).slice(-6).replace(/\D/g, '')
 }
 
+function isNoRowsError(error) {
+  return !!error && (error.code === 'PGRST116' || error.code === 'PGRST205')
+}
+
 function dbUserToApp(row) {
   return {
     id: row.phone,
@@ -32,7 +36,6 @@ function dbUserToApp(row) {
     referralCode: row.referral_code,
     referredBy: row.referred_by,
     createdAt: row.created_at,
-    pin_hash: row.pin_hash,
     must_change_password: row.must_change_password || false,
   }
 }
@@ -44,18 +47,13 @@ function dbInvToApp(row) {
     planName: row.plan_name,
     amount: Number(row.amount),
     dailyReturn: Number(row.daily_return),
-    totalReturn: Number(row.total_return),
+    totalReturn: Number(row.totalReturn),
     status: row.status,
     date: row.created_at,
   }
-
-  function isNoRowsError(error) {
-    return !!error && (error.code === 'PGRST116' || error.code === 'PGRST205')
-  }
 }
 
-// ── Users ────────────────────────────────────────────────────────────────────
-export async function getUser(phone) {
+async function getUserRaw(phone) {
   if (!isSupabaseConfigured) return local.getUser(phone)
   const { data, error } = await supabase
     .from('users')
@@ -63,6 +61,12 @@ export async function getUser(phone) {
     .eq('phone', phone)
     .maybeSingle()
   if (error && !isNoRowsError(error)) throw error
+  return data
+}
+
+// ── Users ────────────────────────────────────────────────────────────────────
+export async function getUser(phone) {
+  const data = await getUserRaw(phone)
   return data ? dbUserToApp(data) : null
 }
 
@@ -525,7 +529,7 @@ export async function adminResetPassword(userPhone, newPin) {
 }
 
 export async function changePassword(userPhone, currentPin, newPin) {
-  const user = await getUser(userPhone)
+  const user = await getUserRaw(userPhone)
   if (!user) throw new Error('User not found')
   const currentHash = await hashPin(currentPin)
   if (user.pin_hash !== currentHash) throw new Error('Current PIN is incorrect')
