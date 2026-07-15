@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { canClaimLoginBonus, setLastLoginBonus, canSpin, setLastSpin, isSpinDay } from '../lib/storage'
-import { getInvestments, updateUserBalance, addLoan, claimKeyword } from '../lib/db'
+import { getInvestments, updateUserBalance, addLoan, claimKeyword, getAllLoans, getSupportMessages, sendSupportMessage } from '../lib/db'
 
 function getInvestorBadge(balance) {
   if (balance >= 50000) return { label: 'Diamond', bg: 'bg-gradient-to-r from-indigo-500 to-purple-500', icon: '💎' }
@@ -11,19 +11,21 @@ function getInvestorBadge(balance) {
   return { label: 'Bronze', bg: 'bg-gradient-to-r from-orange-500 to-amber-600', icon: '🥉' }
 }
 
-function SpinModal({ onClose, onResult }) {
+const SPIN_PRIZES = [0, 0.005, 0.01, 0.02, 0.03, 0.04]
+
+function SpinModal({ onClose, onResult, totalReturns }) {
   const [spinning, setSpinning] = useState(false)
   const [result, setResult] = useState(null)
   const [angle, setAngle] = useState(0)
+  const prizes = SPIN_PRIZES.map(p => p === 0 ? 0 : Math.floor(p * totalReturns))
 
   function spin() {
     if (spinning) return
     setSpinning(true)
-    const prize = SPIN_PRIZES[Math.floor(Math.random() * SPIN_PRIZES.length)]
-    const spins = 5
-    const prizeIdx = SPIN_PRIZES.indexOf(prize)
-    const segAngle = 360 / SPIN_PRIZES.length
-    const targetAngle = 360 * spins + (360 - prizeIdx * segAngle - segAngle / 2)
+    const prize = prizes[Math.floor(Math.random() * prizes.length)]
+    const prizeIdx = prizes.indexOf(prize)
+    const segAngle = 360 / prizes.length
+    const targetAngle = 360 * 5 + (360 - prizeIdx * segAngle - segAngle / 2)
     setAngle(prev => prev + targetAngle)
     setTimeout(() => {
       setResult(prize)
@@ -36,7 +38,8 @@ function SpinModal({ onClose, onResult }) {
     <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4" onClick={onClose}>
       <div className="card max-w-sm w-full" onClick={e => e.stopPropagation()}>
         <h3 className="text-xl font-bold text-center mb-2">🎰 Lucky Spin</h3>
-        <p className="text-gray-400 text-sm text-center mb-6">Available every Monday & Friday</p>
+        <p className="text-gray-400 text-sm text-center mb-1">Available every Monday & Friday</p>
+        <p className="text-yellow-400 text-xs text-center mb-6">Win up to 4% of your total returns!</p>
 
         <div className="relative mx-auto w-48 h-48 mb-6">
           <div
@@ -44,9 +47,9 @@ function SpinModal({ onClose, onResult }) {
             style={{ transform: `rotate(${angle}deg)`, transition: spinning ? 'transform 3.5s cubic-bezier(0.17, 0.67, 0.12, 0.99)' : 'none' }}
           >
             <div className="grid grid-cols-2 gap-1 text-xs text-center text-white font-bold">
-              {SPIN_PRIZES.slice(0, 4).map((p, i) => (
+              {prizes.slice(0, 4).map((p, i) => (
                 <div key={i} className="bg-black/30 rounded p-1 w-16 h-10 flex items-center justify-center">
-                  {p === 0 ? 'Try Again' : `+${p}`}
+                  {p === 0 ? 'Try Again' : `+${p.toLocaleString()}`}
                 </div>
               ))}
             </div>
@@ -56,7 +59,7 @@ function SpinModal({ onClose, onResult }) {
 
         {result !== null && (
           <div className={`text-center mb-4 text-lg font-bold ${result > 0 ? 'text-green-400' : 'text-gray-400'}`}>
-            {result > 0 ? `🎉 You won KSh ${result}!` : '😔 Better luck next time!'}
+            {result > 0 ? `🎉 You won KSh ${result.toLocaleString()}!` : '😔 Better luck next time!'}
           </div>
         )}
 
@@ -243,29 +246,175 @@ function PromoCodeModal({ userPhone, onClose, onCredit }) {
   )
 }
 
+function ContactAdminModal({ onClose, messages, onSend, reply, setReply, sending, bottomRef }) {
+  return (
+    <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="card max-w-lg w-full max-h-[80vh] flex flex-col" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-green-600 to-emerald-600 flex items-center justify-center text-xl">💬</div>
+          <div>
+            <h3 className="text-lg font-bold">Contact Admin</h3>
+            <p className="text-gray-400 text-xs">We typically reply within a few minutes</p>
+          </div>
+        </div>
+
+        <div className="flex-1 overflow-y-auto space-y-3 mb-4 min-h-[200px] max-h-[300px] pr-1">
+          {messages.length === 0 ? (
+            <p className="text-gray-500 text-sm text-center py-8">No messages yet. Start a conversation!</p>
+          ) : (
+            messages.map((m, i) => (
+              <div key={i} className={`flex ${m.sender_type === 'admin' ? 'justify-end' : 'justify-start'}`}>
+                <div className={`max-w-[80%] px-3 py-2 rounded-2xl text-sm ${m.sender_type === 'admin' ? 'bg-gradient-to-r from-red-700 to-pink-700 text-white rounded-tr-none' : 'bg-gray-800 text-gray-200 rounded-tl-none'}`}>
+                  <p>{m.message}</p>
+                  <p className={`text-xs mt-1 ${m.sender_type === 'admin' ? 'text-red-200' : 'text-gray-500'}`}>
+                    {new Date(m.created_at).toLocaleTimeString('en-KE', { hour: '2-digit', minute: '2-digit' })}
+                  </p>
+                </div>
+              </div>
+            ))
+          )}
+          <div ref={bottomRef} />
+        </div>
+
+        <form onSubmit={onSend} className="flex gap-2">
+          <input
+            className="flex-1 bg-gray-800 border border-gray-700 text-white placeholder-gray-500 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-red-500"
+            placeholder="Type your message..."
+            value={reply}
+            onChange={e => setReply(e.target.value)}
+          />
+          <button type="submit" disabled={sending || !reply.trim()} className="btn-primary text-sm py-2 px-4">
+            {sending ? '...' : 'Send'}
+          </button>
+        </form>
+      </div>
+    </div>
+  )
+}
+
 export default function Dashboard() {
   const { user, updateUser } = useAuth()
   const navigate = useNavigate()
   const [showSpin, setShowSpin] = useState(false)
   const [showLoan, setShowLoan] = useState(false)
   const [showPromo, setShowPromo] = useState(false)
+  const [showContactAdmin, setShowContactAdmin] = useState(false)
   const [toast, setToast] = useState('')
   const [investments, setInvestments] = useState([])
+  const [notifications, setNotifications] = useState([])
+  const [showNotifications, setShowNotifications] = useState(false)
+  const [supportMessages, setSupportMessages] = useState([])
+  const [supportReply, setSupportReply] = useState('')
+  const [supportSending, setSupportSending] = useState(false)
+  const prevLoanStatuses = useRef({})
+  const supportBottomRef = useRef(null)
+
+  const userPhone = user?.phone || user?.id
+
+  useEffect(() => {
+    if (user?.must_change_password) {
+      navigate('/profile')
+    }
+  }, [user, navigate])
+
+  const showToast = useCallback((msg) => {
+    setToast(msg)
+    setTimeout(() => setToast(''), 3000)
+  }, [])
+
+  const loadNotifications = useCallback(() => {
+    if (!userPhone) return []
+    try {
+      const stored = localStorage.getItem(`dp_notifications_${userPhone}`)
+      return stored ? JSON.parse(stored) : []
+    } catch { return [] }
+  }, [userPhone])
+
+  const saveNotifications = useCallback((notifs) => {
+    if (!userPhone) return
+    localStorage.setItem(`dp_notifications_${userPhone}`, JSON.stringify(notifs))
+  }, [userPhone])
+
+  const addNotification = useCallback((message, type = 'info') => {
+    setNotifications(prev => {
+      const updated = [{ id: Date.now(), message, type, read: false, createdAt: new Date().toISOString() }, ...prev]
+      saveNotifications(updated)
+      return updated
+    })
+  }, [saveNotifications])
 
   useEffect(() => {
     if (!user) return
     getInvestments(user.phone || user.id).then(setInvestments).catch(() => {})
   }, [user])
 
+  useEffect(() => {
+    if (!user) return
+    const stored = loadNotifications()
+    setNotifications(stored)
+  }, [user, loadNotifications])
+
+  useEffect(() => {
+    if (!userPhone) return
+    const interval = setInterval(async () => {
+      try {
+        const loans = await getAllLoans()
+        const userLoans = loans.filter(l => l.user_phone === userPhone || l.userPhone === userPhone)
+        const currentStatuses = {}
+        userLoans.forEach(l => {
+          currentStatuses[l.id] = l.status
+          const prev = prevLoanStatuses.current[l.id]
+          if (prev === 'pending' && (l.status === 'approved' || l.status === 'rejected')) {
+            const statusLabel = l.status === 'approved' ? 'Approved' : 'Rejected'
+            const emoji = l.status === 'approved' ? '✅' : '❌'
+            addNotification(`${emoji} Your loan of KSh ${Number(l.amount).toLocaleString()} has been ${statusLabel}.`, l.status)
+            showToast(`${emoji} Loan ${statusLabel}!`)
+          }
+        })
+        prevLoanStatuses.current = currentStatuses
+      } catch { }
+    }, 30000)
+    return () => clearInterval(interval)
+  }, [userPhone, showToast, addNotification])
+
+  useEffect(() => {
+    if (!showContactAdmin || !userPhone) return
+    getSupportMessages(userPhone).then(setSupportMessages).catch(() => {})
+  }, [showContactAdmin, userPhone])
+
+  useEffect(() => {
+    if (!showContactAdmin || !userPhone) return
+    const interval = setInterval(async () => {
+      try {
+        const msgs = await getSupportMessages(userPhone)
+        setSupportMessages(prev => {
+          if (JSON.stringify(prev) !== JSON.stringify(msgs)) return msgs
+          return prev
+        })
+      } catch { }
+    }, 3000)
+    return () => clearInterval(interval)
+  }, [showContactAdmin, userPhone])
+
+  useEffect(() => {
+    supportBottomRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [supportMessages])
+
   const activeInvestments = investments.filter(i => i.status === 'active')
   const dailyProfit = activeInvestments.reduce((sum, inv) => sum + (inv.dailyReturn || 0), 0)
-  const loginBonus = Math.max(1, Math.floor(dailyProfit * 0.01))
+  const totalReturns = investments.reduce((sum, inv) => sum + Number(inv.totalReturn || 0), 0)
+  const totalExpectedEarnings = activeInvestments.reduce((sum, inv) => sum + Number(inv.totalReturn || 0), 0)
+  const loginBonus = Math.max(1, Math.floor(dailyProfit * 0.02))
   const badge = getInvestorBadge(user?.balance || 0)
 
-  function showToast(msg) {
-    setToast(msg)
-    setTimeout(() => setToast(''), 3000)
-  }
+  useEffect(() => {
+    if (!user || !canClaimLoginBonus(user.id)) return
+    const newBalance = (user.balance || 0) + loginBonus
+    updateUser({ balance: newBalance })
+    updateUserBalance(user.phone || user.id, newBalance).catch(() => {})
+    setLastLoginBonus(user.id)
+    showToast(`+KSh ${loginBonus} Daily Bonus claimed! 🎉`)
+  }, [user, loginBonus, showToast, updateUser])
 
   async function claimLoginBonus() {
     if (!canClaimLoginBonus(user.id)) {
@@ -295,6 +444,19 @@ export default function Dashboard() {
     showToast(`+KSh ${amount.toLocaleString()} promo credit added! 🎉`)
   }
 
+  async function handleSendSupport(e) {
+    e.preventDefault()
+    if (!supportReply.trim() || !userPhone) return
+    setSupportSending(true)
+    try {
+      await sendSupportMessage(userPhone, supportReply.trim(), 'user')
+      setSupportMessages(prev => [...prev, { user_phone: userPhone, message: supportReply.trim(), sender_type: 'user', created_at: new Date().toISOString() }])
+      setSupportReply('')
+      setTimeout(() => supportBottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 50)
+    } catch { showToast('❌ Failed to send message') }
+    setSupportSending(false)
+  }
+
   const spinAvailable = user && canSpin(user.id)
   const loginBonusAvailable = user && canClaimLoginBonus(user.id)
 
@@ -306,9 +468,20 @@ export default function Dashboard() {
         </div>
       )}
 
-      {showSpin && <SpinModal onClose={() => setShowSpin(false)} onResult={handleSpinResult} />}
+      {showSpin && <SpinModal onClose={() => setShowSpin(false)} onResult={handleSpinResult} totalReturns={totalReturns} />}
       {showLoan && <LoanModal userPhone={user?.phone} onClose={() => setShowLoan(false)} />}
       {showPromo && <PromoCodeModal userPhone={user?.phone} onClose={() => setShowPromo(false)} onCredit={handlePromoCredit} />}
+      {showContactAdmin && (
+        <ContactAdminModal
+          onClose={() => setShowContactAdmin(false)}
+          messages={supportMessages}
+          onSend={handleSendSupport}
+          reply={supportReply}
+          setReply={setSupportReply}
+          sending={supportSending}
+          bottomRef={supportBottomRef}
+        />
+      )}
 
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
@@ -321,18 +494,109 @@ export default function Dashboard() {
             </span>
           </div>
         </div>
-        <div className="w-11 h-11 rounded-full bg-gradient-to-br from-red-600 to-pink-600 flex items-center justify-center font-bold text-lg ring-2 ring-red-500/30">
-          {user?.name?.[0]?.toUpperCase() || 'U'}
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setShowNotifications(s => !s)}
+            className="relative w-11 h-11 rounded-full bg-gray-800 flex items-center justify-center text-xl hover:bg-gray-700 transition-colors"
+          >
+            🔔
+            {notifications.filter(n => !n.read).length > 0 && (
+              <span className="absolute -top-0.5 -right-0.5 bg-red-500 text-white text-[10px] font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                {notifications.filter(n => !n.read).length}
+              </span>
+            )}
+          </button>
+          <div className="w-11 h-11 rounded-full bg-gradient-to-br from-red-600 to-pink-600 flex items-center justify-center font-bold text-lg ring-2 ring-red-500/30">
+            {user?.name?.[0]?.toUpperCase() || 'U'}
+          </div>
         </div>
       </div>
 
+      {/* Notifications Dropdown */}
+      {showNotifications && (
+        <div className="mb-6 card max-h-80 overflow-y-auto">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="font-semibold text-sm">Notifications</h3>
+            {notifications.length > 0 && (
+              <button
+                onClick={() => {
+                  const updated = notifications.map(n => ({ ...n, read: true }))
+                  setNotifications(updated)
+                  saveNotifications(updated)
+                }}
+                className="text-xs text-gray-400 hover:text-white transition-colors"
+              >
+                Mark all read
+              </button>
+            )}
+          </div>
+          {notifications.length === 0 ? (
+            <p className="text-gray-500 text-sm text-center py-4">No notifications yet</p>
+          ) : (
+            <div className="space-y-2">
+              {notifications.map(n => (
+                <div
+                  key={n.id}
+                  onClick={() => {
+                    if (!n.read) {
+                      const updated = notifications.map(notif => notif.id === n.id ? { ...notif, read: true } : notif)
+                      setNotifications(updated)
+                      saveNotifications(updated)
+                    }
+                  }}
+                  className={`p-3 rounded-xl cursor-pointer transition-colors ${n.read ? 'bg-gray-800/50 text-gray-400' : 'bg-gray-800 text-white'}`}
+                >
+                  <p className="text-sm">{n.message}</p>
+                  <p className="text-[10px] text-gray-500 mt-1">{new Date(n.createdAt).toLocaleString()}</p>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Balance Card */}
       <div className="relative overflow-hidden balance-gradient rounded-2xl p-6 mb-6">
-        <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -translate-y-12 translate-x-12" />
-        <div className="absolute bottom-0 left-0 w-20 h-20 bg-white/5 rounded-full translate-y-8 -translate-x-6" />
-        <div className="relative">
+        {/* Shimmer sweep effect */}
+        <div className="balance-shimmer" />
+
+        {/* Floating golden coins */}
+        <div className="coin-particle" />
+        <div className="coin-particle" />
+        <div className="coin-particle" />
+        <div className="coin-particle" />
+        <div className="coin-particle" />
+        <div className="coin-particle" />
+        <div className="coin-particle" />
+
+        {/* Sparkle particles */}
+        <div className="sparkle-particle">✦</div>
+        <div className="sparkle-particle">✦</div>
+        <div className="sparkle-particle">✦</div>
+        <div className="sparkle-particle">✦</div>
+        <div className="sparkle-particle">✦</div>
+        <div className="sparkle-particle">✦</div>
+        <div className="sparkle-particle">✦</div>
+        <div className="sparkle-particle">✦</div>
+
+        {/* Floating money symbols */}
+        <div className="money-symbol">💵</div>
+        <div className="money-symbol">💰</div>
+        <div className="money-symbol">💸</div>
+        <div className="money-symbol">🪙</div>
+        <div className="money-symbol">💳</div>
+        <div className="money-symbol">📈</div>
+
+        {/* Subtle money tree background element */}
+        <div className="money-tree-bg">🌳</div>
+
+        {/* Additional decorative orbs */}
+        <div className="absolute top-1/4 right-1/4 w-32 h-32 bg-red-500/5 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute bottom-1/4 left-1/4 w-40 h-40 bg-pink-500/5 rounded-full blur-3xl pointer-events-none" />
+
+        <div className="relative z-10">
           <p className="text-gray-400 text-xs uppercase tracking-wider mb-1">Total Balance</p>
-          <p className="text-4xl font-black text-white mb-1">
+          <p className="text-4xl font-black text-white mb-1 balance-text-glow">
             KSh {(user?.balance || 0).toLocaleString()}
           </p>
           {dailyProfit > 0 && (
@@ -363,8 +627,8 @@ export default function Dashboard() {
             <p className="text-gray-500 text-xs mt-0.5">Active Plans</p>
           </div>
           <div className="bg-gray-900 border border-gray-800 rounded-xl p-3 text-center">
-            <p className="text-yellow-400 font-bold text-base">3%</p>
-            <p className="text-gray-500 text-xs mt-0.5">Daily Rate</p>
+            <p className="text-yellow-400 font-bold text-base">KSh {totalExpectedEarnings.toLocaleString()}</p>
+            <p className="text-gray-500 text-xs mt-0.5">Expected Earnings</p>
           </div>
         </div>
       )}
@@ -389,7 +653,7 @@ export default function Dashboard() {
           <span className="text-3xl">🎰</span>
           <p className="font-semibold text-sm text-center">Lucky Spin</p>
           <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${spinAvailable ? 'bg-yellow-800 text-yellow-300' : 'bg-gray-800 text-gray-400'}`}>
-            {spinAvailable ? 'Spin Now!' : isSpinDay() ? 'Used Today' : 'Mon & Fri'}
+            {spinAvailable ? `Win up to KSh ${Math.floor(totalReturns * 0.04).toLocaleString()}` : isSpinDay() ? 'Used Today' : 'Mon & Fri'}
           </span>
         </div>
       </div>
@@ -425,6 +689,15 @@ export default function Dashboard() {
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-600 to-indigo-600 flex items-center justify-center text-xl">🏦</div>
             <p className="font-semibold text-xs text-center">Request Loan</p>
           </div>
+
+          {/* Contact Admin */}
+          <div
+            className="card flex flex-col items-center gap-2 cursor-pointer transition-all active:scale-95 hover:border-green-700 hover:bg-green-950/20"
+            onClick={() => setShowContactAdmin(true)}
+          >
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-green-600 to-emerald-600 flex items-center justify-center text-xl">💬</div>
+            <p className="font-semibold text-xs text-center">Contact Admin</p>
+          </div>
         </div>
       </div>
 
@@ -447,18 +720,21 @@ export default function Dashboard() {
             Active Investments
           </h3>
           <div className="space-y-3">
-            {activeInvestments.slice(0, 3).map(inv => (
-              <div key={inv.id} className="flex items-center justify-between bg-gray-800 rounded-xl px-4 py-3">
-                <div>
-                  <p className="font-medium text-sm">{inv.planName}</p>
-                  <p className="text-gray-400 text-xs">KSh {inv.amount.toLocaleString()}</p>
+            {activeInvestments.slice(0, 3).map(inv => {
+              const expectedEarnings = Number(inv.totalReturn || 0)
+              return (
+                <div key={inv.id} className="flex items-center justify-between bg-gray-800 rounded-xl px-4 py-3">
+                  <div>
+                    <p className="font-medium text-sm">{inv.planName}</p>
+                    <p className="text-gray-400 text-xs">KSh {Number(inv.amount).toLocaleString()}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-green-400 text-sm font-semibold">+KSh {Number(inv.dailyReturn || 0).toLocaleString()}/day</p>
+                    <p className="text-yellow-400 text-xs">Expected: KSh {expectedEarnings.toLocaleString()}</p>
+                  </div>
                 </div>
-                <div className="text-right">
-                  <p className="text-green-400 text-sm font-semibold">+KSh {inv.dailyReturn}/day</p>
-                  <p className="text-gray-400 text-xs">3% daily</p>
-                </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
         </div>
       )}

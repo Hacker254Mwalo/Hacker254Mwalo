@@ -107,6 +107,15 @@ create table if not exists public.support_messages (
   created_at  timestamptz not null default now()
 );
 
+-- Password reset requests
+create table if not exists public.password_reset_requests (
+  id          uuid primary key default gen_random_uuid(),
+  user_phone  text not null,
+  status      text not null default 'pending',      -- pending | completed
+  created_at  timestamptz not null default now(),
+  completed_at timestamptz
+);
+
 -- ── Row Level Security ────────────────────────────────────────────────────────
 -- NOTE: The current app uses a custom phone+PIN auth system, not Supabase Auth,
 -- so auth.uid()-based policies are not applicable here. These open anon policies
@@ -122,6 +131,7 @@ alter table public.referrals         enable row level security;
 alter table public.keywords          enable row level security;
 alter table public.keyword_claims    enable row level security;
 alter table public.support_messages  enable row level security;
+alter table public.password_reset_requests enable row level security;
 
 grant usage on schema public to anon, authenticated;
 grant all on table
@@ -133,7 +143,8 @@ grant all on table
   public.referrals,
   public.keywords,
   public.keyword_claims,
-  public.support_messages
+  public.support_messages,
+  public.password_reset_requests
 to anon, authenticated;
 
 drop policy if exists "anon_all" on public.users;
@@ -145,6 +156,7 @@ drop policy if exists "anon_all" on public.referrals;
 drop policy if exists "anon_all" on public.keywords;
 drop policy if exists "anon_all" on public.keyword_claims;
 drop policy if exists "anon_all" on public.support_messages;
+drop policy if exists "anon_all" on public.password_reset_requests;
 
 create policy "anon_all" on public.users             for all to anon, authenticated using (true) with check (true);
 create policy "anon_all" on public.deposits          for all to anon, authenticated using (true) with check (true);
@@ -155,8 +167,10 @@ create policy "anon_all" on public.referrals         for all to anon, authentica
 create policy "anon_all" on public.keywords          for all to anon, authenticated using (true) with check (true);
 create policy "anon_all" on public.keyword_claims    for all to anon, authenticated using (true) with check (true);
 create policy "anon_all" on public.support_messages  for all to anon, authenticated using (true) with check (true);
+create policy "anon_all" on public.password_reset_requests for all to anon, authenticated using (true) with check (true);
 
 -- ── Incremental migration helpers (safe to re-run) ───────────────────────────
 alter table public.deposits add column if not exists mpesa_receipt text;
 alter table public.users    add column if not exists bonus_balance numeric not null default 0;
 alter table public.users    add column if not exists is_admin boolean not null default false;
+alter table public.users    add column if not exists must_change_password boolean not null default false;

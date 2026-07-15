@@ -23,6 +23,10 @@ export function generateReferralCode(phone) {
   return 'DUM' + String(phone).slice(-6).replace(/\D/g, '')
 }
 
+function isNoRowsError(error) {
+  return !!error && (error.code === 'PGRST116' || error.code === 'PGRST205')
+}
+
 function dbUserToApp(row) {
   return {
     id: row.phone,
@@ -32,6 +36,7 @@ function dbUserToApp(row) {
     referralCode: row.referral_code,
     referredBy: row.referred_by,
     createdAt: row.created_at,
+    must_change_password: row.must_change_password || false,
   }
 }
 
@@ -42,18 +47,13 @@ function dbInvToApp(row) {
     planName: row.plan_name,
     amount: Number(row.amount),
     dailyReturn: Number(row.daily_return),
-    totalReturn: Number(row.total_return),
+    totalReturn: Number(row.totalReturn),
     status: row.status,
     date: row.created_at,
   }
-
-  function isNoRowsError(error) {
-    return !!error && (error.code === 'PGRST116' || error.code === 'PGRST205')
-  }
 }
 
-// ── Users ────────────────────────────────────────────────────────────────────
-export async function getUser(phone) {
+async function getUserRaw(phone) {
   if (!isSupabaseConfigured) return local.getUser(phone)
   const { data, error } = await supabase
     .from('users')
@@ -61,6 +61,12 @@ export async function getUser(phone) {
     .eq('phone', phone)
     .maybeSingle()
   if (error && !isNoRowsError(error)) throw error
+  return data
+}
+
+// ── Users ────────────────────────────────────────────────────────────────────
+export async function getUser(phone) {
+  const data = await getUserRaw(phone)
   return data ? dbUserToApp(data) : null
 }
 
@@ -162,7 +168,7 @@ export async function addInvestment(userPhone, investment) {
 // ── Deposits ─────────────────────────────────────────────────────────────────
 export async function addDeposit(userPhone, { amount, checkoutId, mpesaCode }) {
   if (!isSupabaseConfigured) {
-    return { id: Date.now(), user_phone: userPhone, amount, status: 'pending', created_at: new Date().toISOString() }
+    return local.addDeposit(userPhone, { amount, checkoutId, mpesaCode, status: 'pending' })
   }
   const { data, error } = await supabase
     .from('deposits')
@@ -174,7 +180,7 @@ export async function addDeposit(userPhone, { amount, checkoutId, mpesaCode }) {
 }
 
 export async function getDeposits(userPhone) {
-  if (!isSupabaseConfigured) return []
+  if (!isSupabaseConfigured) return local.getDeposits(userPhone)
   const { data } = await supabase
     .from('deposits')
     .select('*')
@@ -184,7 +190,7 @@ export async function getDeposits(userPhone) {
 }
 
 export async function getAllDeposits() {
-  if (!isSupabaseConfigured) return []
+  if (!isSupabaseConfigured) return local.getAllDeposits()
   const { data } = await supabase
     .from('deposits')
     .select('*, users!user_phone(name, phone)')
@@ -193,7 +199,14 @@ export async function getAllDeposits() {
 }
 
 export async function approveDeposit(depositId, userPhone, amount) {
-  if (!isSupabaseConfigured) return
+  if (!isSupabaseConfigured) {
+    local.updateDepositStatus(depositId, 'approved')
+    const user = local.getUser(userPhone)
+    if (user) {
+      local.saveUser(userPhone, { balance: Number(user.balance || 0) + Number(amount) })
+    }
+    return
+  }
   await supabase.from('deposits').update({ status: 'approved' }).eq('id', depositId)
   const { data: u } = await supabase
     .from('users')
@@ -209,7 +222,10 @@ export async function approveDeposit(depositId, userPhone, amount) {
 }
 
 export async function rejectDeposit(depositId) {
-  if (!isSupabaseConfigured) return
+  if (!isSupabaseConfigured) {
+    local.updateDepositStatus(depositId, 'rejected')
+    return
+  }
   await supabase.from('deposits').update({ status: 'rejected' }).eq('id', depositId)
 }
 
@@ -262,7 +278,7 @@ export async function addWithdrawal(userPhone, { amount, fee, netAmount, mpesaPh
 }
 
 export async function getAllWithdrawals() {
-  if (!isSupabaseConfigured) return []
+  if (!isSupabaseConfigured) return local.getAllWithdrawals()
   const { data } = await supabase
     .from('withdrawals')
     .select('*, users!user_phone(name, phone)')
@@ -270,13 +286,33 @@ export async function getAllWithdrawals() {
   return data || []
 }
 
+export async function getWithdrawals(userPhone) {
+  if (!isSupabaseConfigured) return local.getWithdrawals(userPhone)
+  const { data } = await supabase
+    .from('withdrawals')
+    .select('*')
+    .eq('user_phone', userPhone)
+    .order('created_at', { ascending: false })
+  return data || []
+}
+
 export async function approveWithdrawal(id) {
-  if (!isSupabaseConfigured) return
+  if (!isSupabaseConfigured) {
+    local.updateWithdrawalStatus(id, 'approved')
+    return
+  }
   await supabase.from('withdrawals').update({ status: 'approved' }).eq('id', id)
 }
 
 export async function rejectWithdrawal(id, userPhone, amount) {
-  if (!isSupabaseConfigured) return
+  if (!isSupabaseConfigured) {
+    local.updateWithdrawalStatus(id, 'rejected')
+    const user = local.getUser(userPhone)
+    if (user) {
+      local.saveUser(userPhone, { balance: Number(user.balance || 0) + Number(amount) })
+    }
+    return
+  }
   await supabase.from('withdrawals').update({ status: 'rejected' }).eq('id', id)
   const { data: u } = await supabase.from('users').select('balance').eq('phone', userPhone).single()
   if (u) {
@@ -432,7 +468,7 @@ export async function claimKeyword(userPhone, code) {
 
 // ── Support / Live Chat ───────────────────────────────────────────────────────
 export async function getSupportMessages(userPhone) {
-  if (!isSupabaseConfigured) return []
+  if (!isSupabaseConfigured) return local.getSupportMessages(userPhone)
   const { data } = await supabase
     .from('support_messages')
     .select('*')
@@ -442,7 +478,7 @@ export async function getSupportMessages(userPhone) {
 }
 
 export async function getAllSupportThreads() {
-  if (!isSupabaseConfigured) return []
+  if (!isSupabaseConfigured) return local.getAllSupportThreads()
   const { data } = await supabase
     .from('support_messages')
     .select('user_phone, message, sender_type, created_at')
@@ -457,6 +493,78 @@ export async function getAllSupportThreads() {
 }
 
 export async function sendSupportMessage(userPhone, message, senderType = 'user') {
-  if (!isSupabaseConfigured) return
+  if (!isSupabaseConfigured) { local.sendSupportMessage(userPhone, message, senderType); return }
   await supabase.from('support_messages').insert({ user_phone: userPhone, message, sender_type: senderType })
+}
+
+// ── Password Reset ─────────────────────────────────────────────────────────────
+export async function createPasswordResetRequest(userPhone) {
+  if (!isSupabaseConfigured) {
+    local.addPasswordResetRequest({ user_phone: userPhone, status: 'pending' })
+    return { success: true }
+  }
+  const { data, error } = await supabase
+    .from('password_reset_requests')
+    .insert({ user_phone: userPhone, status: 'pending' })
+    .select()
+    .single()
+  if (error) throw error
+  return data
+}
+
+export async function getPasswordResetRequests() {
+  if (!isSupabaseConfigured) return local.getPasswordResetRequests()
+  const { data } = await supabase
+    .from('password_reset_requests')
+    .select('*')
+    .order('created_at', { ascending: false })
+  return data || []
+}
+
+export async function getPasswordResetRequestsByPhone(userPhone) {
+  if (!isSupabaseConfigured) return local.getPasswordResetRequestsByPhone(userPhone)
+  const { data } = await supabase
+    .from('password_reset_requests')
+    .select('*')
+    .eq('user_phone', userPhone)
+    .order('created_at', { ascending: false })
+  return data || []
+}
+
+export async function updatePasswordResetRequest(id, updates) {
+  if (!isSupabaseConfigured) {
+    local.updatePasswordResetRequest(id, updates)
+    return
+  }
+  await supabase.from('password_reset_requests').update(updates).eq('id', id)
+}
+
+export async function adminResetPassword(userPhone, newPin) {
+  const pinHash = await hashPin(newPin)
+  if (!isSupabaseConfigured) {
+    local.saveUser(userPhone, { pin_hash: pinHash, must_change_password: true })
+    return
+  }
+  await supabase.from('users').update({ pin_hash: pinHash, must_change_password: true }).eq('phone', userPhone)
+}
+
+export async function changePassword(userPhone, currentPin, newPin) {
+  const user = await getUserRaw(userPhone)
+  if (!user) throw new Error('User not found')
+  const currentHash = await hashPin(currentPin)
+  if (user.pin_hash !== currentHash) throw new Error('Current PIN is incorrect')
+  const newHash = await hashPin(newPin)
+  if (!isSupabaseConfigured) {
+    local.saveUser(userPhone, { pin_hash: newHash, must_change_password: false })
+    return
+  }
+  await supabase.from('users').update({ pin_hash: newHash, must_change_password: false }).eq('phone', userPhone)
+}
+
+export async function clearMustChangePassword(userPhone) {
+  if (!isSupabaseConfigured) {
+    local.saveUser(userPhone, { must_change_password: false })
+    return
+  }
+  await supabase.from('users').update({ must_change_password: false }).eq('phone', userPhone)
 }
