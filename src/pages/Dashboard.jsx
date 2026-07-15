@@ -556,17 +556,35 @@ export default function Dashboard() {
 
       {/* Balance Card */}
       <div className="relative overflow-hidden balance-gradient rounded-2xl p-6 mb-6">
+        {/* Shimmer sweep effect */}
+        <div className="balance-shimmer" />
+
         {/* Floating golden coins */}
         <div className="coin-particle" />
         <div className="coin-particle" />
         <div className="coin-particle" />
+        <div className="coin-particle" />
+        <div className="coin-particle" />
+
+        {/* Sparkle particles */}
+        <div className="sparkle-particle">✦</div>
+        <div className="sparkle-particle">✦</div>
+        <div className="sparkle-particle">✦</div>
+        <div className="sparkle-particle">✦</div>
+        <div className="sparkle-particle">✦</div>
+
+        {/* Floating money symbols */}
+        <div className="money-symbol">💵</div>
+        <div className="money-symbol">💰</div>
+        <div className="money-symbol">💸</div>
+        <div className="money-symbol">🪙</div>
 
         {/* Subtle money tree background element */}
         <div className="money-tree-bg">🌳</div>
 
         <div className="relative z-10">
           <p className="text-gray-400 text-xs uppercase tracking-wider mb-1">Total Balance</p>
-          <p className="text-4xl font-black text-white mb-1">
+          <p className="text-4xl font-black text-white mb-1 balance-text-glow">
             KSh {(user?.balance || 0).toLocaleString()}
           </p>
           {dailyProfit > 0 && (

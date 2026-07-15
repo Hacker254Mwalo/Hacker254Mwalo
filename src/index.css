@@ -26,52 +26,198 @@
   .balance-gradient {
     background: linear-gradient(135deg, #1A0000 0%, #000 100%);
     border: 1px solid rgba(218, 165, 32, 0.15);
+    box-shadow: 0 0 30px rgba(218, 165, 32, 0.05), inset 0 0 60px rgba(0, 0, 0, 0.4);
   }
 
   .coin-particle {
     position: absolute;
-    width: 20px;
-    height: 20px;
     border-radius: 50%;
     background: radial-gradient(circle at 30% 30%, #FFD700, #B8860B);
     box-shadow: 0 0 10px rgba(255, 215, 0, 0.4), inset -2px -2px 4px rgba(0,0,0,0.3);
     animation: floatUp 6s ease-in-out infinite;
     opacity: 0.7;
+    pointer-events: none;
   }
 
   .coin-particle:nth-child(1) {
-    left: 15%;
+    left: 10%;
     bottom: -20px;
     animation-delay: 0s;
-    width: 24px;
-    height: 24px;
+    width: 28px;
+    height: 28px;
+    animation-duration: 7s;
   }
 
   .coin-particle:nth-child(2) {
-    left: 50%;
+    left: 35%;
     bottom: -30px;
-    animation-delay: 2s;
-    width: 18px;
-    height: 18px;
+    animation-delay: 1.5s;
+    width: 20px;
+    height: 20px;
+    animation-duration: 5.5s;
   }
 
   .coin-particle:nth-child(3) {
-    left: 80%;
+    left: 60%;
+    bottom: -25px;
+    animation-delay: 3s;
+    width: 24px;
+    height: 24px;
+    animation-duration: 6.5s;
+  }
+
+  .coin-particle:nth-child(4) {
+    left: 85%;
     bottom: -15px;
-    animation-delay: 4s;
+    animation-delay: 4.5s;
+    width: 18px;
+    height: 18px;
+    animation-duration: 8s;
+  }
+
+  .coin-particle:nth-child(5) {
+    left: 75%;
+    bottom: -35px;
+    animation-delay: 2s;
     width: 22px;
     height: 22px;
+    animation-duration: 7.5s;
+  }
+
+  .sparkle-particle {
+    position: absolute;
+    color: #FFD700;
+    animation: sparkle 3s ease-in-out infinite;
+    pointer-events: none;
+    text-shadow: 0 0 6px rgba(255, 215, 0, 0.6);
+  }
+
+  .sparkle-particle:nth-child(6) {
+    left: 20%;
+    top: 20%;
+    animation-delay: 0s;
+    font-size: 14px;
+  }
+
+  .sparkle-particle:nth-child(7) {
+    left: 70%;
+    top: 30%;
+    animation-delay: 1s;
+    font-size: 10px;
+  }
+
+  .sparkle-particle:nth-child(8) {
+    left: 40%;
+    top: 60%;
+    animation-delay: 2s;
+    font-size: 12px;
+  }
+
+  .sparkle-particle:nth-child(9) {
+    left: 85%;
+    top: 70%;
+    animation-delay: 0.5s;
+    font-size: 16px;
+  }
+
+  .sparkle-particle:nth-child(10) {
+    left: 10%;
+    top: 80%;
+    animation-delay: 1.5s;
+    font-size: 11px;
+  }
+
+  .money-symbol {
+    position: absolute;
+    animation: floatSymbol 8s ease-in-out infinite;
+    pointer-events: none;
+    opacity: 0.08;
+    font-size: 40px;
+  }
+
+  .money-symbol:nth-child(11) {
+    left: 5%;
+    top: 10%;
+    animation-delay: 0s;
+  }
+
+  .money-symbol:nth-child(12) {
+    right: 10%;
+    top: 50%;
+    animation-delay: 2s;
+  }
+
+  .money-symbol:nth-child(13) {
+    left: 30%;
+    bottom: 20%;
+    animation-delay: 4s;
+  }
+
+  .money-symbol:nth-child(14) {
+    right: 25%;
+    top: 15%;
+    animation-delay: 6s;
   }
 
   @keyframes floatUp {
     0%, 100% {
-      transform: translateY(0) rotate(0deg);
+      transform: translateY(0) rotate(0deg) scale(1);
       opacity: 0.7;
     }
-    50% {
-      transform: translateY(-60px) rotate(180deg);
-      opacity: 0.3;
+    25% {
+      transform: translateY(-30px) rotate(90deg) scale(1.1);
+      opacity: 0.9;
     }
+    50% {
+      transform: translateY(-70px) rotate(180deg) scale(0.9);
+      opacity: 0.4;
+    }
+    75% {
+      transform: translateY(-30px) rotate(270deg) scale(1.05);
+      opacity: 0.6;
+    }
+  }
+
+  @keyframes sparkle {
+    0%, 100% {
+      transform: scale(0) rotate(0deg);
+      opacity: 0;
+    }
+    50% {
+      transform: scale(1) rotate(180deg);
+      opacity: 1;
+    }
+  }
+
+  @keyframes floatSymbol {
+    0%, 100% {
+      transform: translateY(0) rotate(-15deg);
+      opacity: 0.06;
+    }
+    50% {
+      transform: translateY(-20px) rotate(15deg);
+      opacity: 0.12;
+    }
+  }
+
+  .balance-shimmer {
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 50%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 215, 0, 0.03), transparent);
+    animation: shimmer 4s ease-in-out infinite;
+    pointer-events: none;
+  }
+
+  @keyframes shimmer {
+    0% { left: -100%; }
+    100% { left: 200%; }
+  }
+
+  .balance-text-glow {
+    text-shadow: 0 0 20px rgba(255, 215, 0, 0.15), 0 0 40px rgba(255, 215, 0, 0.05);
   }
 
   .money-tree-bg {
