@@ -47,7 +47,7 @@ function dbInvToApp(row) {
     planName: row.plan_name,
     amount: Number(row.amount),
     dailyReturn: Number(row.daily_return),
-    totalReturn: Number(row.totalReturn),
+    totalReturn: Number(row.total_return), // ✅ fixed: was row.totalReturn (wrong key)
     status: row.status,
     date: row.created_at,
   }
@@ -265,7 +265,7 @@ export async function addReferralCommission(referrerPhone, { referredPhone, refe
   }
 }
 
-// ── Withdrawals ───────────────────────────────────────────────────────────────
+// ── Withdrawals ──────────────────────────────────────────────────────────────
 export async function addWithdrawal(userPhone, { amount, fee, netAmount, mpesaPhone }) {
   if (!isSupabaseConfigured) return
   const { data, error } = await supabase
@@ -497,7 +497,7 @@ export async function sendSupportMessage(userPhone, message, senderType = 'user'
   await supabase.from('support_messages').insert({ user_phone: userPhone, message, sender_type: senderType })
 }
 
-// ── Password Reset ─────────────────────────────────────────────────────────────
+// ── Password Reset ────────────────────────────────────────────────────────────
 export async function createPasswordResetRequest(userPhone) {
   if (!isSupabaseConfigured) {
     local.addPasswordResetRequest({ user_phone: userPhone, status: 'pending' })
