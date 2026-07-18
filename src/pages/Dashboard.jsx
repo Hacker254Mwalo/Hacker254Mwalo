@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import { canClaimLoginBonus, setLastLoginBonus, canSpin, setLastSpin, isSpinDay } from '../lib/storage'
-import { getInvestments, updateUserBalance, addLoan, claimKeyword, getAllLoans, getSupportMessages, sendSupportMessage } from '../lib/db'
+import { isSpinDay } from '../lib/storage'
+import { getInvestments, addLoan, claimKeyword, getAllLoans, getSupportMessages, sendSupportMessage, hasClaimedBonusToday, claimBonus } from '../lib/db'
 
 function getInvestorBadge(balance) {
   if (balance >= 50000) return { label: 'Diamond', bg: 'bg-gradient-to-r from-indigo-500 to-purple-500', icon: '💎' }
@@ -306,6 +306,9 @@ export default function Dashboard() {
   const [supportMessages, setSupportMessages] = useState([])
   const [supportReply, setSupportReply] = useState('')
   const [supportSending, setSupportSending] = useState(false)
+  const [loginBonusAvailable, setLoginBonusAvailable] = useState(false)
+  const [spinAvailableDb, setSpinAvailableDb] = useState(false)
+  const [claimingBonus, setClaimingBonus] = useState(false)
   const prevLoanStatuses = useRef({})
   const supportBottomRef = useRef(null)
 
@@ -345,7 +348,12 @@ export default function Dashboard() {
 
   useEffect(() => {
     if (!user) return
-    getInvestments(user.phone || user.id).then(setInvestments).catch(() => {})
+    const phone = user.phone || user.id
+    getInvestments(phone).then(setInvestments).catch(() => {})
+    hasClaimedBonusToday(phone, 'login_bonus').then(claimed => setLoginBonusAvailable(!claimed)).catch(() => {})
+    if (isSpinDay()) {
+      hasClaimedBonusToday(phone, 'spin').then(claimed => setSpinAvailableDb(!claimed)).catch(() => {})
+    }
   }, [user])
 
   useEffect(() => {
@@ -407,40 +415,51 @@ export default function Dashboard() {
   const loginBonus = Math.max(1, Math.floor(dailyProfit * 0.02))
   const badge = getInvestorBadge(user?.balance || 0)
 
-  useEffect(() => {
-    if (!user || !canClaimLoginBonus(user.id)) return
-    const newBalance = (user.balance || 0) + loginBonus
-    updateUser({ balance: newBalance })
-    updateUserBalance(user.phone || user.id, newBalance).catch(() => {})
-    setLastLoginBonus(user.id)
-    showToast(`+KSh ${loginBonus} Daily Bonus claimed! 🎉`)
-  }, [user, loginBonus, showToast, updateUser])
+  // NOTE: Daily Bonus is intentionally NOT auto-claimed on load — it must be
+  // claimed explicitly by tapping the "Daily Bonus" card (see claimLoginBonus
+  // below), and the claim is enforced server-side via the bonus_claims table
+  // so it can't be claimed more than once per day per user.
 
   async function claimLoginBonus() {
-    if (!canClaimLoginBonus(user.id)) {
+    if (!user || claimingBonus) return
+    if (!loginBonusAvailable) {
       showToast('Daily bonus already claimed today!')
       return
     }
-    const newBalance = (user.balance || 0) + loginBonus
-    updateUser({ balance: newBalance })
-    await updateUserBalance(user.phone || user.id, newBalance).catch(() => {})
-    setLastLoginBonus(user.id)
-    showToast(`+KSh ${loginBonus} Daily Bonus claimed! 🎉`)
+    setClaimingBonus(true)
+    const phone = user.phone || user.id
+    try {
+      const result = await claimBonus(phone, 'login_bonus', loginBonus)
+      if (result.success) {
+        updateUser({ balance: result.balance })
+        setLoginBonusAvailable(false)
+        showToast(`+KSh ${loginBonus} Daily Bonus claimed! 🎉`)
+      } else {
+        setLoginBonusAvailable(false)
+        showToast(result.message || 'Daily bonus already claimed today!')
+      }
+    } catch {
+      showToast('❌ Failed to claim bonus. Please try again.')
+    }
+    setClaimingBonus(false)
   }
 
   async function handleSpinResult(prize) {
-    if (prize > 0) {
-      const newBalance = (user.balance || 0) + prize
-      updateUser({ balance: newBalance })
-      await updateUserBalance(user.phone || user.id, newBalance).catch(() => {})
+    const phone = user.phone || user.id
+    try {
+      const result = await claimBonus(phone, 'spin', prize > 0 ? prize : 0)
+      if (result.success && prize > 0) {
+        updateUser({ balance: result.balance })
+      }
+    } catch {
+      // Spin already recorded server-side elsewhere or failed silently — UI still shows result once.
     }
-    setLastSpin(user.id)
+    setSpinAvailableDb(false)
   }
 
   async function handlePromoCredit(amount) {
     const newBalance = (user.balance || 0) + amount
     updateUser({ balance: newBalance })
-    await updateUserBalance(user.phone || user.id, newBalance).catch(() => {})
     showToast(`+KSh ${amount.toLocaleString()} promo credit added! 🎉`)
   }
 
@@ -457,8 +476,7 @@ export default function Dashboard() {
     setSupportSending(false)
   }
 
-  const spinAvailable = user && canSpin(user.id)
-  const loginBonusAvailable = user && canClaimLoginBonus(user.id)
+  const spinAvailable = user && isSpinDay() && spinAvailableDb
 
   return (
     <div className="pt-4 md:pt-20 pb-24 md:pb-8 px-4 max-w-2xl mx-auto">
