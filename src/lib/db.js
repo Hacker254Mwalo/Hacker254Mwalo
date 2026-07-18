@@ -466,6 +466,76 @@ export async function claimKeyword(userPhone, code) {
   return { success: true, bonus }
 }
 
+// ── Bonus Claims (Daily Bonus / Lucky Spin) — server-enforced ────────────────
+// Uses a unique(user_phone, claim_type, claim_date) constraint in Postgres so
+// a user can NEVER claim the same bonus type twice on the same calendar day,
+// no matter how many browsers/devices/incognito sessions they use. Falls back
+// to localStorage only when Supabase isn't configured (pure demo mode).
+function todayStr() {
+  return new Date().toISOString().slice(0, 10) // YYYY-MM-DD (UTC)
+}
+
+export async function hasClaimedBonusToday(userPhone, claimType) {
+  if (!isSupabaseConfigured) {
+    if (claimType === 'login_bonus') return !local.canClaimLoginBonus(userPhone)
+    if (claimType === 'spin') return !local.canSpin(userPhone)
+    return false
+  }
+  const { data, error } = await supabase
+    .from('bonus_claims')
+    .select('id')
+    .eq('user_phone', userPhone)
+    .eq('claim_type', claimType)
+    .eq('claim_date', todayStr())
+    .maybeSingle()
+  if (error && !isNoRowsError(error)) throw error
+  return !!data
+}
+
+// Atomically records the claim (fails if already claimed today thanks to the
+// unique constraint) and credits the user's balance in the same call.
+export async function claimBonus(userPhone, claimType, amount) {
+  if (!isSupabaseConfigured) {
+    // Demo mode fallback — enforced via localStorage day markers (see storage.js).
+    const alreadyClaimed = claimType === 'login_bonus' ? !local.canClaimLoginBonus(userPhone) : !local.canSpin(userPhone)
+    if (alreadyClaimed) return { success: false, message: 'Already claimed today.' }
+    const u = local.getUser(userPhone)
+    const newBalance = Number(u?.balance || 0) + Number(amount)
+    local.saveUser(userPhone, { balance: newBalance })
+    if (claimType === 'login_bonus') local.setLastLoginBonus(userPhone)
+    else local.setLastSpin(userPhone)
+    return { success: true, balance: newBalance }
+  }
+
+  const { error: insertErr } = await supabase
+    .from('bonus_claims')
+    .insert({ user_phone: userPhone, claim_type: claimType, claim_date: todayStr(), amount })
+
+  if (insertErr) {
+    // Unique violation => already claimed today
+    if (insertErr.code === '23505') {
+      return { success: false, message: 'Already claimed today.' }
+    }
+    throw insertErr
+  }
+
+  const { data: u, error: userErr } = await supabase
+    .from('users')
+    .select('balance')
+    .eq('phone', userPhone)
+    .single()
+  if (userErr) throw userErr
+
+  const newBalance = Number(u.balance) + Number(amount)
+  const { error: balErr } = await supabase
+    .from('users')
+    .update({ balance: newBalance })
+    .eq('phone', userPhone)
+  if (balErr) throw balErr
+
+  return { success: true, balance: newBalance }
+}
+
 // ── Support / Live Chat ───────────────────────────────────────────────────────
 export async function getSupportMessages(userPhone) {
   if (!isSupabaseConfigured) return local.getSupportMessages(userPhone)
