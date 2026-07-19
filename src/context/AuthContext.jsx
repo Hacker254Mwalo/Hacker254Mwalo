@@ -13,15 +13,18 @@ export function AuthProvider({ children }) {
     if (saved) {
       try {
         const session = JSON.parse(saved)
-        // Refresh balance/data from DB on mount
+        // Always refresh from DB on mount to get latest balance, isAdmin, must_change_password
         getUser(session.phone).then(fresh => {
-          const u = fresh ? { ...fresh, id: fresh.phone } : session
+          const u = fresh
+            ? { ...fresh, id: fresh.phone }
+            : { ...session, id: session.phone }
           setUser(u)
           localStorage.setItem(SESSION_KEY, JSON.stringify(u))
         }).catch(() => {
-          setUser(session)
+          setUser({ ...session, id: session.phone })
         }).finally(() => setLoading(false))
       } catch {
+        localStorage.removeItem(SESSION_KEY)
         setLoading(false)
       }
     } else {
@@ -42,14 +45,30 @@ export function AuthProvider({ children }) {
 
   const updateUser = useCallback((updates) => {
     setUser(prev => {
+      if (!prev) return prev
       const updated = { ...prev, ...updates }
       localStorage.setItem(SESSION_KEY, JSON.stringify(updated))
       return updated
     })
   }, [])
 
+  // Refresh user from DB (call after balance-changing operations)
+  const refreshUser = useCallback(async () => {
+    const saved = localStorage.getItem(SESSION_KEY)
+    if (!saved) return
+    try {
+      const session = JSON.parse(saved)
+      const fresh = await getUser(session.phone)
+      if (fresh) {
+        const u = { ...fresh, id: fresh.phone }
+        setUser(u)
+        localStorage.setItem(SESSION_KEY, JSON.stringify(u))
+      }
+    } catch { /* silently fail */ }
+  }, [])
+
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout, updateUser }}>
+    <AuthContext.Provider value={{ user, loading, login, logout, updateUser, refreshUser }}>
       {children}
     </AuthContext.Provider>
   )

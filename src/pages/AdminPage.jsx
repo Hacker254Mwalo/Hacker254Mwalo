@@ -9,6 +9,7 @@ import {
   getKeywords, createKeyword, toggleKeyword,
   getAllSupportThreads, getSupportMessages, sendSupportMessage,
   getPasswordResetRequests, updatePasswordResetRequest, adminResetPassword,
+  getAdminStats,
 } from '../lib/db'
 
 // ── Shared helpers ────────────────────────────────────────────────────────────

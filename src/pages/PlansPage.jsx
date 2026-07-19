@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
-import { getInvestments, addInvestment, updateUserBalance, getUser, addReferralCommission } from '../lib/db'
-import { PLANS, getDailyReturn, getTotalReturn, REF_L1, REF_L2 } from '../lib/plans'
+import { getInvestments, addInvestment, getUser } from '../lib/db'
+import { PLANS, getDailyReturn, getTotalReturn } from '../lib/plans'
 
 function PlanCard({ plan, onInvest, alreadyUsed }) {
   const daily = getDailyReturn(plan.amount)
@@ -21,18 +21,18 @@ function PlanCard({ plan, onInvest, alreadyUsed }) {
       </div>
 
       <div className="grid grid-cols-2 gap-3">
-        <div className="bg-gray-800 rounded-xl p-3 text-center">
+        <div className="rounded-xl p-3 text-center" style={{ background: 'var(--bg-elevated)' }}>
           <p className="text-green-400 font-bold text-lg">KSh {daily.toLocaleString()}</p>
-          <p className="text-gray-400 text-xs mt-0.5">Daily Return (3%)</p>
+          <p className="text-xs mt-0.5" style={{ color: 'var(--text-secondary)' }}>Daily Return (3%)</p>
         </div>
-        <div className="bg-gray-800 rounded-xl p-3 text-center">
+        <div className="rounded-xl p-3 text-center" style={{ background: 'var(--bg-elevated)' }}>
           <p className="text-yellow-400 font-bold text-lg">KSh {total.toLocaleString()}</p>
-          <p className="text-gray-400 text-xs mt-0.5">90-Day Total</p>
+          <p className="text-xs mt-0.5" style={{ color: 'var(--text-secondary)' }}>90-Day Total</p>
         </div>
       </div>
 
       {alreadyUsed ? (
-        <div className="text-center text-sm text-gray-500 bg-gray-800 rounded-xl py-3">
+        <div className="text-center text-sm rounded-xl py-3" style={{ background: 'var(--bg-elevated)', color: 'var(--text-secondary)' }}>
           ✓ Already purchased (one-time plan)
         </div>
       ) : (
@@ -53,26 +53,21 @@ function ConfirmModal({ plan, balance, onConfirm, onClose, confirming }) {
       <div className="card max-w-sm w-full" onClick={e => e.stopPropagation()}>
         <h3 className="text-xl font-bold mb-4">{plan.icon} Confirm Investment</h3>
 
-        <div className="bg-gray-800 rounded-xl p-4 space-y-2 mb-4">
+        <div className="rounded-xl p-4 space-y-2 mb-4" style={{ background: 'var(--bg-elevated)' }}>
+          {[
+            ['Plan', plan.name, ''],
+            ['Amount', `KSh ${plan.amount.toLocaleString()}`, 'text-red-400'],
+            ['Daily Return', `KSh ${getDailyReturn(plan.amount).toLocaleString()}`, 'text-green-400'],
+            ['90-Day Total', `KSh ${getTotalReturn(plan.amount).toLocaleString()}`, 'text-yellow-400'],
+          ].map(([label, value, cls]) => (
+            <div key={label} className="flex justify-between text-sm">
+              <span style={{ color: 'var(--text-secondary)' }}>{label}</span>
+              <span className={`font-semibold ${cls}`}>{value}</span>
+            </div>
+          ))}
+          <hr style={{ borderColor: 'var(--border)' }} />
           <div className="flex justify-between text-sm">
-            <span className="text-gray-400">Plan</span>
-            <span className="font-semibold">{plan.name}</span>
-          </div>
-          <div className="flex justify-between text-sm">
-            <span className="text-gray-400">Amount</span>
-            <span className="font-semibold text-red-400">KSh {plan.amount.toLocaleString()}</span>
-          </div>
-          <div className="flex justify-between text-sm">
-            <span className="text-gray-400">Daily Return</span>
-            <span className="font-semibold text-green-400">KSh {getDailyReturn(plan.amount).toLocaleString()}</span>
-          </div>
-          <div className="flex justify-between text-sm">
-            <span className="text-gray-400">90-Day Total</span>
-            <span className="font-semibold text-yellow-400">KSh {getTotalReturn(plan.amount).toLocaleString()}</span>
-          </div>
-          <hr className="border-gray-700" />
-          <div className="flex justify-between text-sm">
-            <span className="text-gray-400">Your Balance</span>
+            <span style={{ color: 'var(--text-secondary)' }}>Your Balance</span>
             <span className={`font-semibold ${enough ? 'text-green-400' : 'text-red-400'}`}>
               KSh {balance.toLocaleString()}
             </span>
@@ -99,7 +94,7 @@ function ConfirmModal({ plan, balance, onConfirm, onClose, confirming }) {
 export default function PlansPage() {
   const { user, updateUser } = useAuth()
   const [selectedPlan, setSelectedPlan] = useState(null)
-  const [toast, setToast] = useState('')
+  const [toast, setToast] = useState({ msg: '', type: 'success' })
   const [confirming, setConfirming] = useState(false)
   const [investments, setInvestments] = useState([])
 
@@ -108,9 +103,9 @@ export default function PlansPage() {
     getInvestments(user.phone || user.id).then(setInvestments).catch(() => {})
   }, [user])
 
-  function showToast(msg) {
-    setToast(msg)
-    setTimeout(() => setToast(''), 3500)
+  function showToast(msg, type = 'success') {
+    setToast({ msg, type })
+    setTimeout(() => setToast({ msg: '', type: 'success' }), 3500)
   }
 
   async function confirmInvest() {
@@ -119,52 +114,33 @@ export default function PlansPage() {
     setConfirming(true)
 
     const userPhone = user.phone || user.id
-    const newBalance = (user.balance || 0) - plan.amount
-    if (newBalance < 0) { setConfirming(false); return }
 
     try {
-      await addInvestment(userPhone, {
+      // atomic_invest handles: balance deduction + investment insert + referral commissions
+      const result = await addInvestment(userPhone, {
         planId: plan.id,
         planName: plan.name,
         amount: plan.amount,
         dailyReturn: getDailyReturn(plan.amount),
         totalReturn: getTotalReturn(plan.amount),
-        status: 'active',
       })
 
-      await updateUserBalance(userPhone, newBalance)
-      updateUser({ balance: newBalance })
-
-      // Referral commission on first deposit
-      if (user.referredBy && investments.length === 0) {
-        const l1Commission = Math.floor(plan.amount * REF_L1)
-        await addReferralCommission(user.referredBy, {
-          referredPhone: userPhone,
-          referredName: user.name,
-          level: 1,
-          commission: l1Commission,
-          planName: plan.name,
-        })
-        const l1User = await getUser(user.referredBy)
-        if (l1User?.referredBy) {
-          const l2Commission = Math.floor(plan.amount * REF_L2)
-          await addReferralCommission(l1User.referredBy, {
-            referredPhone: userPhone,
-            referredName: user.name,
-            level: 2,
-            commission: l2Commission,
-            planName: plan.name,
-          })
-        }
+      // Update local user balance from DB result
+      if (result?.new_balance !== undefined) {
+        updateUser({ balance: result.new_balance })
+      } else {
+        // Fallback: fetch fresh user data
+        const fresh = await getUser(userPhone)
+        if (fresh) updateUser({ balance: fresh.balance })
       }
 
-      const fresh = await getInvestments(userPhone)
-      setInvestments(fresh)
+      const freshInvs = await getInvestments(userPhone)
+      setInvestments(freshInvs)
       setSelectedPlan(null)
       showToast(`✅ Invested KSh ${plan.amount.toLocaleString()} in ${plan.name} plan!`)
     } catch (err) {
-      console.error(err)
-      showToast('❌ Investment failed. Please try again.')
+      console.error('Investment error:', err)
+      showToast(`❌ ${err.message || 'Investment failed. Please try again.'}`, 'error')
     }
     setConfirming(false)
   }
@@ -176,9 +152,13 @@ export default function PlansPage() {
 
   return (
     <div className="pt-4 md:pt-20 pb-24 md:pb-8 px-4 max-w-2xl mx-auto">
-      {toast && (
-        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-green-800 border border-green-600 text-white px-6 py-3 rounded-xl shadow-lg text-sm font-medium">
-          {toast}
+      {toast.msg && (
+        <div className={`fixed top-4 left-1/2 -translate-x-1/2 z-50 px-6 py-3 rounded-xl shadow-lg text-sm font-medium border ${
+          toast.type === 'error'
+            ? 'bg-red-900 border-red-700 text-red-100'
+            : 'bg-green-800 border-green-600 text-white'
+        }`}>
+          {toast.msg}
         </div>
       )}
 
@@ -194,7 +174,7 @@ export default function PlansPage() {
 
       <div className="mb-6">
         <h2 className="text-2xl font-black">Investment Plans</h2>
-        <p className="text-gray-400 text-sm mt-1">3% daily returns • 90-day duration</p>
+        <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>3% daily returns • 90-day duration</p>
       </div>
 
       <div className="balance-gradient rounded-xl px-5 py-4 mb-6 flex items-center justify-between">

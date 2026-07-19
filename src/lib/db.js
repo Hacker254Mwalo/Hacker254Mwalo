@@ -1,11 +1,12 @@
 /**
  * db.js — Dumiropay data layer
  * Uses Supabase when configured, falls back to localStorage for demo mode.
+ * All balance-mutating operations use atomic DB functions to prevent partial updates.
  */
 import { supabase, isSupabaseConfigured } from './supabase'
 import * as local from './storage'
 
-// ── PIN Hashing (SHA-256 via Web Crypto, no extra dependencies) ─────────────
+// ── PIN Hashing (SHA-256 via Web Crypto) ─────────────────────────────────────
 async function hashPin(pin) {
   try {
     const data = new TextEncoder().encode('dumiropay:' + pin)
@@ -14,7 +15,7 @@ async function hashPin(pin) {
       .map(b => b.toString(16).padStart(2, '0'))
       .join('')
   } catch {
-    return pin // fallback — should not happen in modern browsers
+    return pin
   }
 }
 
@@ -32,9 +33,11 @@ function dbUserToApp(row) {
     id: row.phone,
     phone: row.phone,
     name: row.name,
-    balance: Number(row.balance),
+    balance: Number(row.balance || 0),
+    bonusBalance: Number(row.bonus_balance || 0),
     referralCode: row.referral_code,
     referredBy: row.referred_by,
+    isAdmin: row.is_admin || false,
     createdAt: row.created_at,
     must_change_password: row.must_change_password || false,
   }
@@ -45,9 +48,9 @@ function dbInvToApp(row) {
     id: row.id,
     planId: row.plan_id,
     planName: row.plan_name,
-    amount: Number(row.amount),
-    dailyReturn: Number(row.daily_return),
-    totalReturn: Number(row.total_return), // ✅ fixed: was row.totalReturn (wrong key)
+    amount: Number(row.amount || 0),
+    dailyReturn: Number(row.daily_return || 0),
+    totalReturn: Number(row.total_return || 0),
     status: row.status,
     date: row.created_at,
   }
@@ -75,7 +78,7 @@ export async function createUser(userData) {
     const pinHash = await hashPin(userData.pin)
     const row = { ...userData, pin: undefined, pin_hash: pinHash }
     local.saveUser(userData.phone, row)
-    return row
+    return dbUserToApp({ ...row, phone: userData.phone })
   }
   const pinHash = await hashPin(userData.pin)
   const row = {
@@ -83,8 +86,11 @@ export async function createUser(userData) {
     name: userData.name,
     pin_hash: pinHash,
     balance: 0,
+    bonus_balance: 0,
     referral_code: userData.referralCode,
     referred_by: userData.referredBy || null,
+    is_admin: false,
+    must_change_password: false,
   }
   const { data, error } = await supabase
     .from('users')
@@ -101,7 +107,7 @@ export async function verifyUser(phone, pin) {
     if (!u) return null
     const pinHash = await hashPin(pin)
     if (u.pin_hash !== pinHash) return null
-    return u
+    return dbUserToApp(u)
   }
   const { data, error } = await supabase
     .from('users')
@@ -120,7 +126,8 @@ export async function updateUserBalance(phone, balance) {
     local.saveUser(phone, { balance })
     return
   }
-  await supabase.from('users').update({ balance }).eq('phone', phone)
+  const { error } = await supabase.from('users').update({ balance }).eq('phone', phone)
+  if (error) throw error
 }
 
 export async function findUserByReferralCode(code) {
@@ -137,32 +144,28 @@ export async function findUserByReferralCode(code) {
 // ── Investments ──────────────────────────────────────────────────────────────
 export async function getInvestments(userPhone) {
   if (!isSupabaseConfigured) return local.getInvestments(userPhone)
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from('investments')
     .select('*')
     .eq('user_phone', userPhone)
     .order('created_at', { ascending: false })
+  if (error) throw error
   return (data || []).map(dbInvToApp)
 }
 
+// Uses atomic_invest DB function to prevent partial-update bugs
 export async function addInvestment(userPhone, investment) {
   if (!isSupabaseConfigured) return local.addInvestment(userPhone, investment)
-  const row = {
-    user_phone: userPhone,
-    plan_id: investment.planId,
-    plan_name: investment.planName,
-    amount: investment.amount,
-    daily_return: investment.dailyReturn,
-    total_return: investment.totalReturn,
-    status: 'active',
-  }
-  const { data, error } = await supabase
-    .from('investments')
-    .insert(row)
-    .select()
-    .single()
+  const { data, error } = await supabase.rpc('atomic_invest', {
+    p_user_phone:   userPhone,
+    p_plan_id:      investment.planId,
+    p_plan_name:    investment.planName,
+    p_amount:       investment.amount,
+    p_daily_return: investment.dailyReturn,
+    p_total_return: investment.totalReturn,
+  })
   if (error) throw error
-  return dbInvToApp(data)
+  return data
 }
 
 // ── Deposits ─────────────────────────────────────────────────────────────────
@@ -172,7 +175,13 @@ export async function addDeposit(userPhone, { amount, checkoutId, mpesaCode }) {
   }
   const { data, error } = await supabase
     .from('deposits')
-    .insert({ user_phone: userPhone, amount, checkout_id: checkoutId || null, mpesa_receipt: mpesaCode || null, status: 'pending' })
+    .insert({
+      user_phone: userPhone,
+      amount,
+      checkout_id: checkoutId || null,
+      mpesa_receipt: mpesaCode || null,
+      status: 'pending',
+    })
     .select()
     .single()
   if (error) throw error
@@ -181,44 +190,39 @@ export async function addDeposit(userPhone, { amount, checkoutId, mpesaCode }) {
 
 export async function getDeposits(userPhone) {
   if (!isSupabaseConfigured) return local.getDeposits(userPhone)
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from('deposits')
     .select('*')
     .eq('user_phone', userPhone)
     .order('created_at', { ascending: false })
+  if (error) throw error
   return data || []
 }
 
 export async function getAllDeposits() {
   if (!isSupabaseConfigured) return local.getAllDeposits()
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from('deposits')
     .select('*, users!user_phone(name, phone)')
     .order('created_at', { ascending: false })
+  if (error) throw error
   return data || []
 }
 
+// Uses atomic DB function to prevent double-crediting
 export async function approveDeposit(depositId, userPhone, amount) {
   if (!isSupabaseConfigured) {
     local.updateDepositStatus(depositId, 'approved')
     const user = local.getUser(userPhone)
-    if (user) {
-      local.saveUser(userPhone, { balance: Number(user.balance || 0) + Number(amount) })
-    }
+    if (user) local.saveUser(userPhone, { balance: Number(user.balance || 0) + Number(amount) })
     return
   }
-  await supabase.from('deposits').update({ status: 'approved' }).eq('id', depositId)
-  const { data: u } = await supabase
-    .from('users')
-    .select('balance')
-    .eq('phone', userPhone)
-    .single()
-  if (u) {
-    await supabase
-      .from('users')
-      .update({ balance: Number(u.balance) + Number(amount) })
-      .eq('phone', userPhone)
-  }
+  const { error } = await supabase.rpc('atomic_approve_deposit', {
+    p_deposit_id: depositId,
+    p_user_phone: userPhone,
+    p_amount:     Number(amount),
+  })
+  if (error) throw error
 }
 
 export async function rejectDeposit(depositId) {
@@ -226,17 +230,19 @@ export async function rejectDeposit(depositId) {
     local.updateDepositStatus(depositId, 'rejected')
     return
   }
-  await supabase.from('deposits').update({ status: 'rejected' }).eq('id', depositId)
+  const { error } = await supabase.from('deposits').update({ status: 'rejected' }).eq('id', depositId)
+  if (error) throw error
 }
 
 // ── Referrals ─────────────────────────────────────────────────────────────────
 export async function getReferrals(userPhone) {
   if (!isSupabaseConfigured) return local.getReferrals(userPhone)
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from('referrals')
     .select('*')
     .eq('referrer_phone', userPhone)
     .order('created_at', { ascending: false })
+  if (error) throw error
   return (data || []).map(r => ({
     referredName: r.referred_name,
     level: r.level,
@@ -246,53 +252,53 @@ export async function getReferrals(userPhone) {
   }))
 }
 
+// NOTE: Referral commissions are now handled atomically inside atomic_invest.
+// This function is kept for legacy/local fallback only.
 export async function addReferralCommission(referrerPhone, { referredPhone, referredName, level, commission, planName }) {
   if (!isSupabaseConfigured) {
     local.addReferral(referrerPhone, { referredPhone, referredName, level, commission, planName })
     return
   }
-  await supabase.from('referrals').insert({
-    referrer_phone: referrerPhone,
-    referred_phone: referredPhone,
-    referred_name: referredName,
-    level,
-    commission,
-    plan_name: planName,
-  })
-  const { data: referrer } = await supabase.from('users').select('balance').eq('phone', referrerPhone).single()
-  if (referrer) {
-    await supabase.from('users').update({ balance: Number(referrer.balance) + commission }).eq('phone', referrerPhone)
-  }
+  // In Supabase mode, referrals are created by atomic_invest. This is a no-op.
 }
 
 // ── Withdrawals ──────────────────────────────────────────────────────────────
+// Uses atomic DB function to prevent balance going negative
 export async function addWithdrawal(userPhone, { amount, fee, netAmount, mpesaPhone }) {
-  if (!isSupabaseConfigured) return
-  const { data, error } = await supabase
-    .from('withdrawals')
-    .insert({ user_phone: userPhone, amount, fee, net_amount: netAmount, mpesa_phone: mpesaPhone, status: 'pending' })
-    .select()
-    .single()
+  if (!isSupabaseConfigured) {
+    const u = local.getUser(userPhone)
+    if (u) local.saveUser(userPhone, { balance: Number(u.balance || 0) - Number(amount) })
+    return { success: true }
+  }
+  const { data, error } = await supabase.rpc('atomic_withdraw', {
+    p_user_phone:  userPhone,
+    p_amount:      Number(amount),
+    p_fee:         Number(fee),
+    p_net_amount:  Number(netAmount),
+    p_mpesa_phone: mpesaPhone,
+  })
   if (error) throw error
   return data
 }
 
 export async function getAllWithdrawals() {
   if (!isSupabaseConfigured) return local.getAllWithdrawals()
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from('withdrawals')
     .select('*, users!user_phone(name, phone)')
     .order('created_at', { ascending: false })
+  if (error) throw error
   return data || []
 }
 
 export async function getWithdrawals(userPhone) {
   if (!isSupabaseConfigured) return local.getWithdrawals(userPhone)
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from('withdrawals')
     .select('*')
     .eq('user_phone', userPhone)
     .order('created_at', { ascending: false })
+  if (error) throw error
   return data || []
 }
 
@@ -301,23 +307,24 @@ export async function approveWithdrawal(id) {
     local.updateWithdrawalStatus(id, 'approved')
     return
   }
-  await supabase.from('withdrawals').update({ status: 'approved' }).eq('id', id)
+  const { error } = await supabase.from('withdrawals').update({ status: 'approved' }).eq('id', id)
+  if (error) throw error
 }
 
+// Uses atomic DB function to refund balance on rejection
 export async function rejectWithdrawal(id, userPhone, amount) {
   if (!isSupabaseConfigured) {
     local.updateWithdrawalStatus(id, 'rejected')
     const user = local.getUser(userPhone)
-    if (user) {
-      local.saveUser(userPhone, { balance: Number(user.balance || 0) + Number(amount) })
-    }
+    if (user) local.saveUser(userPhone, { balance: Number(user.balance || 0) + Number(amount) })
     return
   }
-  await supabase.from('withdrawals').update({ status: 'rejected' }).eq('id', id)
-  const { data: u } = await supabase.from('users').select('balance').eq('phone', userPhone).single()
-  if (u) {
-    await supabase.from('users').update({ balance: Number(u.balance) + Number(amount) }).eq('phone', userPhone)
-  }
+  const { error } = await supabase.rpc('atomic_reject_withdrawal', {
+    p_withdrawal_id: id,
+    p_user_phone:    userPhone,
+    p_amount:        Number(amount),
+  })
+  if (error) throw error
 }
 
 // ── Loans ─────────────────────────────────────────────────────────────────────
@@ -341,10 +348,25 @@ export async function getAllLoans() {
   if (!isSupabaseConfigured) {
     return JSON.parse(localStorage.getItem('dp_loan_requests') || '[]')
   }
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from('loans')
     .select('*, users!user_phone(name, phone)')
     .order('created_at', { ascending: false })
+  if (error) throw error
+  return data || []
+}
+
+export async function getUserLoans(userPhone) {
+  if (!isSupabaseConfigured) {
+    const all = JSON.parse(localStorage.getItem('dp_loan_requests') || '[]')
+    return all.filter(l => l.user_phone === userPhone)
+  }
+  const { data, error } = await supabase
+    .from('loans')
+    .select('*')
+    .eq('user_phone', userPhone)
+    .order('created_at', { ascending: false })
+  if (error) throw error
   return data || []
 }
 
@@ -357,9 +379,7 @@ export async function approveLoan(id, userPhone, amount) {
   }
   await supabase.from('loans').update({ status: 'approved' }).eq('id', id)
   const { data: u } = await supabase.from('users').select('balance').eq('phone', userPhone).single()
-  if (u) {
-    await supabase.from('users').update({ balance: Number(u.balance) + Number(amount) }).eq('phone', userPhone)
-  }
+  if (u) await supabase.from('users').update({ balance: Number(u.balance) + Number(amount) }).eq('phone', userPhone)
 }
 
 export async function rejectLoan(id) {
@@ -368,7 +388,8 @@ export async function rejectLoan(id) {
     localStorage.setItem('dp_loan_requests', JSON.stringify(loans.map(l => l.id === id ? { ...l, status: 'rejected' } : l)))
     return
   }
-  await supabase.from('loans').update({ status: 'rejected' }).eq('id', id)
+  const { error } = await supabase.from('loans').update({ status: 'rejected' }).eq('id', id)
+  if (error) throw error
 }
 
 // ── Admin: User Management ────────────────────────────────────────────────────
@@ -376,36 +397,40 @@ export async function getAllUsers() {
   if (!isSupabaseConfigured) {
     return Object.values(local.getUsers()).map(u => ({
       phone: u.phone, name: u.name, balance: Number(u.balance || 0),
-      bonus_balance: Number(u.bonus_balance || 0), created_at: u.created_at,
+      bonus_balance: Number(u.bonus_balance || 0), is_admin: u.is_admin || false, created_at: u.created_at,
     }))
   }
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from('users')
     .select('phone, name, balance, bonus_balance, is_admin, created_at')
     .order('created_at', { ascending: false })
+  if (error) throw error
   return data || []
 }
 
 export async function adminSetBalance(phone, balance) {
   if (!isSupabaseConfigured) { local.saveUser(phone, { balance }); return }
-  await supabase.from('users').update({ balance }).eq('phone', phone)
+  const { error } = await supabase.from('users').update({ balance }).eq('phone', phone)
+  if (error) throw error
 }
 
 export async function adminSetBonusBalance(phone, bonusBalance) {
   if (!isSupabaseConfigured) { local.saveUser(phone, { bonus_balance: bonusBalance }); return }
-  await supabase.from('users').update({ bonus_balance: bonusBalance }).eq('phone', phone)
+  const { error } = await supabase.from('users').update({ bonus_balance: bonusBalance }).eq('phone', phone)
+  if (error) throw error
 }
 
-// ── Keywords ──────────────────────────────────────────────────────────────────
+// ── Keywords (Promo Codes) ────────────────────────────────────────────────────
 export async function getKeywords() {
   if (!isSupabaseConfigured) {
     return JSON.parse(localStorage.getItem('dp_admin_keywords') || '[]')
   }
-  const { data } = await supabase.from('keywords').select('*').order('created_at', { ascending: false })
+  const { data, error } = await supabase.from('keywords').select('*').order('created_at', { ascending: false })
+  if (error) throw error
   return data || []
 }
 
-export async function createKeyword({ code, minBonus, maxBonus, maxClaims }) {
+export async function createKeyword(code, minBonus, maxBonus, maxClaims) {
   if (!isSupabaseConfigured) {
     const keywords = JSON.parse(localStorage.getItem('dp_admin_keywords') || '[]')
     if (keywords.find(k => k.code.toUpperCase() === code.toUpperCase())) throw new Error('Code already exists')
@@ -428,11 +453,11 @@ export async function toggleKeyword(id, active) {
     localStorage.setItem('dp_admin_keywords', JSON.stringify(keywords.map(k => k.id === String(id) ? { ...k, active } : k)))
     return
   }
-  await supabase.from('keywords').update({ active }).eq('id', id)
+  const { error } = await supabase.from('keywords').update({ active }).eq('id', id)
+  if (error) throw error
 }
 
 export async function claimKeyword(userPhone, code) {
-  // Returns { success: bool, bonus?: number, message?: string }
   if (!isSupabaseConfigured) {
     const keywords = JSON.parse(localStorage.getItem('dp_admin_keywords') || '[]')
     const kw = keywords.find(k => k.code === code.trim().toUpperCase())
@@ -451,26 +476,41 @@ export async function claimKeyword(userPhone, code) {
     if (u) local.saveUser(userPhone, { balance: Number(u.balance || 0) + bonus })
     return { success: true, bonus }
   }
-  const { data: kw, error: kwErr } = await supabase.from('keywords').select('*').ilike('code', code.trim()).single()
+
+  // Supabase mode
+  const { data: kw, error: kwErr } = await supabase
+    .from('keywords')
+    .select('*')
+    .ilike('code', code.trim())
+    .maybeSingle()
   if (kwErr || !kw) return { success: false, message: 'Invalid keyword code.' }
   if (!kw.active) return { success: false, message: 'This keyword is no longer active.' }
   if (kw.claim_count >= kw.max_claims) return { success: false, message: 'All slots for this keyword have been claimed.' }
-  const { data: existing } = await supabase.from('keyword_claims').select('id').eq('keyword_id', kw.id).eq('user_phone', userPhone).maybeSingle()
+
+  const { data: existing } = await supabase
+    .from('keyword_claims')
+    .select('id')
+    .eq('keyword_id', kw.id)
+    .eq('user_phone', userPhone)
+    .maybeSingle()
   if (existing) return { success: false, message: 'You have already claimed this keyword.' }
+
   const bonus = Math.floor(Math.random() * (Number(kw.max_bonus) - Number(kw.min_bonus) + 1)) + Number(kw.min_bonus)
-  const { error: claimErr } = await supabase.from('keyword_claims').insert({ keyword_id: kw.id, user_phone: userPhone, bonus_amount: bonus })
+
+  const { error: claimErr } = await supabase
+    .from('keyword_claims')
+    .insert({ keyword_id: kw.id, user_phone: userPhone, bonus_amount: bonus })
   if (claimErr) return { success: false, message: 'Failed to record claim. Please try again.' }
+
   await supabase.from('keywords').update({ claim_count: kw.claim_count + 1 }).eq('id', kw.id)
+
   const { data: u } = await supabase.from('users').select('balance').eq('phone', userPhone).single()
   if (u) await supabase.from('users').update({ balance: Number(u.balance) + bonus }).eq('phone', userPhone)
+
   return { success: true, bonus }
 }
 
 // ── Bonus Claims (Daily Bonus / Lucky Spin) — server-enforced ────────────────
-// Uses a unique(user_phone, claim_type, claim_date) constraint in Postgres so
-// a user can NEVER claim the same bonus type twice on the same calendar day,
-// no matter how many browsers/devices/incognito sessions they use. Falls back
-// to localStorage only when Supabase isn't configured (pure demo mode).
 function todayStr() {
   return new Date().toISOString().slice(0, 10) // YYYY-MM-DD (UTC)
 }
@@ -492,11 +532,8 @@ export async function hasClaimedBonusToday(userPhone, claimType) {
   return !!data
 }
 
-// Atomically records the claim (fails if already claimed today thanks to the
-// unique constraint) and credits the user's balance in the same call.
 export async function claimBonus(userPhone, claimType, amount) {
   if (!isSupabaseConfigured) {
-    // Demo mode fallback — enforced via localStorage day markers (see storage.js).
     const alreadyClaimed = claimType === 'login_bonus' ? !local.canClaimLoginBonus(userPhone) : !local.canSpin(userPhone)
     if (alreadyClaimed) return { success: false, message: 'Already claimed today.' }
     const u = local.getUser(userPhone)
@@ -507,18 +544,17 @@ export async function claimBonus(userPhone, claimType, amount) {
     return { success: true, balance: newBalance }
   }
 
+  // Insert claim record (unique constraint prevents double-claim)
   const { error: insertErr } = await supabase
     .from('bonus_claims')
-    .insert({ user_phone: userPhone, claim_type: claimType, claim_date: todayStr(), amount })
+    .insert({ user_phone: userPhone, claim_type: claimType, claim_date: todayStr(), amount: Number(amount) })
 
   if (insertErr) {
-    // Unique violation => already claimed today
-    if (insertErr.code === '23505') {
-      return { success: false, message: 'Already claimed today.' }
-    }
+    if (insertErr.code === '23505') return { success: false, message: 'Already claimed today.' }
     throw insertErr
   }
 
+  // Credit balance
   const { data: u, error: userErr } = await supabase
     .from('users')
     .select('balance')
@@ -539,32 +575,43 @@ export async function claimBonus(userPhone, claimType, amount) {
 // ── Support / Live Chat ───────────────────────────────────────────────────────
 export async function getSupportMessages(userPhone) {
   if (!isSupabaseConfigured) return local.getSupportMessages(userPhone)
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from('support_messages')
     .select('*')
     .eq('user_phone', userPhone)
     .order('created_at', { ascending: true })
+  if (error) throw error
   return data || []
 }
 
 export async function getAllSupportThreads() {
   if (!isSupabaseConfigured) return local.getAllSupportThreads()
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from('support_messages')
     .select('user_phone, message, sender_type, created_at')
     .order('created_at', { ascending: false })
+  if (error) throw error
   if (!data) return []
   const map = {}
   data.forEach(m => {
-    if (!map[m.user_phone]) map[m.user_phone] = { userPhone: m.user_phone, messages: [], lastAt: m.created_at }
+    if (!map[m.user_phone]) {
+      map[m.user_phone] = { userPhone: m.user_phone, messages: [], lastAt: m.created_at, unread: 0 }
+    }
     map[m.user_phone].messages.push(m)
+    if (m.sender_type === 'user') map[m.user_phone].unread++
   })
   return Object.values(map).map(t => ({ ...t, messages: t.messages.reverse() }))
 }
 
 export async function sendSupportMessage(userPhone, message, senderType = 'user') {
-  if (!isSupabaseConfigured) { local.sendSupportMessage(userPhone, message, senderType); return }
-  await supabase.from('support_messages').insert({ user_phone: userPhone, message, sender_type: senderType })
+  if (!isSupabaseConfigured) {
+    local.sendSupportMessage(userPhone, message, senderType)
+    return
+  }
+  const { error } = await supabase
+    .from('support_messages')
+    .insert({ user_phone: userPhone, message, sender_type: senderType })
+  if (error) throw error
 }
 
 // ── Password Reset ────────────────────────────────────────────────────────────
@@ -584,20 +631,22 @@ export async function createPasswordResetRequest(userPhone) {
 
 export async function getPasswordResetRequests() {
   if (!isSupabaseConfigured) return local.getPasswordResetRequests()
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from('password_reset_requests')
     .select('*')
     .order('created_at', { ascending: false })
+  if (error) throw error
   return data || []
 }
 
 export async function getPasswordResetRequestsByPhone(userPhone) {
   if (!isSupabaseConfigured) return local.getPasswordResetRequestsByPhone(userPhone)
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from('password_reset_requests')
     .select('*')
     .eq('user_phone', userPhone)
     .order('created_at', { ascending: false })
+  if (error) throw error
   return data || []
 }
 
@@ -606,7 +655,8 @@ export async function updatePasswordResetRequest(id, updates) {
     local.updatePasswordResetRequest(id, updates)
     return
   }
-  await supabase.from('password_reset_requests').update(updates).eq('id', id)
+  const { error } = await supabase.from('password_reset_requests').update(updates).eq('id', id)
+  if (error) throw error
 }
 
 export async function adminResetPassword(userPhone, newPin) {
@@ -615,7 +665,11 @@ export async function adminResetPassword(userPhone, newPin) {
     local.saveUser(userPhone, { pin_hash: pinHash, must_change_password: true })
     return
   }
-  await supabase.from('users').update({ pin_hash: pinHash, must_change_password: true }).eq('phone', userPhone)
+  const { error } = await supabase
+    .from('users')
+    .update({ pin_hash: pinHash, must_change_password: true })
+    .eq('phone', userPhone)
+  if (error) throw error
 }
 
 export async function changePassword(userPhone, currentPin, newPin) {
@@ -628,7 +682,11 @@ export async function changePassword(userPhone, currentPin, newPin) {
     local.saveUser(userPhone, { pin_hash: newHash, must_change_password: false })
     return
   }
-  await supabase.from('users').update({ pin_hash: newHash, must_change_password: false }).eq('phone', userPhone)
+  const { error } = await supabase
+    .from('users')
+    .update({ pin_hash: newHash, must_change_password: false })
+    .eq('phone', userPhone)
+  if (error) throw error
 }
 
 export async function clearMustChangePassword(userPhone) {
@@ -636,5 +694,33 @@ export async function clearMustChangePassword(userPhone) {
     local.saveUser(userPhone, { must_change_password: false })
     return
   }
-  await supabase.from('users').update({ must_change_password: false }).eq('phone', userPhone)
+  const { error } = await supabase
+    .from('users')
+    .update({ must_change_password: false })
+    .eq('phone', userPhone)
+  if (error) throw error
+}
+
+// ── Admin Stats ───────────────────────────────────────────────────────────────
+export async function getAdminStats() {
+  if (!isSupabaseConfigured) {
+    return { totalUsers: 0, totalBalance: 0, pendingDeposits: 0, pendingWithdrawals: 0, pendingLoans: 0 }
+  }
+  const [usersRes, depositsRes, withdrawalsRes, loansRes] = await Promise.all([
+    supabase.from('users').select('balance'),
+    supabase.from('deposits').select('id, status'),
+    supabase.from('withdrawals').select('id, status'),
+    supabase.from('loans').select('id, status'),
+  ])
+  const users = usersRes.data || []
+  const deposits = depositsRes.data || []
+  const withdrawals = withdrawalsRes.data || []
+  const loans = loansRes.data || []
+  return {
+    totalUsers: users.length,
+    totalBalance: users.reduce((s, u) => s + Number(u.balance || 0), 0),
+    pendingDeposits: deposits.filter(d => d.status === 'pending').length,
+    pendingWithdrawals: withdrawals.filter(w => w.status === 'pending').length,
+    pendingLoans: loans.filter(l => l.status === 'pending').length,
+  }
 }

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
-import { updateUserBalance, getReferrals, generateReferralCode, addDeposit, addWithdrawal, changePassword } from '../lib/db'
+import { getReferrals, generateReferralCode, addDeposit, addWithdrawal, changePassword, getUser } from '../lib/db'
 import { canChangePassword, recordPasswordChangeAttempt } from '../lib/storage'
 import { MPESA_PAYBILL, WITHDRAWAL_FEE } from '../lib/plans'
 
@@ -17,29 +17,21 @@ function DepositModal({ user, onClose, onPending }) {
     const amt = parseInt(amount)
     if (!amt || amt < 100) return
     setLoading(true)
-
     try {
       const res = await fetch('/api/stk-push', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          phone: user.phone,
-          amount: amt,
-          userPhone: user.phone,
-        }),
+        body: JSON.stringify({ phone: user.phone, amount: amt, userPhone: user.phone }),
       })
       const data = await res.json()
-
       if (data.success || data.checkoutRequestId) {
         await addDeposit(user.phone, { amount: amt, checkoutId: data.checkoutRequestId })
         setSent(true)
         onPending()
       } else {
-        // STK failed — switch to manual mode silently
         setManualMode(true)
       }
     } catch {
-      // Network or config error — switch to manual mode silently
       setManualMode(true)
     }
     setLoading(false)
@@ -70,12 +62,13 @@ function DepositModal({ user, onClose, onPending }) {
           <>
             {!manualMode ? (
               <>
-                <p className="text-gray-400 text-sm mb-4">
-                  Enter the amount and we'll send an M-Pesa prompt to <span className="text-white font-semibold">{user.phone}</span>
+                <p className="text-sm mb-4" style={{ color: 'var(--text-secondary)' }}>
+                  Enter the amount and we'll send an M-Pesa prompt to{' '}
+                  <span className="font-semibold" style={{ color: 'var(--text-primary)' }}>{user.phone}</span>
                 </p>
 
                 <div className="mb-4">
-                  <label className="text-xs text-gray-400 mb-1 block">Amount (KSh)</label>
+                  <label className="text-xs mb-1 block" style={{ color: 'var(--text-secondary)' }}>Amount (KSh)</label>
                   <input
                     className="input-field"
                     placeholder="e.g. 1000"
@@ -86,9 +79,9 @@ function DepositModal({ user, onClose, onPending }) {
                   />
                 </div>
 
-                <div className="bg-gray-800 rounded-xl p-3 mb-4 text-xs text-gray-400">
-                  <p>Paybill: <span className="text-white font-bold">{MPESA_PAYBILL}</span></p>
-                  <p>Account: <span className="text-white font-bold">21210</span></p>
+                <div className="rounded-xl p-3 mb-4 text-xs" style={{ background: 'var(--bg-elevated)', color: 'var(--text-secondary)' }}>
+                  <p>Paybill: <span className="font-bold" style={{ color: 'var(--text-primary)' }}>{MPESA_PAYBILL}</span></p>
+                  <p>Account: <span className="font-bold" style={{ color: 'var(--text-primary)' }}>21210</span></p>
                 </div>
 
                 <div className="flex gap-3">
@@ -106,12 +99,12 @@ function DepositModal({ user, onClose, onPending }) {
               <>
                 <div className="bg-yellow-900/30 border border-yellow-700/50 rounded-xl p-4 mb-4 text-sm text-yellow-200">
                   STK Prompt unavailable. Please pay manually via M-Pesa Paybill:{' '}
-                  <span className="font-bold text-white">4091165</span> | Account:{' '}
+                  <span className="font-bold text-white">{MPESA_PAYBILL}</span> | Account:{' '}
                   <span className="font-bold text-white">21210</span> and paste your transaction code below.
                 </div>
 
                 <div className="mb-4">
-                  <label className="text-xs text-gray-400 mb-1 block">Enter M-Pesa Transaction Code (e.g., QRL7...)</label>
+                  <label className="text-xs mb-1 block" style={{ color: 'var(--text-secondary)' }}>M-Pesa Transaction Code (e.g., QRL7...)</label>
                   <input
                     className="input-field font-mono tracking-widest uppercase"
                     placeholder="e.g. QRL7ABCDEF"
@@ -122,9 +115,7 @@ function DepositModal({ user, onClose, onPending }) {
                 </div>
 
                 {txError && (
-                  <div className="bg-red-900/40 border border-red-700 text-red-300 text-sm rounded-lg px-4 py-3 mb-4">
-                    {txError}
-                  </div>
+                  <div className="bg-red-900/40 border border-red-700 text-red-300 text-sm rounded-lg px-4 py-3 mb-4">{txError}</div>
                 )}
 
                 <div className="flex gap-3">
@@ -145,7 +136,7 @@ function DepositModal({ user, onClose, onPending }) {
             <div className="text-center py-6">
               <p className="text-5xl mb-3">{manualMode ? '✅' : '📲'}</p>
               <p className="text-green-400 font-bold text-lg mb-2">{manualMode ? 'Code Submitted!' : 'M-Pesa Prompt Sent!'}</p>
-              <p className="text-gray-400 text-sm">
+              <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
                 {manualMode
                   ? 'Your transaction code has been saved for admin review.'
                   : 'Check your phone and enter your M-Pesa PIN to complete the deposit.'}
@@ -163,15 +154,24 @@ function DepositModal({ user, onClose, onPending }) {
 function WithdrawModal({ balance, onClose, onWithdraw }) {
   const [amount, setAmount] = useState('')
   const [phone, setPhone] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
   const MIN_WITHDRAW = 500
 
   const fee = Math.floor(parseInt(amount || 0) * WITHDRAWAL_FEE)
   const receives = Math.max(0, parseInt(amount || 0) - fee)
-  const canWithdraw = parseInt(amount) >= MIN_WITHDRAW && parseInt(amount) <= balance && phone.length >= 10
+  const canWithdraw = parseInt(amount) >= MIN_WITHDRAW && parseInt(amount) <= balance && phone.replace(/\s/g, '').length >= 10
 
-  function confirm() {
-    onWithdraw(parseInt(amount), phone)
-    onClose()
+  async function confirm() {
+    setLoading(true)
+    setError('')
+    try {
+      await onWithdraw(parseInt(amount), phone.replace(/\s/g, ''))
+      onClose()
+    } catch (err) {
+      setError(err.message || 'Withdrawal failed. Please try again.')
+    }
+    setLoading(false)
   }
 
   return (
@@ -181,7 +181,7 @@ function WithdrawModal({ balance, onClose, onWithdraw }) {
 
         <div className="space-y-4 mb-4">
           <div>
-            <label className="text-xs text-gray-400 mb-1 block">Withdrawal Amount (KSh)</label>
+            <label className="text-xs mb-1 block" style={{ color: 'var(--text-secondary)' }}>Withdrawal Amount (KSh)</label>
             <input
               className="input-field"
               placeholder={`Min KSh ${MIN_WITHDRAW}`}
@@ -189,11 +189,11 @@ function WithdrawModal({ balance, onClose, onWithdraw }) {
               min={MIN_WITHDRAW}
               max={balance}
               value={amount}
-              onChange={e => setAmount(e.target.value)}
+              onChange={e => { setAmount(e.target.value); setError('') }}
             />
           </div>
           <div>
-            <label className="text-xs text-gray-400 mb-1 block">M-Pesa Phone Number</label>
+            <label className="text-xs mb-1 block" style={{ color: 'var(--text-secondary)' }}>M-Pesa Phone Number</label>
             <input
               className="input-field"
               placeholder="0712 345 678"
@@ -205,16 +205,16 @@ function WithdrawModal({ balance, onClose, onWithdraw }) {
         </div>
 
         {amount && parseInt(amount) > 0 && (
-          <div className="bg-gray-800 rounded-xl p-4 mb-4 space-y-2 text-sm">
+          <div className="rounded-xl p-4 mb-4 space-y-2 text-sm" style={{ background: 'var(--bg-elevated)' }}>
             <div className="flex justify-between">
-              <span className="text-gray-400">Amount</span>
+              <span style={{ color: 'var(--text-secondary)' }}>Amount</span>
               <span>KSh {parseInt(amount).toLocaleString()}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-400">Processing Fee (8%)</span>
+              <span style={{ color: 'var(--text-secondary)' }}>Processing Fee ({Math.round(WITHDRAWAL_FEE * 100)}%)</span>
               <span className="text-red-400">-KSh {fee.toLocaleString()}</span>
             </div>
-            <hr className="border-gray-700" />
+            <hr style={{ borderColor: 'var(--border)' }} />
             <div className="flex justify-between font-bold">
               <span>You Receive</span>
               <span className="text-green-400">KSh {receives.toLocaleString()}</span>
@@ -226,10 +226,14 @@ function WithdrawModal({ balance, onClose, onWithdraw }) {
           <p className="text-red-400 text-xs mb-4">Amount exceeds available balance (KSh {balance.toLocaleString()})</p>
         )}
 
+        {error && (
+          <div className="bg-red-900/40 border border-red-700 text-red-300 text-sm rounded-lg px-4 py-3 mb-4">{error}</div>
+        )}
+
         <div className="flex gap-3">
           <button onClick={onClose} className="btn-secondary flex-1">Cancel</button>
-          <button onClick={confirm} disabled={!canWithdraw} className="btn-primary flex-1">
-            Withdraw
+          <button onClick={confirm} disabled={!canWithdraw || loading} className="btn-primary flex-1">
+            {loading ? 'Processing...' : 'Withdraw'}
           </button>
         </div>
       </div>
@@ -241,8 +245,8 @@ export default function ProfilePage() {
   const { user, updateUser, logout } = useAuth()
   const [showDeposit, setShowDeposit] = useState(false)
   const [showWithdraw, setShowWithdraw] = useState(false)
-  const [toast, setToast] = useState('')
-  const [copied, _setCopied] = useState(false)
+  const [toast, setToast] = useState({ msg: '', type: 'success' })
+  const [copied, setCopied] = useState(false)
   const [referrals, setReferrals] = useState([])
   const [showPwForm, setShowPwForm] = useState(false)
   const [currentPw, setCurrentPw] = useState('')
@@ -257,20 +261,23 @@ export default function ProfilePage() {
   const totalL2 = referrals.filter(r => r.level === 2).reduce((s, r) => s + Number(r.commission || 0), 0)
   const mustChangePw = user?.must_change_password
 
+  const adminPhone = import.meta.env.VITE_ADMIN_PHONE
+  const isAdmin = user && (user.isAdmin === true || (adminPhone && user.phone === adminPhone))
+
   useEffect(() => {
     if (!user) return
     getReferrals(user.phone || user.id).then(setReferrals).catch(() => {})
   }, [user])
 
-  function showToast(msg) {
-    setToast(msg)
-    setTimeout(() => setToast(''), 3000)
+  function showToast(msg, type = 'success') {
+    setToast({ msg, type })
+    setTimeout(() => setToast({ msg: '', type: 'success' }), 3000)
   }
 
   function copyLink() {
     navigator.clipboard.writeText(refLink).then(() => {
-      _setCopied(true)
-      setTimeout(() => _setCopied(false), 2000)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
     })
   }
 
@@ -290,9 +297,7 @@ export default function ProfilePage() {
     try {
       await changePassword(user.phone || user.id, currentPw, newPw)
       updateUser({ must_change_password: false })
-      setCurrentPw('')
-      setNewPw('')
-      setConfirmPw('')
+      setCurrentPw(''); setNewPw(''); setConfirmPw('')
       setShowPwForm(false)
       showToast('✅ Password updated successfully!')
     } catch (err) {
@@ -301,24 +306,30 @@ export default function ProfilePage() {
     setPwLoading(false)
   }
 
+  // Atomic withdrawal — balance deducted inside DB function
   async function handleWithdraw(amount, mpesaPhone) {
     const fee = Math.floor(amount * WITHDRAWAL_FEE)
     const netAmount = amount - fee
-    const newBalance = (user.balance || 0) - amount
-    updateUser({ balance: newBalance })
-    await updateUserBalance(user.phone || user.id, newBalance).catch(() => {})
-    await addWithdrawal(user.phone || user.id, { amount, fee, netAmount, mpesaPhone }).catch(() => {})
+    const result = await addWithdrawal(user.phone || user.id, { amount, fee, netAmount, mpesaPhone })
+    // Refresh balance from DB result or fetch fresh
+    if (result?.new_balance !== undefined) {
+      updateUser({ balance: result.new_balance })
+    } else {
+      const fresh = await getUser(user.phone || user.id)
+      if (fresh) updateUser({ balance: fresh.balance })
+    }
     showToast(`✅ Withdrawal of KSh ${netAmount.toLocaleString()} initiated! (Fee: KSh ${fee})`)
   }
 
-  const adminPhone = import.meta.env.VITE_ADMIN_PHONE
-  const isAdmin = user && adminPhone && user.phone === adminPhone
-
   return (
     <div className="pt-4 md:pt-20 pb-24 md:pb-8 px-4 max-w-2xl mx-auto">
-      {toast && (
-        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-green-800 border border-green-600 text-white px-6 py-3 rounded-xl shadow-lg text-sm font-medium">
-          {toast}
+      {toast.msg && (
+        <div className={`fixed top-4 left-1/2 -translate-x-1/2 z-50 px-6 py-3 rounded-xl shadow-lg text-sm font-medium border ${
+          toast.type === 'error'
+            ? 'bg-red-900 border-red-700 text-red-100'
+            : 'bg-green-800 border-green-600 text-white'
+        }`}>
+          {toast.msg}
         </div>
       )}
 
@@ -344,12 +355,14 @@ export default function ProfilePage() {
         </div>
         <div className="flex-1 min-w-0">
           <p className="font-bold text-lg truncate">{user?.name}</p>
-          <p className="text-gray-400 text-sm">{user?.phone}</p>
-          <p className="text-xs text-gray-500 mt-1">Member since {user?.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'N/A'}</p>
+          <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>{user?.phone}</p>
+          <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>
+            Member since {user?.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'N/A'}
+          </p>
         </div>
         {isAdmin && (
           <a href="/admin" className="text-xs bg-yellow-600 hover:bg-yellow-500 text-white px-3 py-1.5 rounded-lg font-semibold transition-colors">
-            Admin
+            ⚙️ Admin
           </a>
         )}
       </div>
@@ -371,26 +384,28 @@ export default function ProfilePage() {
       {/* Referral Section */}
       <div className="card mb-6">
         <h3 className="font-bold text-lg mb-1">🤝 Referral Program</h3>
-        <p className="text-gray-400 text-xs mb-4">Earn 10% (Level 1) & 4% (Level 2) on referred users' first deposit</p>
+        <p className="text-xs mb-4" style={{ color: 'var(--text-secondary)' }}>
+          Earn 10% (Level 1) &amp; 4% (Level 2) on referred users' first investment
+        </p>
 
         <div className="grid grid-cols-2 gap-3 mb-4">
-          <div className="bg-gray-800 rounded-xl p-3 text-center">
+          <div className="rounded-xl p-3 text-center" style={{ background: 'var(--bg-elevated)' }}>
             <p className="text-green-400 font-bold text-lg">KSh {totalL1.toLocaleString()}</p>
-            <p className="text-gray-400 text-xs">Level 1 Earnings</p>
+            <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>Level 1 Earnings</p>
           </div>
-          <div className="bg-gray-800 rounded-xl p-3 text-center">
+          <div className="rounded-xl p-3 text-center" style={{ background: 'var(--bg-elevated)' }}>
             <p className="text-blue-400 font-bold text-lg">KSh {totalL2.toLocaleString()}</p>
-            <p className="text-gray-400 text-xs">Level 2 Earnings</p>
+            <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>Level 2 Earnings</p>
           </div>
         </div>
 
-        <div className="bg-gray-800 rounded-xl p-3 mb-3">
-          <p className="text-xs text-gray-400 mb-1">Your Referral Code</p>
+        <div className="rounded-xl p-3 mb-3" style={{ background: 'var(--bg-elevated)' }}>
+          <p className="text-xs mb-1" style={{ color: 'var(--text-secondary)' }}>Your Referral Code</p>
           <p className="text-xl font-black text-red-400 tracking-wider">{refCode}</p>
         </div>
 
-        <div className="flex items-center gap-2 bg-gray-800 rounded-xl p-3 mb-3">
-          <p className="text-xs text-gray-300 flex-1 truncate">{refLink}</p>
+        <div className="flex items-center gap-2 rounded-xl p-3 mb-3" style={{ background: 'var(--bg-elevated)' }}>
+          <p className="text-xs flex-1 truncate" style={{ color: 'var(--text-primary)' }}>{refLink}</p>
           <button onClick={copyLink} className="text-xs bg-red-600 hover:bg-red-500 text-white px-3 py-1.5 rounded-lg flex-shrink-0 transition-colors">
             {copied ? '✓ Copied' : 'Copy'}
           </button>
@@ -398,98 +413,82 @@ export default function ProfilePage() {
 
         {referrals.length > 0 ? (
           <div className="space-y-2 mt-4">
-            <p className="text-sm font-semibold text-gray-400 uppercase tracking-wider">Referral History</p>
+            <p className="text-sm font-semibold uppercase tracking-wider" style={{ color: 'var(--text-secondary)' }}>Referral History</p>
             {referrals.map((r, i) => (
-              <div key={i} className="flex items-center justify-between bg-gray-800 rounded-xl px-4 py-3">
+              <div key={i} className="flex items-center justify-between rounded-xl px-4 py-3" style={{ background: 'var(--bg-elevated)' }}>
                 <div>
                   <p className="text-sm font-medium">{r.referredName}</p>
-                  <p className="text-xs text-gray-500">{new Date(r.date).toLocaleDateString()} • Level {r.level}</p>
+                  <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{new Date(r.date).toLocaleDateString()} • Level {r.level}</p>
                 </div>
                 <div className="text-right">
                   <p className="text-green-400 font-semibold text-sm">+KSh {r.commission.toLocaleString()}</p>
-                  <p className="text-gray-500 text-xs">{r.planName}</p>
+                  <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{r.planName}</p>
                 </div>
               </div>
             ))}
           </div>
         ) : (
-          <p className="text-center text-gray-500 text-sm py-4">No referrals yet. Share your code to earn!</p>
+          <p className="text-center text-sm py-4" style={{ color: 'var(--text-muted)' }}>No referrals yet. Share your code to earn!</p>
         )}
       </div>
 
+      {/* Temporary password warning */}
       {mustChangePw && (
         <div className="card mb-6 border-yellow-700 bg-yellow-900/20">
           <div className="flex items-center gap-2 mb-2">
             <span className="text-2xl">⚠️</span>
             <p className="font-bold text-yellow-400">Temporary Password</p>
           </div>
-          <p className="text-gray-300 text-sm mb-4">You are using a temporary password. Please change it immediately to secure your account.</p>
+          <p className="text-sm mb-4" style={{ color: 'var(--text-secondary)' }}>
+            You are using a temporary password. Please change it immediately to secure your account.
+          </p>
           <button onClick={() => setShowPwForm(true)} className="btn-primary w-full text-sm py-2.5">Change Password Now</button>
         </div>
       )}
 
+      {/* Security */}
       <div className="card mb-6">
         <div className="flex items-center justify-between mb-4">
           <div>
             <h3 className="font-bold text-lg">🔒 Security</h3>
-            <p className="text-gray-400 text-xs">Manage your password</p>
+            <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>Manage your PIN</p>
           </div>
           {!showPwForm && !mustChangePw && (
-            <button onClick={() => setShowPwForm(true)} className="text-xs bg-gray-800 hover:bg-gray-700 text-white px-3 py-1.5 rounded-lg transition-colors">
-              Change Password
+            <button onClick={() => setShowPwForm(true)} className="text-xs px-3 py-1.5 rounded-lg transition-colors" style={{ background: 'var(--bg-elevated)', color: 'var(--text-primary)' }}>
+              Change PIN
             </button>
           )}
         </div>
 
         {showPwForm && (
           <form onSubmit={handleChangePassword} className="space-y-3">
-            <div>
-              <label className="text-xs text-gray-400 mb-1 block">Current PIN</label>
-              <input
-                className="input-field"
-                type="password"
-                inputMode="numeric"
-                maxLength={6}
-                placeholder="Enter current PIN"
-                value={currentPw}
-                onChange={e => setCurrentPw(e.target.value.replace(/\D/g, ''))}
-              />
-            </div>
-            <div>
-              <label className="text-xs text-gray-400 mb-1 block">New PIN (4–6 digits)</label>
-              <input
-                className="input-field"
-                type="password"
-                inputMode="numeric"
-                maxLength={6}
-                placeholder="Enter new PIN"
-                value={newPw}
-                onChange={e => setNewPw(e.target.value.replace(/\D/g, ''))}
-              />
-            </div>
-            <div>
-              <label className="text-xs text-gray-400 mb-1 block">Confirm New PIN</label>
-              <input
-                className="input-field"
-                type="password"
-                inputMode="numeric"
-                maxLength={6}
-                placeholder="Repeat new PIN"
-                value={confirmPw}
-                onChange={e => setConfirmPw(e.target.value.replace(/\D/g, ''))}
-              />
-            </div>
+            {[
+              { label: 'Current PIN', value: currentPw, setter: setCurrentPw },
+              { label: 'New PIN (4–6 digits)', value: newPw, setter: setNewPw },
+              { label: 'Confirm New PIN', value: confirmPw, setter: setConfirmPw },
+            ].map(({ label, value, setter }) => (
+              <div key={label}>
+                <label className="text-xs mb-1 block" style={{ color: 'var(--text-secondary)' }}>{label}</label>
+                <input
+                  className="input-field"
+                  type="password"
+                  inputMode="numeric"
+                  maxLength={6}
+                  placeholder="••••"
+                  value={value}
+                  onChange={e => setter(e.target.value.replace(/\D/g, ''))}
+                />
+              </div>
+            ))}
 
             {pwError && (
-              <div className="bg-red-900/40 border border-red-700 text-red-300 text-sm rounded-lg px-4 py-3">
-                {pwError}
-              </div>
+              <div className="bg-red-900/40 border border-red-700 text-red-300 text-sm rounded-lg px-4 py-3">{pwError}</div>
             )}
 
             <div className="flex gap-2">
               <button type="button" onClick={() => { setShowPwForm(false); setPwError('') }} className="btn-secondary flex-1 text-sm py-2">Cancel</button>
               <button type="submit" disabled={pwLoading} className="btn-primary flex-1 text-sm py-2">
-                {pwLoading ? 'Updating...' : 'Update Password'}
+                {pwLoading ? 'Updating...' : 'Update PIN'}
               </button>
             </div>
           </form>
