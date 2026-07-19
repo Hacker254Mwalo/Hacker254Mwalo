@@ -1,18 +1,19 @@
 import { NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useTheme } from '../context/ThemeContext'
+import { useClerk } from '@clerk/clerk-react'
 
 export default function Navbar() {
-  const { user, logout } = useAuth()
+  const { user } = useAuth()
   const { theme, toggleTheme } = useTheme()
+  const { signOut } = useClerk()
   const navigate = useNavigate()
-
   const adminPhone = import.meta.env.VITE_ADMIN_PHONE
-  const isAdmin = user && (user.is_admin === true || (adminPhone && user.phone === adminPhone))
+  const isAdmin = user && (user.isAdmin === true || (adminPhone && user.phone === adminPhone))
   const waPhone = adminPhone ? adminPhone.replace(/\D/g, '') : ''
 
-  function handleLogout() {
-    logout()
+  async function handleLogout() {
+    await signOut()
     navigate('/login')
   }
 
@@ -36,7 +37,6 @@ export default function Navbar() {
           </span>
           <span className="text-xs bg-red-600 text-white px-2 py-0.5 rounded-full">KE</span>
         </div>
-
         <div className="flex items-center gap-1">
           {links.map(l => (
             <NavLink
@@ -53,7 +53,6 @@ export default function Navbar() {
               {l.label}
             </NavLink>
           ))}
-
           {isAdmin && (
             <NavLink
               to="/admin"
@@ -62,7 +61,6 @@ export default function Navbar() {
               ⚙️ Admin
             </NavLink>
           )}
-
           {/* Theme toggle */}
           <button
             onClick={toggleTheme}
@@ -72,7 +70,6 @@ export default function Navbar() {
           >
             {theme === 'dark' ? '☀️' : '🌙'}
           </button>
-
           {user && waPhone && (
             <a
               href={`https://wa.me/${waPhone}`}
@@ -84,7 +81,6 @@ export default function Navbar() {
               <span className="hidden lg:inline">Support</span>
             </a>
           )}
-
           <button
             onClick={handleLogout}
             className="ml-1 px-4 py-2 text-sm text-gray-400 hover:text-red-400 rounded-lg hover:bg-gray-800 transition-colors"
@@ -113,26 +109,18 @@ export default function Navbar() {
             {l.label}
           </NavLink>
         ))}
-
-        {/* Theme toggle on mobile */}
-        <button
-          onClick={toggleTheme}
-          className="flex-1 flex flex-col items-center py-3 text-xs font-medium text-gray-500 transition-colors"
-        >
-          <span className="text-xl mb-0.5">{theme === 'dark' ? '☀️' : '🌙'}</span>
-          {theme === 'dark' ? 'Light' : 'Dark'}
-        </button>
-
-        {user && waPhone && (
-          <a
-            href={`https://wa.me/${waPhone}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex-1 flex flex-col items-center py-3 text-xs font-medium text-gray-500"
+        {isAdmin && (
+          <NavLink
+            to="/admin"
+            className={({ isActive }) =>
+              `flex-1 flex flex-col items-center py-3 text-xs font-medium transition-colors ${
+                isActive ? 'text-yellow-400' : 'text-gray-500'
+              }`
+            }
           >
-            <span className="text-xl mb-0.5">💬</span>
-            Support
-          </a>
+            <span className="text-xl mb-0.5">⚙️</span>
+            Admin
+          </NavLink>
         )}
       </nav>
     </>

@@ -30,8 +30,9 @@ function isNoRowsError(error) {
 
 function dbUserToApp(row) {
   return {
-    id: row.phone,
+    id: row.phone || row.clerk_id,
     phone: row.phone,
+    clerkId: row.clerk_id || null,
     name: row.name,
     balance: Number(row.balance || 0),
     bonusBalance: Number(row.bonus_balance || 0),
@@ -41,6 +42,91 @@ function dbUserToApp(row) {
     createdAt: row.created_at,
     must_change_password: row.must_change_password || false,
   }
+}
+
+// ── Clerk Integration ─────────────────────────────────────────────────────────
+export async function getUserByClerkId(clerkId) {
+  if (!isSupabaseConfigured) {
+    // LocalStorage fallback: search by clerk_id field
+    const users = local.getUsers()
+    const row = Object.values(users).find(u => u.clerk_id === clerkId)
+    return row ? dbUserToApp(row) : null
+  }
+  const { data, error } = await supabase
+    .from('users')
+    .select('*')
+    .eq('clerk_id', clerkId)
+    .maybeSingle()
+  if (error && !isNoRowsError(error)) throw error
+  return data ? dbUserToApp(data) : null
+}
+
+export async function createUserFromClerk({ clerkId, phone, name, email }) {
+  const referralCode = generateReferralCode(phone || clerkId)
+  if (!isSupabaseConfigured) {
+    const row = {
+      phone: phone || clerkId,
+      clerk_id: clerkId,
+      name,
+      email,
+      balance: 0,
+      bonus_balance: 0,
+      referral_code: referralCode,
+      referred_by: null,
+      is_admin: false,
+      must_change_password: false,
+    }
+    local.saveUser(phone || clerkId, row)
+    return dbUserToApp(row)
+  }
+  // Upsert: if phone already exists, link clerk_id; otherwise create new row
+  const { data: existing } = await supabase
+    .from('users')
+    .select('*')
+    .eq('phone', phone)
+    .maybeSingle()
+  if (existing) {
+    // Link existing phone-based account to Clerk
+    const { data, error } = await supabase
+      .from('users')
+      .update({ clerk_id: clerkId })
+      .eq('phone', phone)
+      .select()
+      .single()
+    if (error) throw error
+    return dbUserToApp(data)
+  }
+  // Create brand new user
+  const row = {
+    phone: phone || ('clerk_' + clerkId.slice(-10)),
+    clerk_id: clerkId,
+    name,
+    balance: 0,
+    bonus_balance: 0,
+    referral_code: referralCode,
+    referred_by: null,
+    is_admin: false,
+    must_change_password: false,
+  }
+  const { data, error } = await supabase
+    .from('users')
+    .insert(row)
+    .select()
+    .single()
+  if (error) throw error
+  return dbUserToApp(data)
+}
+
+export async function linkClerkIdToPhone(phone, clerkId) {
+  if (!isSupabaseConfigured) {
+    local.saveUser(phone, { clerk_id: clerkId })
+    return
+  }
+  const { error } = await supabase
+    .from('users')
+    .update({ clerk_id: clerkId })
+    .eq('phone', phone)
+  if (error) throw error
 }
 
 function dbInvToApp(row) {
