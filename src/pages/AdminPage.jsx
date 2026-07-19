@@ -6,6 +6,7 @@ import {
   getAllWithdrawals, approveWithdrawal, rejectWithdrawal,
   getAllLoans, approveLoan, rejectLoan,
   getAllUsers, adminSetBalance, adminSetBonusBalance,
+  adminDeleteUser, adminUpdateUserStatus, getInvestments,
   getKeywords, createKeyword, toggleKeyword,
   getAllSupportThreads, getSupportMessages, sendSupportMessage,
   getPasswordResetRequests, adminResetPassword,
