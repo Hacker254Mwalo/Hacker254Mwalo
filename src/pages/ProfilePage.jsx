@@ -98,17 +98,46 @@ function DepositModal({ user, onClose, onPending }) {
             ) : (
               <>
                 <div className="bg-yellow-900/30 border border-yellow-700/50 rounded-xl p-4 mb-4 text-sm text-yellow-200">
-                  STK Prompt unavailable. Please pay manually via M-Pesa Paybill:{' '}
-                  <span className="font-bold text-white">{MPESA_PAYBILL}</span> | Account:{' '}
-                  <span className="font-bold text-white">21210</span> and paste your transaction code below.
+                  <p className="font-bold mb-2 flex items-center gap-2">
+                    <span className="text-lg">⚠️</span> STK Prompt Unavailable
+                  </p>
+                  <p className="mb-3 opacity-90">Please complete your deposit manually by sending <span className="font-bold text-white">KSh {Number(amount).toLocaleString()}</span> to the Paybill below:</p>
+                  
+                  <div className="space-y-2 mb-2">
+                    <div className="flex items-center justify-between bg-black/40 p-2.5 rounded-lg border border-yellow-700/30">
+                      <div>
+                        <p className="text-[10px] uppercase opacity-60">Paybill Number</p>
+                        <p className="font-mono font-bold text-white tracking-wider">{MPESA_PAYBILL}</p>
+                      </div>
+                      <button 
+                        onClick={() => { navigator.clipboard.writeText(MPESA_PAYBILL); showToast('Paybill copied!') }}
+                        className="text-[10px] bg-yellow-700/50 hover:bg-yellow-700 text-white px-2 py-1 rounded font-bold transition-colors"
+                      >COPY</button>
+                    </div>
+                    
+                    <div className="flex items-center justify-between bg-black/40 p-2.5 rounded-lg border border-yellow-700/30">
+                      <div>
+                        <p className="text-[10px] uppercase opacity-60">Account Number</p>
+                        <p className="font-mono font-bold text-white tracking-wider">21210</p>
+                      </div>
+                      <button 
+                        onClick={() => { navigator.clipboard.writeText('21210'); showToast('Account copied!') }}
+                        className="text-[10px] bg-yellow-700/50 hover:bg-yellow-700 text-white px-2 py-1 rounded font-bold transition-colors"
+                      >COPY</button>
+                    </div>
+                  </div>
                 </div>
 
                 <div className="mb-4">
-                  <label className="text-xs mb-1 block" style={{ color: 'var(--text-secondary)' }}>M-Pesa Transaction Code (e.g., QRL7...)</label>
+                  <label className="text-xs mb-1 block font-semibold" style={{ color: 'var(--text-primary)' }}>
+                    Enter M-Pesa Transaction Code
+                  </label>
+                  <p className="text-[10px] mb-2" style={{ color: 'var(--text-secondary)' }}>Paste the code from your M-Pesa SMS (e.g., SGR7ABCDEF)</p>
                   <input
-                    className="input-field font-mono tracking-widest uppercase"
-                    placeholder="e.g. QRL7ABCDEF"
+                    className="input-field font-mono tracking-widest uppercase text-center text-lg py-3 border-2 border-red-900/30 focus:border-red-600"
+                    placeholder="QRL7ABCDEF"
                     type="text"
+                    maxLength={12}
                     value={txCode}
                     onChange={e => { setTxCode(e.target.value.toUpperCase()); setTxError('') }}
                   />
