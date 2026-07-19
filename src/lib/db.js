@@ -459,6 +459,12 @@ export async function toggleKeyword(id, active) {
 
 export async function claimKeyword(userPhone, code) {
   if (!isSupabaseConfigured) {
+    // Local fallback: check for active investment
+    const investments = local.getInvestments(userPhone)
+    const hasActive = (investments || []).some(i => i.status === 'active')
+    if (!hasActive) {
+      return { success: false, code: 'NO_ACTIVE_INVESTMENT', message: 'An active investment is required to redeem promo codes. Please invest first.' }
+    }
     const keywords = JSON.parse(localStorage.getItem('dp_admin_keywords') || '[]')
     const kw = keywords.find(k => k.code === code.trim().toUpperCase())
     if (!kw) return { success: false, message: 'Invalid keyword code.' }
@@ -477,37 +483,13 @@ export async function claimKeyword(userPhone, code) {
     return { success: true, bonus }
   }
 
-  // Supabase mode
-  const { data: kw, error: kwErr } = await supabase
-    .from('keywords')
-    .select('*')
-    .ilike('code', code.trim())
-    .maybeSingle()
-  if (kwErr || !kw) return { success: false, message: 'Invalid keyword code.' }
-  if (!kw.active) return { success: false, message: 'This keyword is no longer active.' }
-  if (kw.claim_count >= kw.max_claims) return { success: false, message: 'All slots for this keyword have been claimed.' }
-
-  const { data: existing } = await supabase
-    .from('keyword_claims')
-    .select('id')
-    .eq('keyword_id', kw.id)
-    .eq('user_phone', userPhone)
-    .maybeSingle()
-  if (existing) return { success: false, message: 'You have already claimed this keyword.' }
-
-  const bonus = Math.floor(Math.random() * (Number(kw.max_bonus) - Number(kw.min_bonus) + 1)) + Number(kw.min_bonus)
-
-  const { error: claimErr } = await supabase
-    .from('keyword_claims')
-    .insert({ keyword_id: kw.id, user_phone: userPhone, bonus_amount: bonus })
-  if (claimErr) return { success: false, message: 'Failed to record claim. Please try again.' }
-
-  await supabase.from('keywords').update({ claim_count: kw.claim_count + 1 }).eq('id', kw.id)
-
-  const { data: u } = await supabase.from('users').select('balance').eq('phone', userPhone).single()
-  if (u) await supabase.from('users').update({ balance: Number(u.balance) + bonus }).eq('phone', userPhone)
-
-  return { success: true, bonus }
+  // Supabase mode — use atomic RPC that enforces active investment server-side
+  const { data, error } = await supabase.rpc('claim_keyword', {
+    p_user_phone: userPhone,
+    p_code: code.trim(),
+  })
+  if (error) return { success: false, message: error.message || 'Failed to redeem code. Please try again.' }
+  return data
 }
 
 // ── Bonus Claims (Daily Bonus / Lucky Spin) — server-enforced ────────────────

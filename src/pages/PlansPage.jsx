@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { getInvestments, addInvestment, getUser } from '../lib/db'
 import { PLANS, getDailyReturn, getTotalReturn } from '../lib/plans'
@@ -44,7 +45,7 @@ function PlanCard({ plan, onInvest, alreadyUsed }) {
   )
 }
 
-function ConfirmModal({ plan, balance, onConfirm, onClose, confirming }) {
+function ConfirmModal({ plan, balance, onConfirm, onClose, confirming, onDeposit }) {
   if (!plan) return null
   const enough = balance >= plan.amount
 
@@ -76,7 +77,14 @@ function ConfirmModal({ plan, balance, onConfirm, onClose, confirming }) {
 
         {!enough && (
           <div className="bg-red-900/40 border border-red-700 text-red-300 text-sm rounded-lg px-4 py-3 mb-4">
-            Insufficient balance. Please deposit via M-Pesa first.
+            <p className="font-semibold mb-2">Insufficient balance</p>
+            <p className="text-xs mb-3">You need KSh {(plan.amount - balance).toLocaleString()} more. Deposit via M-Pesa to continue.</p>
+            <button
+              onClick={onDeposit}
+              className="w-full bg-red-700 hover:bg-red-600 text-white text-xs font-semibold py-2 px-4 rounded-lg transition-colors"
+            >
+              📱 Deposit Now (Min KSh 400)
+            </button>
           </div>
         )}
 
@@ -93,6 +101,7 @@ function ConfirmModal({ plan, balance, onConfirm, onClose, confirming }) {
 
 export default function PlansPage() {
   const { user, updateUser } = useAuth()
+  const navigate = useNavigate()
   const [selectedPlan, setSelectedPlan] = useState(null)
   const [toast, setToast] = useState({ msg: '', type: 'success' })
   const [confirming, setConfirming] = useState(false)
@@ -169,6 +178,7 @@ export default function PlansPage() {
           onConfirm={confirmInvest}
           onClose={() => setSelectedPlan(null)}
           confirming={confirming}
+          onDeposit={() => { setSelectedPlan(null); navigate('/profile?deposit=1') }}
         />
       )}
 

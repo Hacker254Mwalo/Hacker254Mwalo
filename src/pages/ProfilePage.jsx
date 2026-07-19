@@ -15,7 +15,7 @@ function DepositModal({ user, onClose, onPending }) {
 
   async function initiateStkPush() {
     const amt = parseInt(amount)
-    if (!amt || amt < 100) return
+    if (!amt || amt < 400) return
     setLoading(true)
     try {
       const res = await fetch('/api/stk-push', {
@@ -68,12 +68,12 @@ function DepositModal({ user, onClose, onPending }) {
                 </p>
 
                 <div className="mb-4">
-                  <label className="text-xs mb-1 block" style={{ color: 'var(--text-secondary)' }}>Amount (KSh)</label>
+                  <label className="text-xs mb-1 block" style={{ color: 'var(--text-secondary)' }}>Amount (KSh, min KSh 400)</label>
                   <input
                     className="input-field"
-                    placeholder="e.g. 1000"
+                    placeholder="Min KSh 400"
                     type="number"
-                    min="100"
+                    min="400"
                     value={amount}
                     onChange={e => setAmount(e.target.value)}
                   />
@@ -88,7 +88,7 @@ function DepositModal({ user, onClose, onPending }) {
                   <button onClick={onClose} className="btn-secondary flex-1">Cancel</button>
                   <button
                     onClick={initiateStkPush}
-                    disabled={loading || !amount || parseInt(amount) < 100}
+                    disabled={loading || !amount || parseInt(amount) < 400}
                     className="btn-primary flex-1"
                   >
                     {loading ? 'Sending...' : 'Pay Now'}

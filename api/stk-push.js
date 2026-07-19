@@ -52,8 +52,8 @@ export default async function handler(req, res) {
   }
 
   const numAmount = Math.ceil(Number(amount))
-  if (!Number.isFinite(numAmount) || numAmount < 10 || numAmount > 150000) {
-    return res.status(400).json({ error: 'Amount must be between KSh 10 and KSh 150,000' })
+  if (!Number.isFinite(numAmount) || numAmount < 400 || numAmount > 150000) {
+    return res.status(400).json({ error: 'Amount must be between KSh 400 and KSh 150,000 (minimum deposit is KSh 400)' })
   }
 
   if (isRateLimited(normalPhone)) {

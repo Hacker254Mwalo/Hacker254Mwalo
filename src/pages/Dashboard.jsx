@@ -12,7 +12,7 @@ import {
   addLoan,
 } from '../lib/db'
 
-const SPIN_DAYS = [1, 5] // Monday=1, Friday=5 (JS: 0=Sun,1=Mon,...,5=Fri)
+const SPIN_DAYS = [1, 5] // Monday=1, Friday=5
 
 function isTodaySpinDay() {
   return SPIN_DAYS.includes(new Date().getDay())
@@ -27,6 +27,43 @@ function Toast({ msg, type }) {
         : 'bg-green-800 border-green-600 text-white'
     }`}>
       {msg}
+    </div>
+  )
+}
+
+/** Shown when user tries to access a feature that needs an active investment */
+function InvestFirstModal({ onClose, onGoInvest, onGoDeposit, hasBalance }) {
+  return (
+    <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="card max-w-sm w-full text-center" onClick={e => e.stopPropagation()}>
+        <div className="text-5xl mb-3">🔒</div>
+        <h3 className="text-xl font-bold mb-2">Active Investment Required</h3>
+        <p className="text-sm mb-5" style={{ color: 'var(--text-secondary)' }}>
+          This feature is only available to members with an active investment.
+          {hasBalance
+            ? ' You have balance — go invest now to unlock this!'
+            : ' Please deposit at least KSh 400, then invest to unlock this feature.'}
+        </p>
+        <div className="space-y-3">
+          {hasBalance ? (
+            <button onClick={onGoInvest} className="btn-primary w-full">
+              📈 Go Invest Now
+            </button>
+          ) : (
+            <>
+              <button onClick={onGoDeposit} className="btn-primary w-full">
+                📱 Deposit via M-Pesa
+              </button>
+              <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
+                Minimum deposit: KSh 400 · Then invest to unlock all features
+              </p>
+            </>
+          )}
+          <button onClick={onClose} className="btn-secondary w-full">
+            Cancel
+          </button>
+        </div>
+      </div>
     </div>
   )
 }
@@ -69,7 +106,7 @@ function PromoModal({ onClose, onClaim }) {
           <div className="text-center py-4">
             <p className="text-4xl mb-3">🎉</p>
             <p className="text-green-400 font-bold text-lg">Bonus Credited!</p>
-            <p className="text-2xl font-black mt-2">+KSh {result.bonus?.toLocaleString()}</p>
+            <p className="text-2xl font-black mt-2">+KSh {(result.bonus || result.amount || 0).toLocaleString()}</p>
             <button onClick={onClose} className="btn-primary w-full mt-6">Awesome!</button>
           </div>
         ) : (
@@ -216,6 +253,7 @@ export default function Dashboard() {
   const [showPromo, setShowPromo] = useState(false)
   const [showLoan, setShowLoan] = useState(false)
   const [showContactAdmin, setShowContactAdmin] = useState(false)
+  const [showInvestFirst, setShowInvestFirst] = useState(false)
   const [bonusClaimed, setBonusClaimed] = useState(false)
   const [spinClaimed, setSpinClaimed] = useState(false)
   const [spinning, setSpinning] = useState(false)
@@ -243,13 +281,35 @@ export default function Dashboard() {
 
   useEffect(() => { loadData() }, [loadData])
 
-  function redirectToDeposit(message) {
-    showToast(message, 'error')
+  const hasActiveInvestment = activeInvestments.length > 0
+  const userBalance = user?.balance || 0
+
+  /** Redirect helper: first tell user to invest, then if no balance → deposit */
+  function requireInvestment(action) {
+    if (!hasActiveInvestment) {
+      setShowInvestFirst(true)
+      return false
+    }
+    return true
+  }
+
+  function handleInvestFirstGoInvest() {
+    setShowInvestFirst(false)
+    navigate('/plans')
+  }
+
+  function handleInvestFirstGoDeposit() {
+    setShowInvestFirst(false)
     navigate('/profile?deposit=1')
   }
 
   async function handleClaimBonus() {
     if (bonusClaimed || claimingBonus || !user) return
+    // Require active investment
+    if (!hasActiveInvestment) {
+      setShowInvestFirst(true)
+      return
+    }
     setClaimingBonus(true)
     try {
       const result = await claimDailyLoginBonus(user.phone || user.id)
@@ -258,6 +318,8 @@ export default function Dashboard() {
         if (result.balance !== undefined) updateUser({ balance: result.balance })
         else await refreshUser()
         showToast(`🎁 Daily bonus of KSh ${Number(result.amount || 10).toLocaleString()} collected!`)
+      } else if (result.code === 'NO_ACTIVE_INVESTMENT') {
+        setShowInvestFirst(true)
       } else {
         showToast(result.message || 'Already claimed today.', 'error')
         setBonusClaimed(true)
@@ -274,14 +336,12 @@ export default function Dashboard() {
       showToast('Lucky Spin is available on Mondays and Fridays only!', 'error')
       return
     }
-    if (!activeInvestments.length) {
-      redirectToDeposit('An active investment is required for Lucky Spin. Please deposit and invest first.')
+    if (!hasActiveInvestment) {
+      setShowInvestFirst(true)
       return
     }
-
     setSpinning(true)
     try {
-      // Give the wheel a visible spin while the database randomly selects an active investment.
       await new Promise(resolve => setTimeout(resolve, 900))
       const result = await claimLuckySpin(user.phone || user.id)
       if (result.success) {
@@ -290,7 +350,7 @@ export default function Dashboard() {
         else await refreshUser()
         showToast(`🎰 You won KSh ${Number(result.amount).toLocaleString()} — 3% of the KSh ${Number(result.daily_profit).toLocaleString()} daily profit from ${result.plan_name || 'your active investment'}!`)
       } else if (result.code === 'NO_ACTIVE_INVESTMENT') {
-        redirectToDeposit(result.message || 'An active investment is required. Please deposit and invest first.')
+        setShowInvestFirst(true)
       } else {
         showToast(result.message || 'Already spun today.', 'error')
         if (result.code === 'ALREADY_SPUN') setSpinClaimed(true)
@@ -301,12 +361,21 @@ export default function Dashboard() {
     setSpinning(false)
   }
 
+  function handleOpenPromo() {
+    if (!hasActiveInvestment) {
+      setShowInvestFirst(true)
+      return
+    }
+    setShowPromo(true)
+  }
+
   async function handlePromo(code) {
     if (!user) return { success: false, message: 'Not logged in' }
     try {
       const result = await claimKeyword(user.phone || user.id, code)
       if (result.success) {
-        await refreshUser()
+        if (result.balance !== undefined) updateUser({ balance: result.balance })
+        else await refreshUser()
       }
       return result
     } catch (err) {
@@ -315,8 +384,8 @@ export default function Dashboard() {
   }
 
   function handleOpenLoan() {
-    if (!activeInvestments.length) {
-      redirectToDeposit('An active investment is required before requesting a loan. Please deposit and invest first.')
+    if (!hasActiveInvestment) {
+      setShowInvestFirst(true)
       return
     }
     setShowLoan(true)
@@ -324,8 +393,8 @@ export default function Dashboard() {
 
   async function handleLoan(amount, purpose) {
     if (!user) throw new Error('Not logged in')
-    if (!activeInvestments.length) {
-      redirectToDeposit('An active investment is required before requesting a loan. Please deposit and invest first.')
+    if (!hasActiveInvestment) {
+      setShowInvestFirst(true)
       throw new Error('An active investment is required before requesting a loan.')
     }
     return addLoan(user.phone || user.id, { amount, purpose })
@@ -339,6 +408,14 @@ export default function Dashboard() {
     <div className="pt-4 md:pt-20 pb-24 md:pb-8 px-4 max-w-2xl mx-auto">
       <Toast msg={toast.msg} type={toast.type} />
 
+      {showInvestFirst && (
+        <InvestFirstModal
+          onClose={() => setShowInvestFirst(false)}
+          onGoInvest={handleInvestFirstGoInvest}
+          onGoDeposit={handleInvestFirstGoDeposit}
+          hasBalance={userBalance >= 200}
+        />
+      )}
       {showPromo && <PromoModal onClose={() => setShowPromo(false)} onClaim={handlePromo} />}
       {showLoan && <LoanModal onClose={() => setShowLoan(false)} onSubmit={handleLoan} />}
       {showContactAdmin && <SupportModal user={user} onClose={() => setShowContactAdmin(false)} />}
@@ -361,18 +438,73 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Balance Card */}
-      <div className="balance-gradient rounded-2xl p-5 mb-6">
-        <p className="text-gray-400 text-sm mb-1">Total Balance</p>
-        <p className="text-4xl font-black">KSh {(user?.balance || 0).toLocaleString()}</p>
-        {(user?.bonusBalance || 0) > 0 && (
-          <p className="text-yellow-400 text-sm mt-1">+ KSh {(user.bonusBalance || 0).toLocaleString()} bonus</p>
-        )}
-        <div className="flex gap-3 mt-4">
-          <button onClick={() => navigate('/profile?deposit=1')} className="btn-primary flex-1 text-sm py-2.5">+ Deposit</button>
-          <button onClick={() => navigate('/profile')} className="btn-secondary flex-1 text-sm py-2.5">Withdraw</button>
+      {/* Balance Card with Golden Money Animation */}
+      <div className="balance-gradient rounded-2xl p-5 mb-6 relative overflow-hidden">
+        {/* Shimmer sweep */}
+        <div className="balance-shimmer" />
+
+        {/* Floating coins */}
+        <div className="coin-particle" />
+        <div className="coin-particle" />
+        <div className="coin-particle" />
+        <div className="coin-particle" />
+        <div className="coin-particle" />
+        <div className="coin-particle" />
+        <div className="coin-particle" />
+
+        {/* Gold sparkles */}
+        <div className="sparkle-particle">✦</div>
+        <div className="sparkle-particle">✦</div>
+        <div className="sparkle-particle">✦</div>
+        <div className="sparkle-particle">✦</div>
+        <div className="sparkle-particle">✦</div>
+        <div className="sparkle-particle">✦</div>
+        <div className="sparkle-particle">✦</div>
+        <div className="sparkle-particle">✦</div>
+
+        {/* Floating money symbols */}
+        <div className="money-symbol">💰</div>
+        <div className="money-symbol">💵</div>
+        <div className="money-symbol">🪙</div>
+        <div className="money-symbol">💴</div>
+        <div className="money-symbol">💸</div>
+        <div className="money-symbol">🏦</div>
+
+        {/* Background money tree */}
+        <div className="money-tree-bg">🌳</div>
+
+        {/* Content (above animations) */}
+        <div className="relative z-10">
+          <p className="text-gray-400 text-sm mb-1">Total Balance</p>
+          <p className="text-4xl font-black balance-text-glow">KSh {(user?.balance || 0).toLocaleString()}</p>
+          {(user?.bonusBalance || 0) > 0 && (
+            <p className="text-yellow-400 text-sm mt-1">+ KSh {(user.bonusBalance || 0).toLocaleString()} bonus</p>
+          )}
+          <div className="flex gap-3 mt-4">
+            <button onClick={() => navigate('/plans')} className="btn-primary flex-1 text-sm py-2.5">Invest</button>
+            <button onClick={() => navigate('/profile')} className="btn-secondary flex-1 text-sm py-2.5">Withdraw</button>
+          </div>
         </div>
       </div>
+
+      {/* No Investment Banner */}
+      {!hasActiveInvestment && (
+        <div className="rounded-2xl p-4 mb-5 border border-yellow-700/50 bg-yellow-900/20 flex items-center gap-3">
+          <span className="text-2xl">⚠️</span>
+          <div className="flex-1">
+            <p className="font-semibold text-yellow-300 text-sm">No Active Investment</p>
+            <p className="text-xs mt-0.5" style={{ color: 'var(--text-secondary)' }}>
+              Invest to unlock daily bonus, lucky spin, promo codes &amp; loans.
+            </p>
+          </div>
+          <button
+            onClick={() => navigate('/plans')}
+            className="text-xs bg-yellow-600 hover:bg-yellow-500 text-white px-3 py-2 rounded-xl font-semibold whitespace-nowrap"
+          >
+            Invest →
+          </button>
+        </div>
+      )}
 
       {/* Daily Bonus */}
       <div className="card mb-4">
@@ -380,7 +512,11 @@ export default function Dashboard() {
           <div>
             <p className="font-bold">🎁 Daily Login Bonus</p>
             <p className="text-xs mt-0.5" style={{ color: 'var(--text-secondary)' }}>
-              {bonusClaimed ? 'Claimed today — come back tomorrow!' : 'Tap Claim to collect your KSh 10 daily bonus once today'}
+              {!hasActiveInvestment
+                ? 'Requires active investment to claim'
+                : bonusClaimed
+                  ? 'Claimed today — come back tomorrow!'
+                  : 'Tap Claim to collect your KSh 10 daily bonus'}
             </p>
           </div>
           <button
@@ -389,10 +525,12 @@ export default function Dashboard() {
             className={`text-sm px-4 py-2 rounded-xl font-semibold transition-all ${
               bonusClaimed
                 ? 'bg-gray-700 text-gray-500 cursor-not-allowed'
-                : 'bg-green-600 hover:bg-green-500 text-white active:scale-95'
+                : !hasActiveInvestment
+                  ? 'bg-gray-700 text-gray-400 cursor-pointer hover:bg-yellow-800'
+                  : 'bg-green-600 hover:bg-green-500 text-white active:scale-95'
             }`}
           >
-            {claimingBonus ? '...' : bonusClaimed ? '✓ Claimed' : 'Claim'}
+            {claimingBonus ? '...' : bonusClaimed ? '✓ Claimed' : !hasActiveInvestment ? '🔒' : 'Claim'}
           </button>
         </div>
       </div>
@@ -405,11 +543,11 @@ export default function Dashboard() {
             <p className="text-xs mt-0.5" style={{ color: 'var(--text-secondary)' }}>
               {!todayIsSpinDay
                 ? 'Available on Mondays & Fridays'
-                : spinClaimed
-                  ? 'Already spun today!'
-                  : activeInvestments.length
-                    ? 'Random active investment • reward is 3% of its daily profit'
-                    : 'Active investment required — tap Spin to deposit and invest'}
+                : !hasActiveInvestment
+                  ? 'Requires active investment to spin'
+                  : spinClaimed
+                    ? 'Already spun today!'
+                    : 'Random active investment • reward is 3% of its daily profit'}
             </p>
           </div>
           <button
@@ -418,10 +556,12 @@ export default function Dashboard() {
             className={`text-sm px-4 py-2 rounded-xl font-semibold transition-all ${
               spinClaimed || !todayIsSpinDay
                 ? 'bg-gray-700 text-gray-500 cursor-not-allowed'
-                : 'bg-yellow-600 hover:bg-yellow-500 text-white active:scale-95'
+                : !hasActiveInvestment
+                  ? 'bg-gray-700 text-gray-400 cursor-pointer hover:bg-yellow-800'
+                  : 'bg-yellow-600 hover:bg-yellow-500 text-white active:scale-95'
             }`}
           >
-            {spinning ? '🌀' : spinClaimed ? '✓ Done' : 'Spin!'}
+            {spinning ? '🌀' : spinClaimed ? '✓ Done' : !hasActiveInvestment ? '🔒' : 'Spin!'}
           </button>
         </div>
       </div>
@@ -440,9 +580,11 @@ export default function Dashboard() {
 
           <div
             className="card flex flex-col items-center gap-2 cursor-pointer transition-all active:scale-95 hover:border-teal-700"
-            onClick={() => setShowPromo(true)}
+            onClick={handleOpenPromo}
           >
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-green-600 to-teal-600 flex items-center justify-center text-xl">🎟️</div>
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-green-600 to-teal-600 flex items-center justify-center text-xl">
+              {hasActiveInvestment ? '🎟️' : '🔒'}
+            </div>
             <p className="font-semibold text-xs text-center">Redeem Code</p>
           </div>
 
@@ -450,7 +592,9 @@ export default function Dashboard() {
             className="card flex flex-col items-center gap-2 cursor-pointer transition-all active:scale-95 hover:border-purple-700"
             onClick={handleOpenLoan}
           >
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-600 to-indigo-600 flex items-center justify-center text-xl">🏦</div>
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-600 to-indigo-600 flex items-center justify-center text-xl">
+              {hasActiveInvestment ? '🏦' : '🔒'}
+            </div>
             <p className="font-semibold text-xs text-center">Request Loan</p>
           </div>
 
