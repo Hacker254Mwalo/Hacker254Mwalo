@@ -8,7 +8,7 @@ export default function Navbar() {
   const navigate = useNavigate()
 
   const adminPhone = import.meta.env.VITE_ADMIN_PHONE
-  const isAdmin = user && (user.is_admin === true || (adminPhone && user.phone === adminPhone))
+  const isAdmin = user && (user.isAdmin === true || (adminPhone && user.phone === adminPhone))
   const waPhone = adminPhone ? adminPhone.replace(/\D/g, '') : ''
 
   function handleLogout() {

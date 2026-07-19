@@ -868,7 +868,7 @@ export default function AdminPage() {
   const [toast, setToast] = useState(null)
 
   const adminPhone = import.meta.env.VITE_ADMIN_PHONE
-  const isAdmin = user && (user.is_admin === true || (adminPhone && user.phone === adminPhone))
+  const isAdmin = user && (user.isAdmin === true || (adminPhone && user.phone === adminPhone))
 
   useEffect(() => {
     if (user === null) navigate('/login')
