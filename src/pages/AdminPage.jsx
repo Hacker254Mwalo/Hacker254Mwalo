@@ -541,12 +541,16 @@ function UsersTab({ showToast }) {
                 <button onClick={() => handleViewInvestments(u)} className="px-2 py-1 text-[10px] rounded bg-blue-900/30 hover:bg-blue-900/50 text-blue-300 transition-colors">
                   📈 Packages
                 </button>
-                <button onClick={() => handleToggleStatus(u)} className={`px-2 py-1 text-[10px] rounded transition-colors ${u.status === 'suspended' ? 'bg-green-900/30 text-green-300 hover:bg-green-900/50' : 'bg-yellow-900/30 text-yellow-300 hover:bg-yellow-900/50'}`}>
-                  {u.status === 'suspended' ? '🔓 Activate' : '🚫 Suspend'}
-                </button>
-                <button onClick={() => setConfirmAction({ message: `Permanently DELETE account ${u.phone}? This cannot be undone.`, action: () => handleDelete(u) })} className="px-2 py-1 text-[10px] rounded bg-red-900/30 hover:bg-red-900/50 text-red-300 transition-colors">
-                  🗑️ Delete
-                </button>
+                {!u.is_admin && (
+                  <>
+                    <button onClick={() => handleToggleStatus(u)} className={`px-2 py-1 text-[10px] rounded transition-colors ${u.status === 'suspended' ? 'bg-green-900/30 text-green-300 hover:bg-green-900/50' : 'bg-yellow-900/30 text-yellow-300 hover:bg-yellow-900/50'}`}>
+                      {u.status === 'suspended' ? '🔓 Activate' : '🚫 Suspend'}
+                    </button>
+                    <button onClick={() => setConfirmAction({ message: `Permanently DELETE account ${u.phone}? This cannot be undone.`, action: () => handleDelete(u) })} className="px-2 py-1 text-[10px] rounded bg-red-900/30 hover:bg-red-900/50 text-red-300 transition-colors">
+                      🗑️ Delete
+                    </button>
+                  </>
+                )}
               </div>
             </div>
           ))}
