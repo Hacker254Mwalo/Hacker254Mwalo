@@ -255,6 +255,14 @@ export default function ProfilePage() {
   const [pwError, setPwError] = useState('')
   const [pwLoading, setPwLoading] = useState(false)
 
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    if (params.get('deposit') === '1') {
+      setShowDeposit(true)
+      window.history.replaceState({}, '', window.location.pathname)
+    }
+  }, [])
+
   const refCode = user ? (user.referralCode || generateReferralCode(user.phone)) : ''
   const refLink = `${window.location.origin}/login?ref=${refCode}`
   const totalL1 = referrals.filter(r => r.level === 1).reduce((s, r) => s + Number(r.commission || 0), 0)

@@ -8,8 +8,7 @@ import {
   getAllUsers, adminSetBalance, adminSetBonusBalance,
   getKeywords, createKeyword, toggleKeyword,
   getAllSupportThreads, getSupportMessages, sendSupportMessage,
-  getPasswordResetRequests, updatePasswordResetRequest, adminResetPassword,
-  getAdminStats,
+  getPasswordResetRequests, adminResetPassword,
 } from '../lib/db'
 
 // ── Shared helpers ────────────────────────────────────────────────────────────
@@ -722,12 +721,13 @@ function PasswordResetsTab({ showToast }) {
     if (!newPin || newPin.length < 4) { showToast('PIN must be at least 4 digits', 'error'); return }
     setSaving(true)
     try {
-      await adminResetPassword(req.user_phone, newPin)
-      await updatePasswordResetRequest(req.id, { status: 'completed', completed_at: new Date().toISOString() })
-      showToast(`✅ PIN reset for ${req.user_phone}`)
+      await adminResetPassword(req.id, req.user_phone, newPin)
+      showToast(`✅ PIN reset for ${req.user_phone}. The user must change it after login.`)
       setResetting(null); setNewPin('')
       load()
-    } catch { showToast('❌ Failed to reset PIN', 'error') }
+    } catch (err) {
+      showToast(`❌ ${err.message || 'Failed to reset PIN'}`, 'error')
+    }
     setSaving(false)
   }
 

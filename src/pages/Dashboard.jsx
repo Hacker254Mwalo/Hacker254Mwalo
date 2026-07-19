@@ -4,15 +4,14 @@ import { useAuth } from '../context/AuthContext'
 import {
   getInvestments,
   hasClaimedBonusToday,
-  claimBonus,
+  claimDailyLoginBonus,
+  claimLuckySpin,
   sendSupportMessage,
   getSupportMessages,
   claimKeyword,
   addLoan,
-  getUser,
 } from '../lib/db'
 
-const SPIN_PRIZES = [50, 100, 200, 500, 0, 100, 200, 50]
 const SPIN_DAYS = [1, 5] // Monday=1, Friday=5 (JS: 0=Sun,1=Mon,...,5=Fri)
 
 function isTodaySpinDay() {
@@ -244,26 +243,27 @@ export default function Dashboard() {
 
   useEffect(() => { loadData() }, [loadData])
 
+  function redirectToDeposit(message) {
+    showToast(message, 'error')
+    navigate('/profile?deposit=1')
+  }
+
   async function handleClaimBonus() {
     if (bonusClaimed || claimingBonus || !user) return
     setClaimingBonus(true)
     try {
-      const BONUS_AMOUNT = 10
-      const result = await claimBonus(user.phone || user.id, 'login_bonus', BONUS_AMOUNT)
+      const result = await claimDailyLoginBonus(user.phone || user.id)
       if (result.success) {
         setBonusClaimed(true)
-        if (result.balance !== undefined) {
-          updateUser({ balance: result.balance })
-        } else {
-          await refreshUser()
-        }
-        showToast(`🎁 Daily bonus of KSh ${BONUS_AMOUNT} claimed!`)
+        if (result.balance !== undefined) updateUser({ balance: result.balance })
+        else await refreshUser()
+        showToast(`🎁 Daily bonus of KSh ${Number(result.amount || 10).toLocaleString()} collected!`)
       } else {
         showToast(result.message || 'Already claimed today.', 'error')
         setBonusClaimed(true)
       }
     } catch (err) {
-      showToast(err.message || 'Failed to claim bonus', 'error')
+      showToast(err.message || 'Failed to collect daily bonus', 'error')
     }
     setClaimingBonus(false)
   }
@@ -274,25 +274,26 @@ export default function Dashboard() {
       showToast('Lucky Spin is available on Mondays and Fridays only!', 'error')
       return
     }
+    if (!activeInvestments.length) {
+      redirectToDeposit('An active investment is required for Lucky Spin. Please deposit and invest first.')
+      return
+    }
+
     setSpinning(true)
     try {
-      const prize = SPIN_PRIZES[Math.floor(Math.random() * SPIN_PRIZES.length)]
-      const result = await claimBonus(user.phone || user.id, 'spin', prize)
+      // Give the wheel a visible spin while the database randomly selects an active investment.
+      await new Promise(resolve => setTimeout(resolve, 900))
+      const result = await claimLuckySpin(user.phone || user.id)
       if (result.success) {
         setSpinClaimed(true)
-        if (result.balance !== undefined) {
-          updateUser({ balance: result.balance })
-        } else {
-          await refreshUser()
-        }
-        if (prize > 0) {
-          showToast(`🎰 You won KSh ${prize}! Credited to your balance.`)
-        } else {
-          showToast('🎰 Better luck next time! No prize this spin.', 'error')
-        }
+        if (result.balance !== undefined) updateUser({ balance: result.balance })
+        else await refreshUser()
+        showToast(`🎰 You won KSh ${Number(result.amount).toLocaleString()} — 3% of the KSh ${Number(result.daily_profit).toLocaleString()} daily profit from ${result.plan_name || 'your active investment'}!`)
+      } else if (result.code === 'NO_ACTIVE_INVESTMENT') {
+        redirectToDeposit(result.message || 'An active investment is required. Please deposit and invest first.')
       } else {
         showToast(result.message || 'Already spun today.', 'error')
-        setSpinClaimed(true)
+        if (result.code === 'ALREADY_SPUN') setSpinClaimed(true)
       }
     } catch (err) {
       showToast(err.message || 'Spin failed', 'error')
@@ -313,9 +314,21 @@ export default function Dashboard() {
     }
   }
 
+  function handleOpenLoan() {
+    if (!activeInvestments.length) {
+      redirectToDeposit('An active investment is required before requesting a loan. Please deposit and invest first.')
+      return
+    }
+    setShowLoan(true)
+  }
+
   async function handleLoan(amount, purpose) {
     if (!user) throw new Error('Not logged in')
-    await addLoan(user.phone || user.id, { amount, purpose })
+    if (!activeInvestments.length) {
+      redirectToDeposit('An active investment is required before requesting a loan. Please deposit and invest first.')
+      throw new Error('An active investment is required before requesting a loan.')
+    }
+    return addLoan(user.phone || user.id, { amount, purpose })
   }
 
   const adminPhone = import.meta.env.VITE_ADMIN_PHONE
@@ -356,7 +369,7 @@ export default function Dashboard() {
           <p className="text-yellow-400 text-sm mt-1">+ KSh {(user.bonusBalance || 0).toLocaleString()} bonus</p>
         )}
         <div className="flex gap-3 mt-4">
-          <button onClick={() => navigate('/profile')} className="btn-primary flex-1 text-sm py-2.5">+ Deposit</button>
+          <button onClick={() => navigate('/profile?deposit=1')} className="btn-primary flex-1 text-sm py-2.5">+ Deposit</button>
           <button onClick={() => navigate('/profile')} className="btn-secondary flex-1 text-sm py-2.5">Withdraw</button>
         </div>
       </div>
@@ -367,7 +380,7 @@ export default function Dashboard() {
           <div>
             <p className="font-bold">🎁 Daily Login Bonus</p>
             <p className="text-xs mt-0.5" style={{ color: 'var(--text-secondary)' }}>
-              {bonusClaimed ? 'Claimed today — come back tomorrow!' : 'Claim your KSh 10 daily bonus'}
+              {bonusClaimed ? 'Claimed today — come back tomorrow!' : 'Tap Claim to collect your KSh 10 daily bonus once today'}
             </p>
           </div>
           <button
@@ -394,7 +407,9 @@ export default function Dashboard() {
                 ? 'Available on Mondays & Fridays'
                 : spinClaimed
                   ? 'Already spun today!'
-                  : 'Spin to win up to KSh 500!'}
+                  : activeInvestments.length
+                    ? 'Random active investment • reward is 3% of its daily profit'
+                    : 'Active investment required — tap Spin to deposit and invest'}
             </p>
           </div>
           <button
@@ -433,7 +448,7 @@ export default function Dashboard() {
 
           <div
             className="card flex flex-col items-center gap-2 cursor-pointer transition-all active:scale-95 hover:border-purple-700"
-            onClick={() => setShowLoan(true)}
+            onClick={handleOpenLoan}
           >
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-600 to-indigo-600 flex items-center justify-center text-xl">🏦</div>
             <p className="font-semibold text-xs text-center">Request Loan</p>

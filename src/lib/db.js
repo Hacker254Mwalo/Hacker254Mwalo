@@ -333,13 +333,13 @@ export async function addLoan(userPhone, { amount, purpose }) {
     const loans = JSON.parse(localStorage.getItem('dp_loan_requests') || '[]')
     loans.push({ id: Date.now().toString(), user_phone: userPhone, amount, purpose: purpose || null, status: 'pending', created_at: new Date().toISOString() })
     localStorage.setItem('dp_loan_requests', JSON.stringify(loans))
-    return
+    return { success: true }
   }
-  const { data, error } = await supabase
-    .from('loans')
-    .insert({ user_phone: userPhone, amount, purpose: purpose || null, status: 'pending' })
-    .select()
-    .single()
+  const { data, error } = await supabase.rpc('create_loan_request', {
+    p_user_phone: userPhone,
+    p_amount: Number(amount),
+    p_purpose: purpose || null,
+  })
   if (error) throw error
   return data
 }
@@ -544,32 +544,44 @@ export async function claimBonus(userPhone, claimType, amount) {
     return { success: true, balance: newBalance }
   }
 
-  // Insert claim record (unique constraint prevents double-claim)
+  // Retained for legacy callers. Dashboard rewards use the dedicated atomic RPCs below.
   const { error: insertErr } = await supabase
     .from('bonus_claims')
     .insert({ user_phone: userPhone, claim_type: claimType, claim_date: todayStr(), amount: Number(amount) })
-
   if (insertErr) {
     if (insertErr.code === '23505') return { success: false, message: 'Already claimed today.' }
     throw insertErr
   }
-
-  // Credit balance
-  const { data: u, error: userErr } = await supabase
-    .from('users')
-    .select('balance')
-    .eq('phone', userPhone)
-    .single()
+  const { data: u, error: userErr } = await supabase.from('users').select('balance').eq('phone', userPhone).single()
   if (userErr) throw userErr
-
   const newBalance = Number(u.balance) + Number(amount)
-  const { error: balErr } = await supabase
-    .from('users')
-    .update({ balance: newBalance })
-    .eq('phone', userPhone)
+  const { error: balErr } = await supabase.from('users').update({ balance: newBalance }).eq('phone', userPhone)
   if (balErr) throw balErr
-
   return { success: true, balance: newBalance }
+}
+
+export async function claimDailyLoginBonus(userPhone) {
+  if (!isSupabaseConfigured) return claimBonus(userPhone, 'login_bonus', 10)
+  const { data, error } = await supabase.rpc('claim_daily_login_bonus', {
+    p_user_phone: userPhone,
+    p_amount: 10,
+  })
+  if (error) throw error
+  return data
+}
+
+export async function claimLuckySpin(userPhone) {
+  if (!isSupabaseConfigured) {
+    const investments = local.getInvestments(userPhone).filter(i => i.status === 'active' && Number(i.dailyReturn || 0) > 0)
+    if (!investments.length) return { success: false, code: 'NO_ACTIVE_INVESTMENT', message: 'An active investment is required. Please deposit and invest first.' }
+    const selected = investments[Math.floor(Math.random() * investments.length)]
+    const reward = Math.round(Number(selected.dailyReturn) * 0.03 * 100) / 100
+    const result = await claimBonus(userPhone, 'spin', reward)
+    return { ...result, amount: reward, daily_profit: Number(selected.dailyReturn), plan_name: selected.planName }
+  }
+  const { data, error } = await supabase.rpc('claim_lucky_spin', { p_user_phone: userPhone })
+  if (error) throw error
+  return data
 }
 
 // ── Support / Live Chat ───────────────────────────────────────────────────────
@@ -618,13 +630,9 @@ export async function sendSupportMessage(userPhone, message, senderType = 'user'
 export async function createPasswordResetRequest(userPhone) {
   if (!isSupabaseConfigured) {
     local.addPasswordResetRequest({ user_phone: userPhone, status: 'pending' })
-    return { success: true }
+    return { success: true, queued: true }
   }
-  const { data, error } = await supabase
-    .from('password_reset_requests')
-    .insert({ user_phone: userPhone, status: 'pending' })
-    .select()
-    .single()
+  const { data, error } = await supabase.rpc('request_password_reset', { p_user_phone: userPhone })
   if (error) throw error
   return data
 }
@@ -659,34 +667,39 @@ export async function updatePasswordResetRequest(id, updates) {
   if (error) throw error
 }
 
-export async function adminResetPassword(userPhone, newPin) {
+export async function adminResetPassword(requestId, userPhone, newPin) {
   const pinHash = await hashPin(newPin)
   if (!isSupabaseConfigured) {
     local.saveUser(userPhone, { pin_hash: pinHash, must_change_password: true })
-    return
+    local.updatePasswordResetRequest(requestId, { status: 'completed', completed_at: new Date().toISOString() })
+    return { success: true, must_change_password: true }
   }
-  const { error } = await supabase
-    .from('users')
-    .update({ pin_hash: pinHash, must_change_password: true })
-    .eq('phone', userPhone)
+  const { data, error } = await supabase.rpc('admin_reset_password', {
+    p_request_id: requestId,
+    p_user_phone: userPhone,
+    p_pin_hash: pinHash,
+  })
   if (error) throw error
+  return data
 }
 
 export async function changePassword(userPhone, currentPin, newPin) {
-  const user = await getUserRaw(userPhone)
-  if (!user) throw new Error('User not found')
   const currentHash = await hashPin(currentPin)
-  if (user.pin_hash !== currentHash) throw new Error('Current PIN is incorrect')
   const newHash = await hashPin(newPin)
   if (!isSupabaseConfigured) {
+    const user = await getUserRaw(userPhone)
+    if (!user) throw new Error('User not found')
+    if (user.pin_hash !== currentHash) throw new Error('Current PIN is incorrect')
     local.saveUser(userPhone, { pin_hash: newHash, must_change_password: false })
-    return
+    return { success: true, must_change_password: false }
   }
-  const { error } = await supabase
-    .from('users')
-    .update({ pin_hash: newHash, must_change_password: false })
-    .eq('phone', userPhone)
+  const { data, error } = await supabase.rpc('change_user_pin', {
+    p_user_phone: userPhone,
+    p_current_pin_hash: currentHash,
+    p_new_pin_hash: newHash,
+  })
   if (error) throw error
+  return data
 }
 
 export async function clearMustChangePassword(userPhone) {

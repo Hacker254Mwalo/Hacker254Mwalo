@@ -48,8 +48,8 @@ export default function AuthPage() {
         await createPasswordResetRequest(normalPhone)
         recordPasswordResetRequest(normalPhone)
         setForgotSent(true)
-      } catch {
-        setError('Something went wrong. Please try again.')
+      } catch (err) {
+        setError(err.message || 'Unable to submit the reset request. Please try again.')
       }
       setLoading(false)
       return
