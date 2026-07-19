@@ -1,101 +1,156 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import { supabase, isSupabaseConfigured } from '../lib/supabase'
 import {
   getAllDeposits, approveDeposit, rejectDeposit,
   getAllWithdrawals, approveWithdrawal, rejectWithdrawal,
   getAllLoans, approveLoan, rejectLoan,
   getAllUsers, adminSetBalance, adminSetBonusBalance,
   getKeywords, createKeyword, toggleKeyword,
-  getAllSupportThreads, sendSupportMessage,
+  getAllSupportThreads, getSupportMessages, sendSupportMessage,
   getPasswordResetRequests, updatePasswordResetRequest, adminResetPassword,
 } from '../lib/db'
 
 // ── Shared helpers ────────────────────────────────────────────────────────────
 function StatusBadge({ status }) {
   const map = {
-    pending:  'bg-yellow-900/60 text-yellow-400',
-    approved: 'bg-green-900/60 text-green-400',
-    rejected: 'bg-red-900/60 text-red-400',
+    pending:   { cls: 'badge-pending',  icon: '⏳', label: 'Pending' },
+    approved:  { cls: 'badge-approved', icon: '✓',  label: 'Approved' },
+    rejected:  { cls: 'badge-rejected', icon: '✗',  label: 'Rejected' },
+    active:    { cls: 'badge-active',   icon: '●',  label: 'Active' },
+    completed: { cls: 'badge-approved', icon: '✓',  label: 'Completed' },
   }
+  const { cls, icon, label } = map[status] || { cls: 'badge-active', icon: '?', label: status }
+  return <span className={cls}>{icon} {label}</span>
+}
+
+function fmt(d) {
+  if (!d) return '—'
+  return new Date(d).toLocaleDateString('en-KE', {
+    day: 'numeric', month: 'short', year: 'numeric',
+    hour: '2-digit', minute: '2-digit'
+  })
+}
+
+function SectionHeader({ title, count, subtitle }) {
   return (
-    <span className={`text-xs px-2 py-0.5 rounded-full font-semibold flex-shrink-0 ${map[status] || 'bg-gray-800 text-gray-400'}`}>
-      {status}
-    </span>
+    <div className="mb-5">
+      <div className="flex items-center gap-3">
+        <h3 className="text-lg font-bold">{title}</h3>
+        {count !== undefined && count > 0 && (
+          <span className="text-xs bg-red-600 text-white px-2 py-0.5 rounded-full font-semibold">{count}</span>
+        )}
+      </div>
+      {subtitle && <p className="text-sm mt-0.5" style={{ color: 'var(--text-muted)' }}>{subtitle}</p>}
+    </div>
   )
 }
 
-function fmtDate(ts) {
-  return ts ? new Date(ts).toLocaleString('en-KE', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '—'
+function ConfirmDialog({ message, onConfirm, onCancel }) {
+  return (
+    <div className="fixed inset-0 bg-black/70 z-[100] flex items-center justify-center p-4" onClick={onCancel}>
+      <div className="card max-w-sm w-full" onClick={e => e.stopPropagation()}>
+        <p className="font-semibold text-center mb-6">{message}</p>
+        <div className="flex gap-3">
+          <button onClick={onCancel} className="btn-secondary flex-1">Cancel</button>
+          <button onClick={onConfirm} className="btn-primary flex-1">Confirm</button>
+        </div>
+      </div>
+    </div>
+  )
 }
 
 // ── Deposits Tab ──────────────────────────────────────────────────────────────
 function DepositsTab({ showToast }) {
   const [deposits, setDeposits] = useState([])
   const [loading, setLoading] = useState(true)
-  const [tab, setTab] = useState('pending')
+  const [filter, setFilter] = useState('pending')
+  const [confirm, setConfirm] = useState(null)
 
-  async function load() {
+  const load = useCallback(async () => {
     setLoading(true)
-    try { setDeposits(await getAllDeposits()) } catch {}
+    try { setDeposits(await getAllDeposits()) } catch { }
     setLoading(false)
-  }
-  useEffect(() => { load() }, [])
+  }, [])
+
+  useEffect(() => { load() }, [load])
+
+  const filtered = deposits.filter(d => filter === 'all' ? true : d.status === filter)
+  const pendingCount = deposits.filter(d => d.status === 'pending').length
 
   async function handleApprove(dep) {
-    try { await approveDeposit(dep.id, dep.user_phone, dep.amount); showToast('✅ Deposit approved!'); load() }
-    catch (e) { showToast('❌ ' + e.message) }
-  }
-  async function handleReject(dep) {
-    try { await rejectDeposit(dep.id); showToast('Deposit rejected.'); load() }
-    catch (e) { showToast('❌ ' + e.message) }
+    try {
+      await approveDeposit(dep.id, dep.user_phone, dep.amount)
+      showToast(`✅ Deposit of KSh ${Number(dep.amount).toLocaleString()} approved`)
+      load()
+    } catch { showToast('❌ Failed to approve deposit', 'error') }
   }
 
-  const tabs = ['pending', 'approved', 'rejected']
-  const filtered = deposits.filter(d => d.status === tab)
+  async function handleReject(dep) {
+    try {
+      await rejectDeposit(dep.id)
+      showToast('Deposit rejected')
+      load()
+    } catch { showToast('❌ Failed to reject deposit', 'error') }
+  }
 
   return (
     <div>
-      <div className="grid grid-cols-3 gap-3 mb-5">
-        {tabs.map(s => (
-          <div key={s} className="bg-gray-900 border border-gray-800 rounded-xl p-3 text-center">
-            <p className={`text-xl font-black ${s === 'approved' ? 'text-green-400' : s === 'rejected' ? 'text-red-400' : 'text-yellow-400'}`}>
-              {deposits.filter(d => d.status === s).length}
-            </p>
-            <p className="text-gray-500 text-xs capitalize">{s}</p>
-          </div>
-        ))}
-      </div>
+      {confirm && <ConfirmDialog message={confirm.message} onConfirm={() => { confirm.action(); setConfirm(null) }} onCancel={() => setConfirm(null)} />}
+      <SectionHeader title="Deposit Requests" count={pendingCount} subtitle="Approve or reject M-Pesa deposit submissions" />
 
-      <div className="flex gap-1 bg-gray-800 p-1 rounded-xl mb-5">
-        {tabs.map(t => (
-          <button key={t} onClick={() => setTab(t)}
-            className={`flex-1 py-2 rounded-lg text-xs font-semibold capitalize transition-all ${tab === t ? 'bg-gradient-to-r from-red-600 to-pink-600 text-white shadow' : 'text-gray-400'}`}>
-            {t} ({deposits.filter(d => d.status === t).length})
+      <div className="flex gap-2 mb-5 flex-wrap">
+        {['pending', 'approved', 'rejected', 'all'].map(f => (
+          <button key={f} onClick={() => setFilter(f)}
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold capitalize transition-all ${filter === f ? 'bg-red-600 text-white' : 'text-gray-400 hover:text-white'}`}
+            style={{ background: filter === f ? undefined : 'var(--bg-input)' }}>
+            {f} {f !== 'all' && <span className="ml-1 opacity-70">({deposits.filter(d => d.status === f).length})</span>}
           </button>
         ))}
+        <button onClick={load} className="ml-auto px-3 py-1.5 rounded-lg text-xs font-semibold text-gray-400 hover:text-white transition-all" style={{ background: 'var(--bg-input)' }}>
+          ↻ Refresh
+        </button>
       </div>
 
-      {loading ? <Spinner /> : filtered.length === 0 ? <Empty text={`No ${tab} deposits`} /> : (
+      {loading ? (
+        <div className="text-center py-12 text-gray-500">Loading...</div>
+      ) : filtered.length === 0 ? (
+        <div className="card text-center py-12">
+          <p className="text-4xl mb-3">💳</p>
+          <p style={{ color: 'var(--text-muted)' }}>No {filter} deposits</p>
+        </div>
+      ) : (
         <div className="space-y-3">
           {filtered.map(dep => (
-            <div key={dep.id} className="card">
-              <div className="flex items-start justify-between mb-3">
-                <div>
-                  <p className="font-bold text-green-400">KSh {Number(dep.amount).toLocaleString()}</p>
-                  <p className="text-sm font-medium">{dep.users?.name || 'Unknown'}</p>
-                  <p className="text-gray-400 text-xs">{dep.user_phone}</p>
-                  <p className="text-gray-500 text-xs mt-1">{fmtDate(dep.created_at)}</p>
+            <div key={dep.id} className="card hover:border-gray-600 transition-colors">
+              <div className="flex items-start justify-between gap-4 flex-wrap">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1 flex-wrap">
+                    <span className="font-semibold">{dep.users?.name || dep.user_phone}</span>
+                    <StatusBadge status={dep.status} />
+                  </div>
+                  <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{dep.user_phone}</p>
+                  <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>{fmt(dep.created_at)}</p>
+                  {dep.mpesa_receipt && (
+                    <p className="text-xs mt-1 font-mono" style={{ color: 'var(--text-secondary)' }}>M-Pesa Ref: {dep.mpesa_receipt}</p>
+                  )}
                 </div>
-                <StatusBadge status={dep.status} />
+                <div className="text-right">
+                  <p className="text-xl font-black text-green-400">KSh {Number(dep.amount).toLocaleString()}</p>
+                  {dep.status === 'pending' && (
+                    <div className="flex gap-2 mt-2">
+                      <button
+                        onClick={() => setConfirm({ message: `Approve KSh ${Number(dep.amount).toLocaleString()} deposit?`, action: () => handleApprove(dep) })}
+                        className="px-3 py-1.5 bg-green-700 hover:bg-green-600 text-white text-xs font-semibold rounded-lg transition-colors"
+                      >✓ Approve</button>
+                      <button
+                        onClick={() => setConfirm({ message: 'Reject this deposit?', action: () => handleReject(dep) })}
+                        className="px-3 py-1.5 bg-red-800 hover:bg-red-700 text-white text-xs font-semibold rounded-lg transition-colors"
+                      >✗ Reject</button>
+                    </div>
+                  )}
+                </div>
               </div>
-              {dep.status === 'pending' && (
-                <div className="flex gap-2">
-                  <button onClick={() => handleReject(dep)} className="btn-secondary flex-1 text-xs py-2">Reject</button>
-                  <button onClick={() => handleApprove(dep)} className="flex-1 text-xs py-2 rounded-xl font-semibold bg-green-700 hover:bg-green-600 text-white transition-all">Approve & Credit</button>
-                </div>
-              )}
             </div>
           ))}
         </div>
@@ -108,70 +163,95 @@ function DepositsTab({ showToast }) {
 function WithdrawalsTab({ showToast }) {
   const [withdrawals, setWithdrawals] = useState([])
   const [loading, setLoading] = useState(true)
-  const [tab, setTab] = useState('pending')
+  const [filter, setFilter] = useState('pending')
+  const [confirm, setConfirm] = useState(null)
 
-  async function load() {
+  const load = useCallback(async () => {
     setLoading(true)
-    try { setWithdrawals(await getAllWithdrawals()) } catch {}
+    try { setWithdrawals(await getAllWithdrawals()) } catch { }
     setLoading(false)
-  }
-  useEffect(() => { load() }, [])
+  }, [])
+
+  useEffect(() => { load() }, [load])
+
+  const filtered = withdrawals.filter(w => filter === 'all' ? true : w.status === filter)
+  const pendingCount = withdrawals.filter(w => w.status === 'pending').length
 
   async function handleApprove(w) {
-    try { await approveWithdrawal(w.id); showToast('✅ Withdrawal approved!'); load() }
-    catch (e) { showToast('❌ ' + e.message) }
-  }
-  async function handleReject(w) {
-    try { await rejectWithdrawal(w.id, w.user_phone, w.amount); showToast('Withdrawal rejected & refunded.'); load() }
-    catch (e) { showToast('❌ ' + e.message) }
+    try {
+      await approveWithdrawal(w.id)
+      showToast(`✅ Withdrawal approved — send KSh ${Number(w.net_amount || w.amount).toLocaleString()} to ${w.mpesa_phone}`)
+      load()
+    } catch { showToast('❌ Failed to approve withdrawal', 'error') }
   }
 
-  const tabs = ['pending', 'approved', 'rejected']
-  const filtered = withdrawals.filter(w => w.status === tab)
+  async function handleReject(w) {
+    try {
+      await rejectWithdrawal(w.id, w.user_phone, w.amount)
+      showToast(`Withdrawal rejected & KSh ${Number(w.amount).toLocaleString()} refunded`)
+      load()
+    } catch { showToast('❌ Failed to reject withdrawal', 'error') }
+  }
 
   return (
     <div>
-      <div className="grid grid-cols-3 gap-3 mb-5">
-        {tabs.map(s => (
-          <div key={s} className="bg-gray-900 border border-gray-800 rounded-xl p-3 text-center">
-            <p className={`text-xl font-black ${s === 'approved' ? 'text-green-400' : s === 'rejected' ? 'text-red-400' : 'text-yellow-400'}`}>
-              {withdrawals.filter(w => w.status === s).length}
-            </p>
-            <p className="text-gray-500 text-xs capitalize">{s}</p>
-          </div>
-        ))}
-      </div>
+      {confirm && <ConfirmDialog message={confirm.message} onConfirm={() => { confirm.action(); setConfirm(null) }} onCancel={() => setConfirm(null)} />}
+      <SectionHeader title="Withdrawal Requests" count={pendingCount} subtitle="Review and process M-Pesa withdrawal requests" />
 
-      <div className="flex gap-1 bg-gray-800 p-1 rounded-xl mb-5">
-        {tabs.map(t => (
-          <button key={t} onClick={() => setTab(t)}
-            className={`flex-1 py-2 rounded-lg text-xs font-semibold capitalize transition-all ${tab === t ? 'bg-gradient-to-r from-red-600 to-pink-600 text-white shadow' : 'text-gray-400'}`}>
-            {t} ({withdrawals.filter(w => w.status === t).length})
+      <div className="flex gap-2 mb-5 flex-wrap">
+        {['pending', 'approved', 'rejected', 'all'].map(f => (
+          <button key={f} onClick={() => setFilter(f)}
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold capitalize transition-all ${filter === f ? 'bg-red-600 text-white' : 'text-gray-400 hover:text-white'}`}
+            style={{ background: filter === f ? undefined : 'var(--bg-input)' }}>
+            {f} {f !== 'all' && <span className="ml-1 opacity-70">({withdrawals.filter(w => w.status === f).length})</span>}
           </button>
         ))}
+        <button onClick={load} className="ml-auto px-3 py-1.5 rounded-lg text-xs font-semibold text-gray-400 hover:text-white transition-all" style={{ background: 'var(--bg-input)' }}>
+          ↻ Refresh
+        </button>
       </div>
 
-      {loading ? <Spinner /> : filtered.length === 0 ? <Empty text={`No ${tab} withdrawals`} /> : (
+      {loading ? (
+        <div className="text-center py-12 text-gray-500">Loading...</div>
+      ) : filtered.length === 0 ? (
+        <div className="card text-center py-12">
+          <p className="text-4xl mb-3">💸</p>
+          <p style={{ color: 'var(--text-muted)' }}>No {filter} withdrawals</p>
+        </div>
+      ) : (
         <div className="space-y-3">
           {filtered.map(w => (
-            <div key={w.id} className="card">
-              <div className="flex items-start justify-between mb-3">
-                <div>
-                  <p className="font-bold text-red-400">KSh {Number(w.amount).toLocaleString()}</p>
-                  <p className="text-xs text-gray-400">Net: KSh {Number(w.net_amount || w.amount).toLocaleString()} · Fee: KSh {Number(w.fee || 0).toLocaleString()}</p>
-                  <p className="text-sm font-medium mt-1">{w.users?.name || 'Unknown'}</p>
-                  <p className="text-gray-400 text-xs">{w.user_phone}</p>
-                  <p className="text-gray-500 text-xs">→ {w.mpesa_phone}</p>
-                  <p className="text-gray-500 text-xs mt-1">{fmtDate(w.created_at)}</p>
+            <div key={w.id} className="card hover:border-gray-600 transition-colors">
+              <div className="flex items-start justify-between gap-4 flex-wrap">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1 flex-wrap">
+                    <span className="font-semibold">{w.users?.name || w.user_phone}</span>
+                    <StatusBadge status={w.status} />
+                  </div>
+                  <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{w.user_phone}</p>
+                  <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>{fmt(w.created_at)}</p>
+                  <div className="mt-2 p-2 rounded-lg text-xs space-y-0.5" style={{ background: 'var(--bg-input)' }}>
+                    <p>Send to: <span className="font-bold text-white">{w.mpesa_phone}</span></p>
+                    <p>Net amount: <span className="font-bold text-green-400">KSh {Number(w.net_amount || w.amount).toLocaleString()}</span></p>
+                    {w.fee > 0 && <p style={{ color: 'var(--text-muted)' }}>Fee: KSh {Number(w.fee).toLocaleString()}</p>}
+                  </div>
                 </div>
-                <StatusBadge status={w.status} />
+                <div className="text-right">
+                  <p className="text-xl font-black text-red-400">KSh {Number(w.amount).toLocaleString()}</p>
+                  {w.status === 'pending' && (
+                    <div className="flex gap-2 mt-2">
+                      <button
+                        onClick={() => setConfirm({ message: `Approve withdrawal of KSh ${Number(w.amount).toLocaleString()} to ${w.mpesa_phone}?`, action: () => handleApprove(w) })}
+                        className="px-3 py-1.5 bg-green-700 hover:bg-green-600 text-white text-xs font-semibold rounded-lg transition-colors"
+                      >✓ Approve</button>
+                      <button
+                        onClick={() => setConfirm({ message: `Reject & refund KSh ${Number(w.amount).toLocaleString()} to user?`, action: () => handleReject(w) })}
+                        className="px-3 py-1.5 bg-red-800 hover:bg-red-700 text-white text-xs font-semibold rounded-lg transition-colors"
+                      >↩ Refund</button>
+                    </div>
+                  )}
+                </div>
               </div>
-              {w.status === 'pending' && (
-                <div className="flex gap-2">
-                  <button onClick={() => handleReject(w)} className="btn-secondary flex-1 text-xs py-2">Reject & Refund</button>
-                  <button onClick={() => handleApprove(w)} className="flex-1 text-xs py-2 rounded-xl font-semibold bg-green-700 hover:bg-green-600 text-white transition-all">Mark Paid</button>
-                </div>
-              )}
             </div>
           ))}
         </div>
@@ -184,69 +264,93 @@ function WithdrawalsTab({ showToast }) {
 function LoansTab({ showToast }) {
   const [loans, setLoans] = useState([])
   const [loading, setLoading] = useState(true)
-  const [tab, setTab] = useState('pending')
+  const [filter, setFilter] = useState('pending')
+  const [confirm, setConfirm] = useState(null)
 
-  async function load() {
+  const load = useCallback(async () => {
     setLoading(true)
-    try { setLoans(await getAllLoans()) } catch {}
+    try { setLoans(await getAllLoans()) } catch { }
     setLoading(false)
-  }
-  useEffect(() => { load() }, [])
+  }, [])
+
+  useEffect(() => { load() }, [load])
+
+  const filtered = loans.filter(l => filter === 'all' ? true : l.status === filter)
+  const pendingCount = loans.filter(l => l.status === 'pending').length
 
   async function handleApprove(loan) {
-    try { await approveLoan(loan.id, loan.user_phone, loan.amount); showToast('✅ Loan approved & disbursed!'); load() }
-    catch (e) { showToast('❌ ' + e.message) }
-  }
-  async function handleReject(loan) {
-    try { await rejectLoan(loan.id); showToast('Loan rejected.'); load() }
-    catch (e) { showToast('❌ ' + e.message) }
+    try {
+      await approveLoan(loan.id, loan.user_phone, loan.amount)
+      showToast(`✅ Loan of KSh ${Number(loan.amount).toLocaleString()} approved & credited`)
+      load()
+    } catch { showToast('❌ Failed to approve loan', 'error') }
   }
 
-  const tabs = ['pending', 'approved', 'rejected']
-  const filtered = loans.filter(l => l.status === tab)
+  async function handleReject(loan) {
+    try {
+      await rejectLoan(loan.id)
+      showToast('Loan request rejected')
+      load()
+    } catch { showToast('❌ Failed to reject loan', 'error') }
+  }
 
   return (
     <div>
-      <div className="grid grid-cols-3 gap-3 mb-5">
-        {tabs.map(s => (
-          <div key={s} className="bg-gray-900 border border-gray-800 rounded-xl p-3 text-center">
-            <p className={`text-xl font-black ${s === 'approved' ? 'text-green-400' : s === 'rejected' ? 'text-red-400' : 'text-yellow-400'}`}>
-              {loans.filter(l => l.status === s).length}
-            </p>
-            <p className="text-gray-500 text-xs capitalize">{s}</p>
-          </div>
-        ))}
-      </div>
+      {confirm && <ConfirmDialog message={confirm.message} onConfirm={() => { confirm.action(); setConfirm(null) }} onCancel={() => setConfirm(null)} />}
+      <SectionHeader title="Loan Requests" count={pendingCount} subtitle="Review and disburse loan applications" />
 
-      <div className="flex gap-1 bg-gray-800 p-1 rounded-xl mb-5">
-        {tabs.map(t => (
-          <button key={t} onClick={() => setTab(t)}
-            className={`flex-1 py-2 rounded-lg text-xs font-semibold capitalize transition-all ${tab === t ? 'bg-gradient-to-r from-red-600 to-pink-600 text-white shadow' : 'text-gray-400'}`}>
-            {t} ({loans.filter(l => l.status === t).length})
+      <div className="flex gap-2 mb-5 flex-wrap">
+        {['pending', 'approved', 'rejected', 'all'].map(f => (
+          <button key={f} onClick={() => setFilter(f)}
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold capitalize transition-all ${filter === f ? 'bg-red-600 text-white' : 'text-gray-400 hover:text-white'}`}
+            style={{ background: filter === f ? undefined : 'var(--bg-input)' }}>
+            {f} {f !== 'all' && <span className="ml-1 opacity-70">({loans.filter(l => l.status === f).length})</span>}
           </button>
         ))}
+        <button onClick={load} className="ml-auto px-3 py-1.5 rounded-lg text-xs font-semibold text-gray-400 hover:text-white transition-all" style={{ background: 'var(--bg-input)' }}>
+          ↻ Refresh
+        </button>
       </div>
 
-      {loading ? <Spinner /> : filtered.length === 0 ? <Empty text={`No ${tab} loans`} /> : (
+      {loading ? (
+        <div className="text-center py-12 text-gray-500">Loading...</div>
+      ) : filtered.length === 0 ? (
+        <div className="card text-center py-12">
+          <p className="text-4xl mb-3">🏦</p>
+          <p style={{ color: 'var(--text-muted)' }}>No {filter} loan requests</p>
+        </div>
+      ) : (
         <div className="space-y-3">
           {filtered.map(loan => (
-            <div key={loan.id} className="card">
-              <div className="flex items-start justify-between mb-3">
-                <div>
-                  <p className="font-bold text-purple-400">KSh {Number(loan.amount).toLocaleString()}</p>
-                  {loan.purpose && <p className="text-gray-400 text-xs italic">"{loan.purpose}"</p>}
-                  <p className="text-sm font-medium mt-1">{loan.users?.name || loan.user_phone}</p>
-                  <p className="text-gray-400 text-xs">{loan.user_phone}</p>
-                  <p className="text-gray-500 text-xs mt-1">{fmtDate(loan.created_at)}</p>
+            <div key={loan.id} className="card hover:border-gray-600 transition-colors">
+              <div className="flex items-start justify-between gap-4 flex-wrap">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1 flex-wrap">
+                    <span className="font-semibold">{loan.users?.name || loan.user_phone}</span>
+                    <StatusBadge status={loan.status} />
+                  </div>
+                  <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{loan.user_phone}</p>
+                  <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>{fmt(loan.created_at)}</p>
+                  {loan.purpose && (
+                    <p className="text-xs mt-1 italic" style={{ color: 'var(--text-secondary)' }}>"{loan.purpose}"</p>
+                  )}
                 </div>
-                <StatusBadge status={loan.status} />
+                <div className="text-right">
+                  <p className="text-xl font-black text-purple-400">KSh {Number(loan.amount).toLocaleString()}</p>
+                  {loan.status === 'pending' && (
+                    <div className="flex gap-2 mt-2">
+                      <button
+                        onClick={() => setConfirm({ message: `Approve & disburse KSh ${Number(loan.amount).toLocaleString()} loan?`, action: () => handleApprove(loan) })}
+                        className="px-3 py-1.5 bg-green-700 hover:bg-green-600 text-white text-xs font-semibold rounded-lg transition-colors"
+                      >✓ Disburse</button>
+                      <button
+                        onClick={() => setConfirm({ message: 'Reject this loan request?', action: () => handleReject(loan) })}
+                        className="px-3 py-1.5 bg-red-800 hover:bg-red-700 text-white text-xs font-semibold rounded-lg transition-colors"
+                      >✗ Reject</button>
+                    </div>
+                  )}
+                </div>
               </div>
-              {loan.status === 'pending' && (
-                <div className="flex gap-2">
-                  <button onClick={() => handleReject(loan)} className="btn-secondary flex-1 text-xs py-2">Reject</button>
-                  <button onClick={() => handleApprove(loan)} className="flex-1 text-xs py-2 rounded-xl font-semibold bg-purple-700 hover:bg-purple-600 text-white transition-all">Approve & Disburse</button>
-                </div>
-              )}
             </div>
           ))}
         </div>
@@ -260,91 +364,100 @@ function UsersTab({ showToast }) {
   const [users, setUsers] = useState([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
-  const [editing, setEditing] = useState(null) // { phone, field: 'balance'|'bonus_balance', value }
+  const [editing, setEditing] = useState(null)
+  const [editBalance, setEditBalance] = useState('')
+  const [editBonus, setEditBonus] = useState('')
+  const [saving, setSaving] = useState(false)
 
-  async function load() {
+  const load = useCallback(async () => {
     setLoading(true)
-    try { setUsers(await getAllUsers()) } catch {}
+    try { setUsers(await getAllUsers()) } catch { }
     setLoading(false)
-  }
-  useEffect(() => { load() }, [])
+  }, [])
+
+  useEffect(() => { load() }, [load])
 
   const filtered = users.filter(u =>
-    (u.name || '').toLowerCase().includes(search.toLowerCase()) ||
-    (u.phone || '').includes(search)
+    !search || u.name?.toLowerCase().includes(search.toLowerCase()) || u.phone?.includes(search)
   )
+
+  function startEdit(u) {
+    setEditing(u)
+    setEditBalance(String(u.balance || 0))
+    setEditBonus(String(u.bonus_balance || 0))
+  }
 
   async function saveEdit() {
     if (!editing) return
+    setSaving(true)
     try {
-      if (editing.field === 'balance') {
-        await adminSetBalance(editing.phone, Number(editing.value))
-      } else {
-        await adminSetBonusBalance(editing.phone, Number(editing.value))
-      }
-      showToast('✅ Updated successfully!')
+      const bal = parseFloat(editBalance)
+      const bon = parseFloat(editBonus)
+      if (!isNaN(bal)) await adminSetBalance(editing.phone, bal)
+      if (!isNaN(bon)) await adminSetBonusBalance(editing.phone, bon)
+      showToast(`✅ Updated balance for ${editing.name || editing.phone}`)
       setEditing(null)
       load()
-    } catch (e) { showToast('❌ ' + e.message) }
+    } catch { showToast('❌ Failed to update balance', 'error') }
+    setSaving(false)
   }
+
+  const totalBalance = users.reduce((s, u) => s + Number(u.balance || 0), 0)
 
   return (
     <div>
-      <input
-        className="input-field mb-5"
-        placeholder="🔍 Search by name or phone..."
-        value={search}
-        onChange={e => setSearch(e.target.value)}
-      />
-
-      {/* Edit modal */}
       {editing && (
-        <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4" onClick={() => setEditing(null)}>
-          <div className="card max-w-xs w-full" onClick={e => e.stopPropagation()}>
-            <h3 className="font-bold mb-1">Edit {editing.field === 'balance' ? 'Balance' : 'Bonus Balance'}</h3>
-            <p className="text-gray-400 text-xs mb-3">{editing.phone}</p>
-            <input
-              className="input-field mb-4"
-              type="number"
-              min="0"
-              value={editing.value}
-              onChange={e => setEditing(prev => ({ ...prev, value: e.target.value }))}
-              autoFocus
-            />
-            <div className="flex gap-2">
-              <button onClick={() => setEditing(null)} className="btn-secondary flex-1 text-sm py-2">Cancel</button>
-              <button onClick={saveEdit} className="btn-primary flex-1 text-sm py-2">Save</button>
+        <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" onClick={() => setEditing(null)}>
+          <div className="card max-w-sm w-full" onClick={e => e.stopPropagation()}>
+            <h3 className="font-bold text-lg mb-1">Edit User Balance</h3>
+            <p className="text-sm mb-4" style={{ color: 'var(--text-muted)' }}>{editing.name} · {editing.phone}</p>
+            <div className="space-y-3 mb-4">
+              <div>
+                <label className="text-xs mb-1 block" style={{ color: 'var(--text-muted)' }}>Main Balance (KSh)</label>
+                <input className="input-field" type="number" value={editBalance} onChange={e => setEditBalance(e.target.value)} />
+              </div>
+              <div>
+                <label className="text-xs mb-1 block" style={{ color: 'var(--text-muted)' }}>Bonus Balance (KSh)</label>
+                <input className="input-field" type="number" value={editBonus} onChange={e => setEditBonus(e.target.value)} />
+              </div>
+            </div>
+            <div className="flex gap-3">
+              <button onClick={() => setEditing(null)} className="btn-secondary flex-1">Cancel</button>
+              <button onClick={saveEdit} disabled={saving} className="btn-primary flex-1">{saving ? 'Saving...' : 'Save'}</button>
             </div>
           </div>
         </div>
       )}
 
-      {loading ? <Spinner /> : filtered.length === 0 ? <Empty text="No users found" /> : (
+      <SectionHeader title="All Users" count={users.length} subtitle={`Total platform balance: KSh ${totalBalance.toLocaleString()}`} />
+
+      <div className="mb-4">
+        <input className="input-field" placeholder="Search by name or phone..." value={search} onChange={e => setSearch(e.target.value)} />
+      </div>
+
+      {loading ? (
+        <div className="text-center py-12 text-gray-500">Loading...</div>
+      ) : (
         <div className="space-y-3">
           {filtered.map(u => (
-            <div key={u.phone} className="card">
-              <div className="flex items-start justify-between mb-3">
-                <div>
-                  <p className="font-semibold">{u.name}</p>
-                  <p className="text-gray-400 text-xs">{u.phone}</p>
-                  <p className="text-gray-500 text-xs mt-0.5">Joined {fmtDate(u.created_at)}</p>
+            <div key={u.phone} className="card flex items-center justify-between gap-4 hover:border-gray-600 transition-colors">
+              <div className="flex items-center gap-3 flex-1 min-w-0">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-red-600 to-pink-600 flex items-center justify-center font-bold text-sm flex-shrink-0">
+                  {u.name?.[0]?.toUpperCase() || '?'}
                 </div>
-                {u.is_admin && <span className="text-xs bg-red-900/60 text-red-400 px-2 py-0.5 rounded-full">Admin</span>}
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold text-sm truncate">{u.name || 'Unknown'}</p>
+                  <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{u.phone}</p>
+                  <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>Joined {fmt(u.created_at)}</p>
+                </div>
               </div>
-              <div className="grid grid-cols-2 gap-2">
-                <button
-                  onClick={() => setEditing({ phone: u.phone, field: 'balance', value: u.balance || 0 })}
-                  className="bg-gray-800 hover:bg-gray-700 rounded-xl p-3 text-left transition-colors"
-                >
-                  <p className="text-green-400 font-bold text-sm">KSh {Number(u.balance || 0).toLocaleString()}</p>
-                  <p className="text-gray-500 text-xs">Balance ✏️</p>
-                </button>
-                <button
-                  onClick={() => setEditing({ phone: u.phone, field: 'bonus_balance', value: u.bonus_balance || 0 })}
-                  className="bg-gray-800 hover:bg-gray-700 rounded-xl p-3 text-left transition-colors"
-                >
-                  <p className="text-yellow-400 font-bold text-sm">KSh {Number(u.bonus_balance || 0).toLocaleString()}</p>
-                  <p className="text-gray-500 text-xs">Bonus ✏️</p>
+              <div className="text-right flex-shrink-0">
+                <p className="font-bold text-green-400">KSh {Number(u.balance || 0).toLocaleString()}</p>
+                {u.bonus_balance > 0 && (
+                  <p className="text-xs text-yellow-400">+KSh {Number(u.bonus_balance).toLocaleString()} bonus</p>
+                )}
+                <button onClick={() => startEdit(u)} className="mt-1 px-2 py-1 text-xs rounded-lg font-semibold transition-colors text-gray-400 hover:text-white" style={{ background: 'var(--bg-input)' }}>
+                  ✏️ Edit
                 </button>
               </div>
             </div>
@@ -355,99 +468,103 @@ function UsersTab({ showToast }) {
   )
 }
 
-// ── Keywords Tab ──────────────────────────────────────────────────────────────
-function KeywordsTab({ showToast }) {
+// ── Promo Codes Tab ───────────────────────────────────────────────────────────
+function PromoTab({ showToast }) {
   const [keywords, setKeywords] = useState([])
   const [loading, setLoading] = useState(true)
-  const [form, setForm] = useState({ code: '', minBonus: 50, maxBonus: 500, maxClaims: 5 })
+  const [code, setCode] = useState('')
+  const [minBonus, setMinBonus] = useState('50')
+  const [maxBonus, setMaxBonus] = useState('500')
+  const [maxClaims, setMaxClaims] = useState('10')
   const [creating, setCreating] = useState(false)
 
-  async function load() {
+  const load = useCallback(async () => {
     setLoading(true)
-    try { setKeywords(await getKeywords()) } catch {}
+    try { setKeywords(await getKeywords()) } catch { }
     setLoading(false)
-  }
-  useEffect(() => { load() }, [])
+  }, [])
+
+  useEffect(() => { load() }, [load])
 
   async function handleCreate(e) {
     e.preventDefault()
-    if (!form.code.trim()) return
+    if (!code.trim()) return
     setCreating(true)
     try {
-      await createKeyword({ code: form.code.trim(), minBonus: Number(form.minBonus), maxBonus: Number(form.maxBonus), maxClaims: Number(form.maxClaims) })
-      showToast('✅ Keyword created!')
-      setForm({ code: '', minBonus: 50, maxBonus: 500, maxClaims: 5 })
+      await createKeyword(code.trim().toUpperCase(), Number(minBonus), Number(maxBonus), Number(maxClaims))
+      showToast(`✅ Promo code "${code.toUpperCase()}" created`)
+      setCode(''); setMinBonus('50'); setMaxBonus('500'); setMaxClaims('10')
       load()
-    } catch (e) { showToast('❌ ' + e.message) }
+    } catch (err) { showToast(err.message || '❌ Failed to create code', 'error') }
     setCreating(false)
   }
 
   async function handleToggle(kw) {
-    try { await toggleKeyword(kw.id, !kw.active); load() }
-    catch (e) { showToast('❌ ' + e.message) }
+    try {
+      await toggleKeyword(kw.id, !kw.active)
+      showToast(`Code "${kw.code}" ${!kw.active ? 'activated' : 'deactivated'}`)
+      load()
+    } catch { showToast('❌ Failed to toggle code', 'error') }
   }
 
   return (
     <div>
-      {/* Create form */}
-      <form onSubmit={handleCreate} className="card mb-5 space-y-3">
-        <p className="font-semibold text-sm">Create New Keyword</p>
-        <input
-          className="input-field font-mono uppercase"
-          placeholder="Code (e.g. BONUS2024)"
-          value={form.code}
-          onChange={e => setForm(f => ({ ...f, code: e.target.value.toUpperCase() }))}
-          required
-        />
-        <div className="grid grid-cols-3 gap-2">
-          <div>
-            <label className="text-xs text-gray-400 block mb-1">Min Bonus (KSh)</label>
-            <input className="input-field" type="number" min="1" value={form.minBonus}
-              onChange={e => setForm(f => ({ ...f, minBonus: e.target.value }))} />
-          </div>
-          <div>
-            <label className="text-xs text-gray-400 block mb-1">Max Bonus (KSh)</label>
-            <input className="input-field" type="number" min="1" value={form.maxBonus}
-              onChange={e => setForm(f => ({ ...f, maxBonus: e.target.value }))} />
-          </div>
-          <div>
-            <label className="text-xs text-gray-400 block mb-1">Max Claims</label>
-            <input className="input-field" type="number" min="1" max="1000" value={form.maxClaims}
-              onChange={e => setForm(f => ({ ...f, maxClaims: e.target.value }))} />
-          </div>
-        </div>
-        <button type="submit" disabled={creating} className="btn-primary w-full text-sm py-2.5">
-          {creating ? 'Creating...' : '+ Create Keyword'}
-        </button>
-      </form>
+      <SectionHeader title="Promo Codes" count={keywords.filter(k => k.active).length} subtitle="Create and manage bonus redemption codes" />
 
-      {loading ? <Spinner /> : keywords.length === 0 ? <Empty text="No keywords yet" /> : (
+      <div className="card mb-6">
+        <h4 className="font-semibold mb-4">Create New Code</h4>
+        <form onSubmit={handleCreate} className="space-y-3">
+          <div>
+            <label className="text-xs mb-1 block" style={{ color: 'var(--text-muted)' }}>Code (uppercase)</label>
+            <input className="input-field font-mono uppercase tracking-widest" placeholder="e.g. WELCOME100" value={code}
+              onChange={e => setCode(e.target.value.toUpperCase())} maxLength={20} required />
+          </div>
+          <div className="grid grid-cols-3 gap-3">
+            <div>
+              <label className="text-xs mb-1 block" style={{ color: 'var(--text-muted)' }}>Min Bonus (KSh)</label>
+              <input className="input-field" type="number" min="1" value={minBonus} onChange={e => setMinBonus(e.target.value)} />
+            </div>
+            <div>
+              <label className="text-xs mb-1 block" style={{ color: 'var(--text-muted)' }}>Max Bonus (KSh)</label>
+              <input className="input-field" type="number" min="1" value={maxBonus} onChange={e => setMaxBonus(e.target.value)} />
+            </div>
+            <div>
+              <label className="text-xs mb-1 block" style={{ color: 'var(--text-muted)' }}>Max Claims</label>
+              <input className="input-field" type="number" min="1" value={maxClaims} onChange={e => setMaxClaims(e.target.value)} />
+            </div>
+          </div>
+          <button type="submit" disabled={creating || !code.trim()} className="btn-primary w-full">
+            {creating ? 'Creating...' : '+ Create Code'}
+          </button>
+        </form>
+      </div>
+
+      {loading ? (
+        <div className="text-center py-12 text-gray-500">Loading...</div>
+      ) : keywords.length === 0 ? (
+        <div className="card text-center py-12">
+          <p className="text-4xl mb-3">🎟️</p>
+          <p style={{ color: 'var(--text-muted)' }}>No promo codes yet</p>
+        </div>
+      ) : (
         <div className="space-y-3">
           {keywords.map(kw => (
-            <div key={kw.id} className="card">
-              <div className="flex items-center justify-between mb-2">
-                <p className="font-mono font-bold text-lg tracking-widest">{kw.code}</p>
-                <button
-                  onClick={() => handleToggle(kw)}
-                  className={`text-xs px-3 py-1 rounded-full font-semibold transition-all ${kw.active ? 'bg-green-800 text-green-300 hover:bg-green-700' : 'bg-gray-700 text-gray-400 hover:bg-gray-600'}`}
-                >
-                  {kw.active ? 'Active' : 'Inactive'}
-                </button>
+            <div key={kw.id} className="card flex items-center justify-between gap-4 hover:border-gray-600 transition-colors">
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="font-mono font-bold tracking-widest">{kw.code}</span>
+                  <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${kw.active ? 'bg-green-900/50 text-green-400' : 'bg-gray-800 text-gray-500'}`}>
+                    {kw.active ? 'Active' : 'Inactive'}
+                  </span>
+                </div>
+                <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
+                  KSh {Number(kw.min_bonus).toLocaleString()} – {Number(kw.max_bonus).toLocaleString()} bonus · {kw.claim_count}/{kw.max_claims} claimed
+                </p>
               </div>
-              <div className="grid grid-cols-3 gap-2 text-center text-xs">
-                <div className="bg-gray-800 rounded-lg p-2">
-                  <p className="text-yellow-400 font-bold">KSh {kw.min_bonus}–{kw.max_bonus}</p>
-                  <p className="text-gray-500">Bonus Range</p>
-                </div>
-                <div className="bg-gray-800 rounded-lg p-2">
-                  <p className="text-blue-400 font-bold">{kw.claim_count} / {kw.max_claims}</p>
-                  <p className="text-gray-500">Claims</p>
-                </div>
-                <div className="bg-gray-800 rounded-lg p-2">
-                  <p className="text-gray-300 font-medium">{fmtDate(kw.created_at)}</p>
-                  <p className="text-gray-500">Created</p>
-                </div>
-              </div>
+              <button onClick={() => handleToggle(kw)}
+                className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors flex-shrink-0 ${kw.active ? 'bg-red-900/50 text-red-400 hover:bg-red-800' : 'bg-green-900/50 text-green-400 hover:bg-green-800'}`}>
+                {kw.active ? 'Deactivate' : 'Activate'}
+              </button>
             </div>
           ))}
         </div>
@@ -466,43 +583,27 @@ function SupportTab({ showToast }) {
   const [sending, setSending] = useState(false)
   const bottomRef = useRef(null)
 
-  async function loadThreads() {
+  const loadThreads = useCallback(async () => {
     setLoading(true)
-    try { setThreads(await getAllSupportThreads()) } catch {}
+    try { setThreads(await getAllSupportThreads()) } catch { }
     setLoading(false)
-  }
-  useEffect(() => { loadThreads() }, [])
-
-  // Refresh threads periodically when not using Supabase realtime
-  useEffect(() => {
-    if (isSupabaseConfigured) return
-    const interval = setInterval(loadThreads, 5000)
-    return () => clearInterval(interval)
   }, [])
 
-  // Load messages for selected thread and subscribe to realtime
+  useEffect(() => { loadThreads() }, [loadThreads])
+
   useEffect(() => {
     if (!activePhone) return
-    const thread = threads.find(t => t.userPhone === activePhone)
-    if (thread) setMessages(thread.messages)
-
-    if (!isSupabaseConfigured) return
-    const channel = supabase
-      .channel(`support-admin-${activePhone}`)
-      .on('postgres_changes', {
-        event: 'INSERT', schema: 'public', table: 'support_messages',
-        filter: `user_phone=eq.${activePhone}`,
-      }, payload => {
-        setMessages(prev => [...prev, payload.new])
-        setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 50)
-      })
-      .subscribe()
-    return () => supabase.removeChannel(channel)
-  }, [activePhone, threads])
-
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages])
+    const load = async () => {
+      try {
+        const msgs = await getSupportMessages(activePhone)
+        setMessages(msgs)
+        setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 100)
+      } catch { }
+    }
+    load()
+    const interval = setInterval(load, 5000)
+    return () => clearInterval(interval)
+  }, [activePhone])
 
   async function handleSend(e) {
     e.preventDefault()
@@ -510,166 +611,179 @@ function SupportTab({ showToast }) {
     setSending(true)
     try {
       await sendSupportMessage(activePhone, reply.trim(), 'admin')
-      setMessages(prev => [...prev, { user_phone: activePhone, message: reply.trim(), sender_type: 'admin', created_at: new Date().toISOString() }])
       setReply('')
-      if (!isSupabaseConfigured) loadThreads()
-    } catch (er) { showToast('❌ ' + er.message) }
+      const msgs = await getSupportMessages(activePhone)
+      setMessages(msgs)
+      setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 100)
+      loadThreads()
+    } catch { showToast('❌ Failed to send message', 'error') }
     setSending(false)
   }
 
-  return (
-    <div className="flex gap-4 h-[520px]">
-      {/* Thread list */}
-      <div className="w-44 flex-shrink-0 overflow-y-auto space-y-2">
-        {loading ? <Spinner /> : threads.length === 0 ? <p className="text-gray-500 text-xs text-center pt-4">No messages yet</p> : (
-          threads.map(t => (
-            <button key={t.userPhone}
-              onClick={() => setActivePhone(t.userPhone)}
-              className={`w-full text-left rounded-xl p-3 transition-all ${activePhone === t.userPhone ? 'bg-red-900/30 border border-red-800' : 'bg-gray-800 hover:bg-gray-700'}`}
-            >
-              <p className="text-xs font-semibold truncate">{t.userPhone}</p>
-              <p className="text-xs text-gray-500 truncate mt-0.5">{t.messages?.[t.messages.length - 1]?.message || ''}</p>
-            </button>
-          ))
-        )}
-      </div>
+  const unreadCount = threads.filter(t => t.messages?.at(-1)?.sender_type === 'user').length
 
-      {/* Chat window */}
-      <div className="flex-1 flex flex-col bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden">
-        {!activePhone ? (
-          <div className="flex-1 flex items-center justify-center text-gray-500 text-sm">
-            Select a conversation
-          </div>
-        ) : (
-          <>
-            <div className="px-4 py-3 border-b border-gray-800 flex items-center gap-2">
-              <div className="w-7 h-7 rounded-full bg-gradient-to-br from-red-600 to-pink-600 flex items-center justify-center text-xs font-bold">
-                {activePhone.slice(-2)}
-              </div>
-              <p className="text-sm font-semibold">{activePhone}</p>
+  return (
+    <div>
+      <SectionHeader title="Support Messages" count={unreadCount} subtitle="Reply to user support requests in real-time" />
+      <div className="grid md:grid-cols-2 gap-4">
+        <div className="space-y-2">
+          {loading ? (
+            <div className="text-center py-12 text-gray-500">Loading...</div>
+          ) : threads.length === 0 ? (
+            <div className="card text-center py-12">
+              <p className="text-4xl mb-3">💬</p>
+              <p style={{ color: 'var(--text-muted)' }}>No support messages yet</p>
             </div>
-            <div className="flex-1 overflow-y-auto p-4 space-y-3">
-              {messages.map((m, i) => (
-                <div key={i} className={`flex ${m.sender_type === 'admin' ? 'justify-end' : 'justify-start'}`}>
-                  <div className={`max-w-xs px-3 py-2 rounded-2xl text-sm ${m.sender_type === 'admin' ? 'bg-gradient-to-r from-red-700 to-pink-700 text-white rounded-tr-none' : 'bg-gray-800 text-gray-200 rounded-tl-none'}`}>
-                    <p>{m.message}</p>
-                    <p className={`text-xs mt-1 ${m.sender_type === 'admin' ? 'text-red-200' : 'text-gray-500'}`}>
-                      {new Date(m.created_at).toLocaleTimeString('en-KE', { hour: '2-digit', minute: '2-digit' })}
-                    </p>
+          ) : (
+            threads.map(t => {
+              const last = t.messages?.at(-1)
+              const isUnread = last?.sender_type === 'user'
+              return (
+                <div key={t.userPhone} onClick={() => setActivePhone(t.userPhone)}
+                  className={`card cursor-pointer transition-all hover:border-gray-600 ${activePhone === t.userPhone ? 'border-red-600 ring-1 ring-red-600/30' : ''} ${isUnread ? 'border-yellow-700/50' : ''}`}>
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-full bg-gradient-to-br from-red-600 to-pink-600 flex items-center justify-center font-bold text-sm flex-shrink-0">
+                      {t.userPhone?.slice(-2)}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <p className="font-semibold text-sm truncate">{t.userPhone}</p>
+                        {isUnread && <span className="w-2 h-2 rounded-full bg-yellow-400 flex-shrink-0" />}
+                      </div>
+                      <p className="text-xs truncate" style={{ color: 'var(--text-muted)' }}>{last?.message || '...'}</p>
+                    </div>
                   </div>
                 </div>
-              ))}
+              )
+            })
+          )}
+        </div>
+
+        {activePhone ? (
+          <div className="card flex flex-col h-96">
+            <div className="flex items-center gap-2 mb-3 pb-3 border-b" style={{ borderColor: 'var(--border)' }}>
+              <button onClick={() => setActivePhone(null)} className="text-gray-400 hover:text-white text-sm">←</button>
+              <p className="font-semibold text-sm">{activePhone}</p>
+            </div>
+            <div className="flex-1 overflow-y-auto space-y-2 mb-3 pr-1">
+              {messages.length === 0 ? (
+                <p className="text-center text-sm py-8" style={{ color: 'var(--text-muted)' }}>No messages</p>
+              ) : (
+                messages.map((m, i) => (
+                  <div key={i} className={`flex ${m.sender_type === 'admin' ? 'justify-end' : 'justify-start'}`}>
+                    <div className={`max-w-[80%] px-3 py-2 rounded-2xl text-sm ${m.sender_type === 'admin' ? 'bg-gradient-to-r from-red-700 to-pink-700 text-white rounded-tr-none' : 'bg-gray-800 text-gray-200 rounded-tl-none'}`}>
+                      <p>{m.message}</p>
+                      <p className={`text-[10px] mt-1 ${m.sender_type === 'admin' ? 'text-red-200' : 'text-gray-500'}`}>
+                        {new Date(m.created_at).toLocaleTimeString('en-KE', { hour: '2-digit', minute: '2-digit' })}
+                      </p>
+                    </div>
+                  </div>
+                ))
+              )}
               <div ref={bottomRef} />
             </div>
-            <form onSubmit={handleSend} className="border-t border-gray-800 p-3 flex gap-2">
-              <input
-                className="flex-1 bg-gray-800 border border-gray-700 text-white placeholder-gray-500 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-red-500"
-                placeholder="Type a reply..."
-                value={reply}
-                onChange={e => setReply(e.target.value)}
-              />
+            <form onSubmit={handleSend} className="flex gap-2">
+              <input className="flex-1 text-sm px-3 py-2 rounded-xl border outline-none transition-colors"
+                style={{ background: 'var(--bg-input)', borderColor: 'var(--border)', color: 'var(--text-primary)' }}
+                placeholder="Type reply..." value={reply} onChange={e => setReply(e.target.value)} />
               <button type="submit" disabled={sending || !reply.trim()} className="btn-primary text-sm py-2 px-4">
                 {sending ? '...' : 'Send'}
               </button>
             </form>
-          </>
+          </div>
+        ) : (
+          <div className="card flex items-center justify-center h-96">
+            <p style={{ color: 'var(--text-muted)' }}>Select a conversation</p>
+          </div>
         )}
       </div>
     </div>
   )
 }
 
-// ── Password Resets Tab ────────────────────────────────────────────────────────
+// ── Password Resets Tab ───────────────────────────────────────────────────────
 function PasswordResetsTab({ showToast }) {
   const [requests, setRequests] = useState([])
   const [loading, setLoading] = useState(true)
   const [resetting, setResetting] = useState(null)
-  const [tempPin, setTempPin] = useState('')
+  const [newPin, setNewPin] = useState('')
+  const [saving, setSaving] = useState(false)
 
-  async function load() {
+  const load = useCallback(async () => {
     setLoading(true)
-    try { setRequests(await getPasswordResetRequests()) } catch {}
+    try { setRequests(await getPasswordResetRequests()) } catch { }
     setLoading(false)
-  }
-  useEffect(() => { load() }, [])
+  }, [])
 
-  useEffect(() => {
-    if (!resetting) setTempPin('')
-  }, [resetting])
+  useEffect(() => { load() }, [load])
 
   async function handleReset(req) {
-    if (!tempPin || tempPin.length < 4) { showToast('Enter a valid temporary PIN (4–6 digits)'); return }
-    setResetting(req.id)
+    if (!newPin || newPin.length < 4) { showToast('PIN must be at least 4 digits', 'error'); return }
+    setSaving(true)
     try {
-      await adminResetPassword(req.user_phone, tempPin)
+      await adminResetPassword(req.user_phone, newPin)
       await updatePasswordResetRequest(req.id, { status: 'completed', completed_at: new Date().toISOString() })
-      showToast('✅ Temporary password set. User has been notified via SMS.')
-      setTempPin('')
+      showToast(`✅ PIN reset for ${req.user_phone}`)
+      setResetting(null); setNewPin('')
       load()
-    } catch (e) { showToast('❌ ' + e.message) }
-    setResetting(false)
+    } catch { showToast('❌ Failed to reset PIN', 'error') }
+    setSaving(false)
   }
 
   const pending = requests.filter(r => r.status === 'pending')
-  const completed = requests.filter(r => r.status === 'completed')
 
   return (
     <div>
-      <div className="grid grid-cols-2 gap-3 mb-5">
-        <div className="bg-gray-900 border border-gray-800 rounded-xl p-3 text-center">
-          <p className="text-xl font-black text-yellow-400">{pending.length}</p>
-          <p className="text-gray-500 text-xs">Pending</p>
+      {resetting && (
+        <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" onClick={() => setResetting(null)}>
+          <div className="card max-w-sm w-full" onClick={e => e.stopPropagation()}>
+            <h3 className="font-bold text-lg mb-1">Reset PIN</h3>
+            <p className="text-sm mb-4" style={{ color: 'var(--text-muted)' }}>{resetting.user_phone}</p>
+            <div className="mb-4">
+              <label className="text-xs mb-1 block" style={{ color: 'var(--text-muted)' }}>New Temporary PIN (4–6 digits)</label>
+              <input className="input-field" type="text" maxLength={6} placeholder="e.g. 1234"
+                value={newPin} onChange={e => setNewPin(e.target.value.replace(/\D/g, ''))} />
+            </div>
+            <div className="p-3 rounded-xl text-xs mb-4" style={{ background: 'var(--bg-input)' }}>
+              ⚠️ User will be forced to change this PIN on next login.
+            </div>
+            <div className="flex gap-3">
+              <button onClick={() => setResetting(null)} className="btn-secondary flex-1">Cancel</button>
+              <button onClick={() => handleReset(resetting)} disabled={saving || newPin.length < 4} className="btn-primary flex-1">
+                {saving ? 'Resetting...' : 'Reset PIN'}
+              </button>
+            </div>
+          </div>
         </div>
-        <div className="bg-gray-900 border border-gray-800 rounded-xl p-3 text-center">
-          <p className="text-xl font-black text-green-400">{completed.length}</p>
-          <p className="text-gray-500 text-xs">Completed</p>
-        </div>
-      </div>
+      )}
 
-      {loading ? <Spinner /> : pending.length === 0 && completed.length === 0 ? <Empty text="No password reset requests yet" /> : (
+      <SectionHeader title="PIN Reset Requests" count={pending.length} subtitle="Assign temporary PINs to locked-out users" />
+
+      {loading ? (
+        <div className="text-center py-12 text-gray-500">Loading...</div>
+      ) : requests.length === 0 ? (
+        <div className="card text-center py-12">
+          <p className="text-4xl mb-3">🔑</p>
+          <p style={{ color: 'var(--text-muted)' }}>No PIN reset requests</p>
+        </div>
+      ) : (
         <div className="space-y-3">
-          {pending.map(req => (
-            <div key={req.id} className="card">
-              <div className="flex items-start justify-between mb-3">
-                <div>
-                  <p className="font-bold text-yellow-400">{req.user_phone}</p>
-                  <p className="text-gray-500 text-xs mt-1">{fmtDate(req.created_at)}</p>
+          {requests.map(req => (
+            <div key={req.id} className="card flex items-center justify-between gap-4 hover:border-gray-600 transition-colors">
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="font-semibold text-sm">{req.user_phone}</span>
+                  <StatusBadge status={req.status} />
                 </div>
-                <span className="text-xs bg-yellow-900/60 text-yellow-400 px-2 py-0.5 rounded-full font-medium">Pending</span>
+                <p className="text-xs" style={{ color: 'var(--text-muted)' }}>Requested: {fmt(req.created_at)}</p>
+                {req.completed_at && <p className="text-xs" style={{ color: 'var(--text-muted)' }}>Completed: {fmt(req.completed_at)}</p>}
               </div>
-              {resetting === req.id ? (
-                <div className="space-y-2">
-                  <input
-                    className="input-field"
-                    type="password"
-                    inputMode="numeric"
-                    maxLength={6}
-                    placeholder="Enter temporary PIN (4–6 digits)"
-                    value={tempPin}
-                    onChange={e => setTempPin(e.target.value.replace(/\D/g, ''))}
-                    autoFocus
-                  />
-                  <div className="flex gap-2">
-                    <button onClick={() => { setResetting(null); setTempPin('') }} className="btn-secondary flex-1 text-xs py-2">Cancel</button>
-                    <button onClick={() => handleReset(req)} className="btn-primary flex-1 text-xs py-2">Set & Notify</button>
-                  </div>
-                </div>
-              ) : (
-                <button onClick={() => setResetting(req.id)} className="w-full text-xs py-2 rounded-xl font-semibold bg-yellow-700 hover:bg-yellow-600 text-white transition-all">
-                  Reset Password
+              {req.status === 'pending' && (
+                <button onClick={() => { setResetting(req); setNewPin('') }}
+                  className="px-3 py-1.5 bg-yellow-700 hover:bg-yellow-600 text-white text-xs font-semibold rounded-lg transition-colors flex-shrink-0">
+                  🔑 Reset PIN
                 </button>
               )}
-            </div>
-          ))}
-          {completed.map(req => (
-            <div key={req.id} className="card opacity-60">
-              <div className="flex items-start justify-between mb-1">
-                <div>
-                  <p className="font-bold text-green-400">{req.user_phone}</p>
-                  <p className="text-gray-500 text-xs mt-1">{fmtDate(req.created_at)}</p>
-                </div>
-                <span className="text-xs bg-green-900/60 text-green-400 px-2 py-0.5 rounded-full font-medium">Completed</span>
-              </div>
             </div>
           ))}
         </div>
@@ -678,91 +792,166 @@ function PasswordResetsTab({ showToast }) {
   )
 }
 
-// ── Shared UI primitives ──────────────────────────────────────────────────────
-function Spinner() {
+// ── Overview / Stats Tab ──────────────────────────────────────────────────────
+function OverviewTab() {
+  const [stats, setStats] = useState(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    async function load() {
+      setLoading(true)
+      try {
+        const [deposits, withdrawals, loans, users] = await Promise.all([
+          getAllDeposits(), getAllWithdrawals(), getAllLoans(), getAllUsers()
+        ])
+        setStats({
+          totalUsers: users.length,
+          totalBalance: users.reduce((s, u) => s + Number(u.balance || 0), 0),
+          pendingDeposits: deposits.filter(d => d.status === 'pending').length,
+          pendingWithdrawals: withdrawals.filter(w => w.status === 'pending').length,
+          pendingLoans: loans.filter(l => l.status === 'pending').length,
+          totalDeposited: deposits.filter(d => d.status === 'approved').reduce((s, d) => s + Number(d.amount), 0),
+          totalWithdrawn: withdrawals.filter(w => w.status === 'approved').reduce((s, w) => s + Number(w.amount), 0),
+        })
+      } catch { }
+      setLoading(false)
+    }
+    load()
+  }, [])
+
+  if (loading) return <div className="text-center py-12 text-gray-500">Loading overview...</div>
+  if (!stats) return null
+
+  const cards = [
+    { label: 'Total Users', value: stats.totalUsers, icon: '👥', color: 'text-blue-400' },
+    { label: 'Platform Balance', value: `KSh ${stats.totalBalance.toLocaleString()}`, icon: '💰', color: 'text-green-400' },
+    { label: 'Total Deposited', value: `KSh ${stats.totalDeposited.toLocaleString()}`, icon: '💳', color: 'text-emerald-400' },
+    { label: 'Total Withdrawn', value: `KSh ${stats.totalWithdrawn.toLocaleString()}`, icon: '💸', color: 'text-red-400' },
+    { label: 'Pending Deposits', value: stats.pendingDeposits, icon: '⏳', color: stats.pendingDeposits > 0 ? 'text-amber-400' : 'text-gray-400' },
+    { label: 'Pending Withdrawals', value: stats.pendingWithdrawals, icon: '⏳', color: stats.pendingWithdrawals > 0 ? 'text-amber-400' : 'text-gray-400' },
+    { label: 'Pending Loans', value: stats.pendingLoans, icon: '🏦', color: stats.pendingLoans > 0 ? 'text-purple-400' : 'text-gray-400' },
+  ]
+
   return (
-    <div className="text-center py-12">
-      <div className="w-8 h-8 border-4 border-red-600 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
-      <p className="text-gray-500 text-xs">Loading...</p>
+    <div>
+      <SectionHeader title="Platform Overview" subtitle="Real-time summary of all platform activity" />
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+        {cards.map(c => (
+          <div key={c.label} className="card text-center hover:border-gray-600 transition-colors">
+            <p className="text-3xl mb-2">{c.icon}</p>
+            <p className={`text-xl font-black ${c.color}`}>{c.value}</p>
+            <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>{c.label}</p>
+          </div>
+        ))}
+      </div>
     </div>
   )
-}
-function Empty({ text }) {
-  return <div className="card text-center py-12"><p className="text-gray-500 text-sm">{text}</p></div>
 }
 
 // ── Main Admin Page ───────────────────────────────────────────────────────────
 const TABS = [
-  { id: 'deposits',    label: '💰 Deposits' },
-  { id: 'withdrawals', label: '💸 Withdrawals' },
-  { id: 'loans',       label: '🏦 Loans' },
-  { id: 'users',       label: '👥 Users' },
-  { id: 'keywords',    label: '🎟️ Keywords' },
-  { id: 'support',     label: '💬 Support' },
-  { id: 'password-resets', label: '🔑 Passwords' },
+  { id: 'overview',    label: 'Overview',    icon: '📊' },
+  { id: 'deposits',    label: 'Deposits',    icon: '💳' },
+  { id: 'withdrawals', label: 'Withdrawals', icon: '💸' },
+  { id: 'loans',       label: 'Loans',       icon: '🏦' },
+  { id: 'users',       label: 'Users',       icon: '👥' },
+  { id: 'promo',       label: 'Promo Codes', icon: '🎟️' },
+  { id: 'support',     label: 'Support',     icon: '💬' },
+  { id: 'resets',      label: 'PIN Resets',  icon: '🔑' },
 ]
 
 export default function AdminPage() {
   const { user } = useAuth()
   const navigate = useNavigate()
-  const [tab, setTab] = useState('deposits')
-  const [toast, setToast] = useState('')
+  const [tab, setTab] = useState('overview')
+  const [toast, setToast] = useState(null)
 
   const adminPhone = import.meta.env.VITE_ADMIN_PHONE
-  const isAdmin = user && adminPhone && user.phone === adminPhone
+  const isAdmin = user && (user.is_admin === true || (adminPhone && user.phone === adminPhone))
 
   useEffect(() => {
-    if (!user) { navigate('/login'); return }
-    if (!isAdmin) { navigate('/dashboard') }
+    if (user === null) navigate('/login')
+    else if (user && !isAdmin) navigate('/dashboard')
   }, [user, isAdmin, navigate])
 
-  function showToast(msg) {
-    setToast(msg)
-    setTimeout(() => setToast(''), 3500)
+  const showToast = useCallback((msg, type = 'success') => {
+    setToast({ msg, type })
+    setTimeout(() => setToast(null), 4000)
+  }, [])
+
+  if (!user || !isAdmin) {
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--bg-base)' }}>
+        <div className="text-center">
+          <p className="text-4xl mb-4">🔒</p>
+          <p className="font-semibold">Admin access required</p>
+        </div>
+      </div>
+    )
   }
 
-  if (!user || !isAdmin) return null
-
   return (
-    <div className="min-h-screen bg-gray-950 pb-10">
+    <div className="min-h-screen" style={{ background: 'var(--bg-base)', color: 'var(--text-primary)' }}>
       {toast && (
-        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-gray-900 border border-gray-700 text-white px-5 py-3 rounded-xl shadow-2xl text-sm font-medium">
-          {toast}
+        <div className={`toast ${toast.type === 'error' ? 'toast-error' : 'toast-success'}`}>
+          {toast.msg}
         </div>
       )}
 
-      {/* Header */}
-      <div className="bg-gray-900 border-b border-gray-800 px-4 py-4 flex items-center justify-between">
-        <div>
-          <h1 className="text-lg font-black">⚙️ Admin Dashboard</h1>
-          <p className="text-gray-500 text-xs">Dumiropay Control Centre</p>
+      {/* Top bar */}
+      <div className="sticky top-0 z-40 border-b px-4 py-3 flex items-center justify-between"
+        style={{ background: 'var(--nav-bg)', borderColor: 'var(--border)', backdropFilter: 'blur(12px)' }}>
+        <div className="flex items-center gap-3">
+          <button onClick={() => navigate('/dashboard')} className="text-gray-400 hover:text-white text-sm transition-colors">← Back</button>
+          <div>
+            <span className="font-black text-lg bg-gradient-to-r from-red-500 to-pink-500 bg-clip-text text-transparent">Dumiropay</span>
+            <span className="ml-2 text-xs bg-yellow-600 text-white px-2 py-0.5 rounded-full font-semibold">Admin</span>
+          </div>
         </div>
-        <button onClick={() => navigate('/dashboard')} className="btn-secondary text-xs py-1.5 px-3">← Back</button>
+        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-yellow-500 to-amber-600 flex items-center justify-center font-bold text-sm">
+          {user?.name?.[0]?.toUpperCase() || 'A'}
+        </div>
       </div>
 
-      {/* Tab bar — horizontally scrollable on mobile */}
-      <div className="overflow-x-auto px-4 pt-4 pb-2">
-        <div className="flex gap-2 min-w-max">
+      <div className="flex flex-col md:flex-row min-h-[calc(100vh-57px)]">
+        {/* Sidebar — desktop */}
+        <aside className="hidden md:flex flex-col w-56 border-r p-4 gap-1 flex-shrink-0"
+          style={{ borderColor: 'var(--border)', background: 'var(--bg-surface)' }}>
           {TABS.map(t => (
             <button key={t.id} onClick={() => setTab(t.id)}
-              className={`px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all ${tab === t.id ? 'bg-gradient-to-r from-red-600 to-pink-600 text-white shadow' : 'bg-gray-800 text-gray-400 hover:text-white'}`}>
-              {t.label}
+              className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all text-left ${tab === t.id ? 'bg-gradient-to-r from-red-600 to-pink-600 text-white shadow-lg' : 'text-gray-400 hover:text-white hover:bg-gray-800'}`}>
+              <span>{t.icon}</span>
+              <span>{t.label}</span>
+            </button>
+          ))}
+        </aside>
+
+        {/* Mobile tab bar */}
+        <div className="md:hidden overflow-x-auto border-b flex gap-1 px-3 py-2 flex-shrink-0"
+          style={{ borderColor: 'var(--border)', background: 'var(--bg-surface)' }}>
+          {TABS.map(t => (
+            <button key={t.id} onClick={() => setTab(t.id)}
+              className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${tab === t.id ? 'bg-gradient-to-r from-red-600 to-pink-600 text-white' : 'text-gray-400'}`}
+              style={{ background: tab === t.id ? undefined : 'var(--bg-input)' }}>
+              {t.icon} {t.label}
             </button>
           ))}
         </div>
-      </div>
 
-      {/* Tab content */}
-      <div className="px-4 pt-4 max-w-2xl mx-auto">
-        {tab === 'deposits'    && <DepositsTab    showToast={showToast} />}
-        {tab === 'withdrawals' && <WithdrawalsTab showToast={showToast} />}
-        {tab === 'loans'       && <LoansTab       showToast={showToast} />}
-        {tab === 'users'       && <UsersTab       showToast={showToast} />}
-        {tab === 'keywords'    && <KeywordsTab    showToast={showToast} />}
-        {tab === 'support'     && <SupportTab     showToast={showToast} />}
-        {tab === 'password-resets' && <PasswordResetsTab showToast={showToast} />}
+        {/* Main content */}
+        <main className="flex-1 p-4 md:p-6 overflow-auto">
+          <div className="max-w-4xl mx-auto animate-fadeIn">
+            {tab === 'overview'    && <OverviewTab />}
+            {tab === 'deposits'    && <DepositsTab showToast={showToast} />}
+            {tab === 'withdrawals' && <WithdrawalsTab showToast={showToast} />}
+            {tab === 'loans'       && <LoansTab showToast={showToast} />}
+            {tab === 'users'       && <UsersTab showToast={showToast} />}
+            {tab === 'promo'       && <PromoTab showToast={showToast} />}
+            {tab === 'support'     && <SupportTab showToast={showToast} />}
+            {tab === 'resets'      && <PasswordResetsTab showToast={showToast} />}
+          </div>
+        </main>
       </div>
     </div>
   )
 }
-

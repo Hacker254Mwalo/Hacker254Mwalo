@@ -690,13 +690,13 @@ export default function Dashboard() {
             <p className="font-semibold text-xs text-center">Buy Airtime</p>
           </div>
 
-          {/* Pay Bills — opens promo code modal */}
+          {/* Redeem Code — opens promo code modal */}
           <div
             className="card flex flex-col items-center gap-2 cursor-pointer transition-all active:scale-95 hover:border-teal-700 hover:bg-teal-950/20"
             onClick={() => setShowPromo(true)}
           >
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-green-600 to-teal-600 flex items-center justify-center text-xl">🎟️</div>
-            <p className="font-semibold text-xs text-center">Pay Bills</p>
+            <p className="font-semibold text-xs text-center">Redeem Code</p>
           </div>
 
           {/* Request Loan — fully functional */}
