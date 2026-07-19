@@ -368,6 +368,10 @@ function UsersTab({ showToast }) {
   const [editBalance, setEditBalance] = useState('')
   const [editBonus, setEditBonus] = useState('')
   const [saving, setSaving] = useState(false)
+  const [viewingInvestments, setViewingInvestments] = useState(null)
+  const [userInvs, setUserInvs] = useState([])
+  const [invLoading, setInvLoading] = useState(false)
+  const [confirmAction, setConfirmAction] = useState(null)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -400,6 +404,33 @@ function UsersTab({ showToast }) {
       load()
     } catch { showToast('❌ Failed to update balance', 'error') }
     setSaving(false)
+  }
+
+  async function handleToggleStatus(u) {
+    const newStatus = u.status === 'suspended' ? 'active' : 'suspended'
+    try {
+      await adminUpdateUserStatus(u.phone, newStatus)
+      showToast(`User ${u.phone} is now ${newStatus}`)
+      load()
+    } catch { showToast('❌ Failed to update status', 'error') }
+  }
+
+  async function handleDelete(u) {
+    try {
+      await adminDeleteUser(u.phone)
+      showToast(`✅ Account ${u.phone} deleted permanently`)
+      load()
+    } catch { showToast('❌ Failed to delete account', 'error') }
+  }
+
+  async function handleViewInvestments(u) {
+    setViewingInvestments(u)
+    setInvLoading(true)
+    try {
+      const invs = await getInvestments(u.phone)
+      setUserInvs(invs)
+    } catch { showToast('❌ Failed to load investments', 'error') }
+    setInvLoading(false)
   }
 
   const totalBalance = users.reduce((s, u) => s + Number(u.balance || 0), 0)
@@ -435,29 +466,85 @@ function UsersTab({ showToast }) {
         <input className="input-field" placeholder="Search by name or phone..." value={search} onChange={e => setSearch(e.target.value)} />
       </div>
 
+      {confirmAction && (
+        <ConfirmDialog
+          message={confirmAction.message}
+          onConfirm={() => { confirmAction.action(); setConfirmAction(null) }}
+          onCancel={() => setConfirmAction(null)}
+        />
+      )}
+
+      {viewingInvestments && (
+        <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" onClick={() => setViewingInvestments(null)}>
+          <div className="card max-w-md w-full max-h-[80vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="font-bold text-lg">Investments: {viewingInvestments.phone}</h3>
+              <button onClick={() => setViewingInvestments(null)} className="text-gray-400 hover:text-white">✕</button>
+            </div>
+            {invLoading ? (
+              <p className="text-center py-8 text-gray-500">Loading...</p>
+            ) : userInvs.length === 0 ? (
+              <p className="text-center py-8 text-gray-500">No investments found.</p>
+            ) : (
+              <div className="space-y-3">
+                {userInvs.map(inv => (
+                  <div key={inv.id} className="p-3 rounded-xl border border-gray-700 bg-gray-800/50">
+                    <div className="flex justify-between mb-1">
+                      <span className="font-bold text-sm">{inv.planName}</span>
+                      <StatusBadge status={inv.status} />
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 text-[10px] text-gray-400">
+                      <p>Amount: <span className="text-white">KSh {inv.amount.toLocaleString()}</span></p>
+                      <p>Daily: <span className="text-green-400">KSh {inv.dailyReturn.toLocaleString()}</span></p>
+                      <p>Started: <span>{fmt(inv.date)}</span></p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {loading ? (
         <div className="text-center py-12 text-gray-500">Loading...</div>
       ) : (
         <div className="space-y-3">
           {filtered.map(u => (
-            <div key={u.phone} className="card flex items-center justify-between gap-4 hover:border-gray-600 transition-colors">
-              <div className="flex items-center gap-3 flex-1 min-w-0">
-                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-red-600 to-pink-600 flex items-center justify-center font-bold text-sm flex-shrink-0">
-                  {u.name?.[0]?.toUpperCase() || '?'}
+            <div key={u.phone} className={`card flex flex-col gap-3 hover:border-gray-600 transition-colors ${u.status === 'suspended' ? 'opacity-60 border-red-900/50' : ''}`}>
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex items-center gap-3 flex-1 min-w-0">
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-red-600 to-pink-600 flex items-center justify-center font-bold text-sm flex-shrink-0">
+                    {u.name?.[0]?.toUpperCase() || '?'}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <p className="font-semibold text-sm truncate">{u.name || 'Unknown'}</p>
+                      {u.status === 'suspended' && <span className="text-[10px] bg-red-900 text-red-200 px-1.5 py-0.5 rounded uppercase font-bold">Suspended</span>}
+                    </div>
+                    <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{u.phone}</p>
+                  </div>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-sm truncate">{u.name || 'Unknown'}</p>
-                  <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{u.phone}</p>
-                  <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>Joined {fmt(u.created_at)}</p>
+                <div className="text-right flex-shrink-0">
+                  <p className="font-bold text-green-400">KSh {Number(u.balance || 0).toLocaleString()}</p>
+                  {u.bonus_balance > 0 && (
+                    <p className="text-xs text-yellow-400">+KSh {Number(u.bonus_balance).toLocaleString()} bonus</p>
+                  )}
                 </div>
               </div>
-              <div className="text-right flex-shrink-0">
-                <p className="font-bold text-green-400">KSh {Number(u.balance || 0).toLocaleString()}</p>
-                {u.bonus_balance > 0 && (
-                  <p className="text-xs text-yellow-400">+KSh {Number(u.bonus_balance).toLocaleString()} bonus</p>
-                )}
-                <button onClick={() => startEdit(u)} className="mt-1 px-2 py-1 text-xs rounded-lg font-semibold transition-colors text-gray-400 hover:text-white" style={{ background: 'var(--bg-input)' }}>
-                  ✏️ Edit
+              
+              <div className="flex gap-2 flex-wrap pt-2 border-t border-gray-800">
+                <button onClick={() => startEdit(u)} className="px-2 py-1 text-[10px] rounded bg-gray-800 hover:bg-gray-700 text-gray-300 transition-colors">
+                  ✏️ Edit Bal
+                </button>
+                <button onClick={() => handleViewInvestments(u)} className="px-2 py-1 text-[10px] rounded bg-blue-900/30 hover:bg-blue-900/50 text-blue-300 transition-colors">
+                  📈 Packages
+                </button>
+                <button onClick={() => handleToggleStatus(u)} className={`px-2 py-1 text-[10px] rounded transition-colors ${u.status === 'suspended' ? 'bg-green-900/30 text-green-300 hover:bg-green-900/50' : 'bg-yellow-900/30 text-yellow-300 hover:bg-yellow-900/50'}`}>
+                  {u.status === 'suspended' ? '🔓 Activate' : '🚫 Suspend'}
+                </button>
+                <button onClick={() => setConfirmAction({ message: `Permanently DELETE account ${u.phone}? This cannot be undone.`, action: () => handleDelete(u) })} className="px-2 py-1 text-[10px] rounded bg-red-900/30 hover:bg-red-900/50 text-red-300 transition-colors">
+                  🗑️ Delete
                 </button>
               </div>
             </div>

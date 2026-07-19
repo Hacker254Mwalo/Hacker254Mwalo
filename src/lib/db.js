@@ -118,6 +118,7 @@ export async function verifyUser(phone, pin) {
   if (!data) return null
   const pinHash = await hashPin(pin)
   if (data.pin_hash !== pinHash) return null
+  if (data.status === 'suspended') throw new Error('Your account has been suspended. Please contact support.')
   return dbUserToApp(data)
 }
 
@@ -397,15 +398,28 @@ export async function getAllUsers() {
   if (!isSupabaseConfigured) {
     return Object.values(local.getUsers()).map(u => ({
       phone: u.phone, name: u.name, balance: Number(u.balance || 0),
-      bonus_balance: Number(u.bonus_balance || 0), is_admin: u.is_admin || false, created_at: u.created_at,
+      bonus_balance: Number(u.bonus_balance || 0), is_admin: u.is_admin || false, 
+      status: u.status || 'active', created_at: u.created_at,
     }))
   }
   const { data, error } = await supabase
     .from('users')
-    .select('phone, name, balance, bonus_balance, is_admin, created_at')
+    .select('phone, name, balance, bonus_balance, is_admin, status, created_at')
     .order('created_at', { ascending: false })
   if (error) throw error
   return data || []
+}
+
+export async function adminDeleteUser(phone) {
+  if (!isSupabaseConfigured) { local.deleteUser(phone); return }
+  const { error } = await supabase.rpc('admin_delete_user', { p_user_phone: phone })
+  if (error) throw error
+}
+
+export async function adminUpdateUserStatus(phone, status) {
+  if (!isSupabaseConfigured) { local.saveUser(phone, { status }); return }
+  const { error } = await supabase.rpc('admin_update_user_status', { p_user_phone: phone, p_status: status })
+  if (error) throw error
 }
 
 export async function adminSetBalance(phone, balance) {
