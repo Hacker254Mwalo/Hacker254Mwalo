@@ -413,7 +413,7 @@ export default function AuthPage() {
           </div>
           <div className="text-center p-2.5 rounded-xl" style={{ background: 'linear-gradient(135deg, rgba(255,215,0,0.08) 0%, rgba(218,165,32,0.04) 100%)', border: '1px solid rgba(255,215,0,0.12)' }}>
             <p className="text-lg font-bold" style={{ color: '#FFD700' }}>100%</p>
-            <p className="text-[10px] text-gray-400 tracking-wide">Encrypted</p>
+            <p className="text-[10px] text-gray-400 tracking-wide">Start Earning & Withdraw Directly to M-Pesa</p>
           </div>
         </div>
 

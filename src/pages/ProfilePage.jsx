@@ -701,18 +701,34 @@ export default function ProfilePage() {
         {referrals.length > 0 ? (
           <div className="space-y-2 mt-4">
             <p className="text-sm font-semibold uppercase tracking-wider" style={{ color: 'var(--text-secondary)' }}>Referral History</p>
-            {referrals.map((r, i) => (
-              <div key={i} className="flex items-center justify-between rounded-xl px-4 py-3" style={{ background: 'var(--bg-elevated)' }}>
-                <div>
-                  <p className="text-sm font-medium">{r.referredName}</p>
-                  <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{new Date(r.date).toLocaleDateString()} • Level {r.level}</p>
+            {referrals.map((r, i) => {
+              const maskedPhone = r.referredPhone
+                ? r.referredPhone.slice(0, 5) + '***'
+                : 'Unknown'
+              return (
+                <div key={i} className="flex items-center justify-between rounded-xl px-4 py-3" style={{ background: 'var(--bg-elevated)' }}>
+                  <div>
+                    <p className="text-sm font-medium">{r.referredName || maskedPhone}</p>
+                    <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{maskedPhone} • Level {r.level}</p>
+                    <div className="flex items-center gap-1.5 mt-1">
+                      <span className={`inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full font-bold ${
+                        r.isActive
+                          ? 'bg-green-900/50 text-green-300'
+                          : 'bg-gray-700/50 text-gray-400'
+                      }`}>
+                        <span className={`w-1.5 h-1.5 rounded-full ${r.isActive ? 'bg-green-400' : 'bg-gray-500'}`}/>
+                        {r.isActive ? 'Active' : 'Inactive'}
+                      </span>
+                      {r.planName && <span className="text-[10px]" style={{ color: 'var(--text-muted)' }}>• {r.planName}</span>}
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-green-400 font-semibold text-sm">+KSh {r.commission.toLocaleString()}</p>
+                    <p className="text-[10px]" style={{ color: 'var(--text-muted)' }}>{new Date(r.date).toLocaleDateString()}</p>
+                  </div>
                 </div>
-                <div className="text-right">
-                  <p className="text-green-400 font-semibold text-sm">+KSh {r.commission.toLocaleString()}</p>
-                  <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{r.planName}</p>
-                </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
         ) : (
           <p className="text-center text-sm py-4" style={{ color: 'var(--text-muted)' }}>No referrals yet. Share your code to earn!</p>

@@ -248,17 +248,39 @@ export async function getReferrals(userPhone) {
   if (!isSupabaseConfigured) return local.getReferrals(userPhone)
   const { data, error } = await supabase
     .from('referrals')
-    .select('referred_name, level, commission, plan_name, created_at')
+    .select('referred_name, referred_phone, level, commission, plan_name, created_at')
     .eq('referrer_phone', userPhone)
     .order('created_at', { ascending: false })
   if (error) throw error
-  return (data || []).map(r => ({
-    referredName: r.referred_name,
-    level: r.level,
-    commission: Number(r.commission),
-    planName: r.plan_name,
-    date: r.created_at,
-  }))
+  const refs = data || []
+
+  // Check investment status for each referred user
+  const result = []
+  for (const r of refs) {
+    let isActive = false
+    if (r.referred_phone) {
+      try {
+        const { data: invs, error: invErr } = await supabase
+          .from('investments')
+          .select('status')
+          .eq('user_phone', r.referred_phone)
+          .limit(1)
+        if (!invErr && invs && invs.length > 0) {
+          isActive = invs[0].status === 'active'
+        }
+      } catch { /* silently skip */ }
+    }
+    result.push({
+      referredName: r.referred_name,
+      referredPhone: r.referred_phone || '',
+      level: r.level,
+      commission: Number(r.commission),
+      planName: r.plan_name,
+      date: r.created_at,
+      isActive,
+    })
+  }
+  return result
 }
 
 // Admin: Get ALL referrals across the platform

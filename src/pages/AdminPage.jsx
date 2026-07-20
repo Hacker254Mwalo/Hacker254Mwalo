@@ -380,10 +380,13 @@ function UsersTab({ showToast }) {
   const [userInvs, setUserInvs] = useState([])
   const [invLoading, setInvLoading] = useState(false)
   const [confirmAction, setConfirmAction] = useState(null)
+  const [viewingReferrals, setViewingReferrals] = useState(null)
+  const [userReferrals, setUserReferrals] = useState([])
+  const [refLoading, setRefLoading] = useState(false)
 
   const load = useCallback(async () => {
     setLoading(true)
-    try { setUsers(await getAllUsers()) } catch { }
+    try { setUsers(await getAllUsers()) } catch (e) { console.error('Failed to load users:', e) }
     setLoading(false)
   }, [])
 
@@ -439,6 +442,16 @@ function UsersTab({ showToast }) {
       setUserInvs(invs)
     } catch { showToast('❌ Failed to load investments', 'error') }
     setInvLoading(false)
+  }
+
+  async function handleViewReferrals(u) {
+    setViewingReferrals(u)
+    setRefLoading(true)
+    try {
+      const refs = await getReferrals(u.phone)
+      setUserReferrals(refs)
+    } catch (e) { console.error('Failed to load referrals:', e); setUserReferrals([]) }
+    setRefLoading(false)
   }
 
   const totalBalance = users.reduce((s, u) => s + Number(u.balance || 0), 0)
@@ -547,6 +560,9 @@ function UsersTab({ showToast }) {
                 </button>
                 <button onClick={() => handleViewInvestments(u)} className="px-2 py-1 text-[10px] rounded bg-blue-900/30 hover:bg-blue-900/50 text-blue-300 transition-colors">
                   📈 Packages
+                </button>
+                <button onClick={() => handleViewReferrals(u)} className="px-2 py-1 text-[10px] rounded bg-purple-900/30 hover:bg-purple-900/50 text-purple-300 transition-colors">
+                  🤝 Referrals
                 </button>
                 {!u.is_admin && (
                   <>
@@ -1301,14 +1317,25 @@ export default function AdminPage() {
   const isAdmin = user?.isAdmin === true
 
   useEffect(() => {
+    if (loading) return
     if (user === null) navigate('/login')
     else if (user && !isAdmin) navigate('/dashboard')
-  }, [user, isAdmin, navigate])
+  }, [user, isAdmin, navigate, loading])
 
   const showToast = useCallback((msg, type = 'success') => {
     setToast({ msg, type })
     setTimeout(() => setToast(null), 4000)
   }, [])
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--bg-base)' }}>
+        <div className="text-center">
+          <p className="text-xl">Loading...</p>
+        </div>
+      </div>
+    )
+  }
 
   if (!user || !isAdmin) {
     return (
