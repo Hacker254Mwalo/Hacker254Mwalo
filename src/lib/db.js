@@ -418,7 +418,7 @@ export async function getAllUsers() {
 }
 
 export async function adminDeleteUser(phone) {
-  if (!isSupabaseConfigured) { local.deleteUser(phone); return }
+  if (!isSupabaseConfigured) { const users = JSON.parse(localStorage.getItem('dp_users') || '{}'); delete users[phone]; localStorage.setItem('dp_users', JSON.stringify(users)); return }
   const { error } = await supabase.rpc('admin_delete_user', { p_user_phone: phone })
   if (error) throw error
 }
@@ -436,6 +436,40 @@ export async function adminSetBalance(phone, balance) {
     p_balance: Number(balance),
   })
   if (error) throw error
+}
+
+export async function withdrawBonus(userPhone, amount, mpesaPhone) {
+  if (!isSupabaseConfigured) {
+    const u = local.getUser(userPhone)
+    if (u) local.saveUser(userPhone, { bonus_balance: Number(u.bonus_balance || 0) - Number(amount) })
+    return { success: true, net_amount: amount * 0.95, fee: amount * 0.05 }
+  }
+  const { data, error } = await supabase.rpc('withdraw_bonus', {
+    p_user_phone: userPhone,
+    p_amount: Number(amount),
+    p_mpesa_phone: mpesaPhone,
+  })
+  if (error) throw error
+  return data
+}
+
+export async function transferBonusToMain(userPhone, amount) {
+  if (!isSupabaseConfigured) {
+    const u = local.getUser(userPhone)
+    if (u) {
+      local.saveUser(userPhone, {
+        bonus_balance: Number(u.bonus_balance || 0) - Number(amount),
+        balance: Number(u.balance || 0) + Number(amount),
+      })
+    }
+    return { success: true, new_balance: Number(u?.balance || 0) + Number(amount) }
+  }
+  const { data, error } = await supabase.rpc('transfer_bonus_to_main', {
+    p_user_phone: userPhone,
+    p_amount: Number(amount),
+  })
+  if (error) throw error
+  return data
 }
 
 export async function adminSetBonusBalance(phone, bonusBalance) {

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
-import { getReferrals, generateReferralCode, addDeposit, addWithdrawal, changePassword, getUser } from '../lib/db'
+import { getReferrals, generateReferralCode, addDeposit, addWithdrawal, changePassword, getUser, withdrawBonus, transferBonusToMain } from '../lib/db'
 import { canChangePassword, recordPasswordChangeAttempt } from '../lib/storage'
 import { MPESA_PAYBILL, WITHDRAWAL_FEE } from '../lib/plans'
 
@@ -270,14 +270,171 @@ function WithdrawModal({ balance, onClose, onWithdraw }) {
   )
 }
 
+function BonusWithdrawModal({ bonusBalance, onClose, onWithdraw }) {
+  const [amount, setAmount] = useState('')
+  const [phone, setPhone] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+  const MIN_BONUS = 500
+
+  const fee = Math.floor(parseInt(amount || 0) * 0.05)
+  const receives = Math.max(0, parseInt(amount || 0) - fee)
+  const canWithdraw = parseInt(amount) >= MIN_BONUS && parseInt(amount) <= bonusBalance && phone.replace(/\s/g, '').length >= 10
+
+  async function confirm() {
+    setLoading(true)
+    setError('')
+    try {
+      await onWithdraw(parseInt(amount), phone.replace(/\s/g, ''))
+      onClose()
+    } catch (err) {
+      setError(err.message || 'Bonus withdrawal failed.')
+    }
+    setLoading(false)
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="card max-w-sm w-full" onClick={e => e.stopPropagation()}>
+        <h3 className="text-xl font-bold mb-1">🎁 Withdraw Bonus</h3>
+        <p className="text-xs mb-4" style={{ color: 'var(--text-secondary)' }}>Minimum KSh 500 · 5% fee applies</p>
+
+        <div className="space-y-4 mb-4">
+          <div>
+            <label className="text-xs mb-1 block" style={{ color: 'var(--text-secondary)' }}>Amount (KSh)</label>
+            <input
+              className="input-field"
+              placeholder={`Min KSh ${MIN_BONUS}`}
+              type="number"
+              min={MIN_BONUS}
+              max={bonusBalance}
+              value={amount}
+              onChange={e => { setAmount(e.target.value); setError('') }}
+            />
+          </div>
+          <div>
+            <label className="text-xs mb-1 block" style={{ color: 'var(--text-secondary)' }}>M-Pesa Phone Number</label>
+            <input
+              className="input-field"
+              placeholder="0712 345 678"
+              type="tel"
+              value={phone}
+              onChange={e => setPhone(e.target.value)}
+            />
+          </div>
+        </div>
+
+        {amount && parseInt(amount) > 0 && (
+          <div className="rounded-xl p-4 mb-4 space-y-2 text-sm" style={{ background: 'var(--bg-elevated)' }}>
+            <div className="flex justify-between">
+              <span style={{ color: 'var(--text-secondary)' }}>Amount</span>
+              <span>KSh {parseInt(amount).toLocaleString()}</span>
+            </div>
+            <div className="flex justify-between">
+              <span style={{ color: 'var(--text-secondary)' }}>Fee (5%)</span>
+              <span className="text-red-400">-KSh {fee.toLocaleString()}</span>
+            </div>
+            <hr style={{ borderColor: 'var(--border)' }} />
+            <div className="flex justify-between font-bold">
+              <span>You Receive</span>
+              <span className="text-green-400">KSh {receives.toLocaleString()}</span>
+            </div>
+          </div>
+        )}
+
+        {parseInt(amount) > bonusBalance && (
+          <p className="text-red-400 text-xs mb-4">Amount exceeds bonus balance (KSh {bonusBalance.toLocaleString()})</p>
+        )}
+
+        {error && (
+          <div className="bg-red-900/40 border border-red-700 text-red-300 text-sm rounded-lg px-4 py-3 mb-4">{error}</div>
+        )}
+
+        <div className="flex gap-3">
+          <button onClick={onClose} className="btn-secondary flex-1">Cancel</button>
+          <button onClick={confirm} disabled={!canWithdraw || loading} className="btn-primary flex-1">
+            {loading ? 'Processing...' : 'Withdraw Bonus'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function BonusTransferModal({ bonusBalance, onClose, onTransfer }) {
+  const [amount, setAmount] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+  const canTransfer = parseInt(amount) > 0 && parseInt(amount) <= bonusBalance
+
+  async function confirm() {
+    setLoading(true)
+    setError('')
+    try {
+      await onTransfer(parseInt(amount))
+      onClose()
+    } catch (err) {
+      setError(err.message || 'Transfer failed.')
+    }
+    setLoading(false)
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="card max-w-sm w-full" onClick={e => e.stopPropagation()}>
+        <h3 className="text-xl font-bold mb-1">🔄 Transfer Bonus to Balance</h3>
+        <p className="text-xs mb-4" style={{ color: 'var(--text-secondary)' }}>Move bonus to your main balance (no fee)</p>
+
+        <div className="space-y-4 mb-4">
+          <div>
+            <label className="text-xs mb-1 block" style={{ color: 'var(--text-secondary)' }}>Amount (KSh)</label>
+            <input
+              className="input-field"
+              placeholder={`Max KSh ${bonusBalance.toLocaleString()}`}
+              type="number"
+              min={1}
+              max={bonusBalance}
+              value={amount}
+              onChange={e => { setAmount(e.target.value); setError('') }}
+            />
+          </div>
+        </div>
+
+        <div className="rounded-xl p-4 mb-4 text-sm text-center" style={{ background: 'var(--bg-elevated)' }}>
+          <p style={{ color: 'var(--text-secondary)' }}>Available Bonus</p>
+          <p className="text-xl font-black text-yellow-400">KSh {bonusBalance.toLocaleString()}</p>
+        </div>
+
+        {parseInt(amount) > bonusBalance && (
+          <p className="text-red-400 text-xs mb-4">Amount exceeds bonus balance</p>
+        )}
+
+        {error && (
+          <div className="bg-red-900/40 border border-red-700 text-red-300 text-sm rounded-lg px-4 py-3 mb-4">{error}</div>
+        )}
+
+        <div className="flex gap-3">
+          <button onClick={onClose} className="btn-secondary flex-1">Cancel</button>
+          <button onClick={confirm} disabled={!canTransfer || loading} className="btn-primary flex-1">
+            {loading ? 'Transferring...' : 'Transfer'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function ProfilePage() {
   const { user, updateUser, logout } = useAuth()
   const [showDeposit, setShowDeposit] = useState(false)
   const [showWithdraw, setShowWithdraw] = useState(false)
+  const [showBonusWithdraw, setShowBonusWithdraw] = useState(false)
+  const [showBonusTransfer, setShowBonusTransfer] = useState(false)
   const [toast, setToast] = useState({ msg: '', type: 'success' })
   const [copied, setCopied] = useState(false)
   const [referrals, setReferrals] = useState([])
   const [showPwForm, setShowPwForm] = useState(false)
+  const [loading, setLoading] = useState(false)
   const [currentPw, setCurrentPw] = useState('')
   const [newPw, setNewPw] = useState('')
   const [confirmPw, setConfirmPw] = useState('')
@@ -343,6 +500,36 @@ export default function ProfilePage() {
     setPwLoading(false)
   }
 
+  async function handleBonusWithdraw(amount, mpesaPhone) {
+    setLoading(true)
+    try {
+      const result = await withdrawBonus(user.phone || user.id, amount, mpesaPhone)
+      if (result?.new_bonus_balance !== undefined) {
+        updateUser({ bonusBalance: result.new_bonus_balance })
+      }
+      const fresh = await getUser(user.phone || user.id)
+      if (fresh) updateUser({ balance: fresh.balance, bonusBalance: fresh.bonus_balance || 0 })
+      showToast(`✅ Bonus withdrawal of KSh ${amount.toLocaleString()} initiated! (Fee: 5% = KSh ${Math.floor(amount * 0.05).toLocaleString()}, You receive: KSh ${Math.floor(amount * 0.95).toLocaleString()})`)
+    } catch (err) {
+      showToast(err.message || 'Bonus withdrawal failed', 'error')
+    }
+    setLoading(false)
+  }
+
+  async function handleBonusTransfer(amount) {
+    setLoading(true)
+    try {
+      const result = await transferBonusToMain(user.phone || user.id, amount)
+      if (result?.new_balance !== undefined) {
+        updateUser({ balance: result.new_balance, bonusBalance: result.new_bonus_balance })
+      }
+      showToast(`✅ KSh ${amount.toLocaleString()} transferred from bonus to main balance!`)
+    } catch (err) {
+      showToast(err.message || 'Transfer failed', 'error')
+    }
+    setLoading(false)
+  }
+
   // Atomic withdrawal — balance deducted inside DB function
   async function handleWithdraw(amount, mpesaPhone) {
     const fee = Math.floor(amount * WITHDRAWAL_FEE)
@@ -384,6 +571,20 @@ export default function ProfilePage() {
           onWithdraw={handleWithdraw}
         />
       )}
+      {showBonusWithdraw && (
+        <BonusWithdrawModal
+          bonusBalance={user?.bonusBalance || 0}
+          onClose={() => setShowBonusWithdraw(false)}
+          onWithdraw={handleBonusWithdraw}
+        />
+      )}
+      {showBonusTransfer && (
+        <BonusTransferModal
+          bonusBalance={user?.bonusBalance || 0}
+          onClose={() => setShowBonusTransfer(false)}
+          onTransfer={handleBonusTransfer}
+        />
+      )}
 
       {/* Profile Header */}
       <div className="card mb-6 flex items-center gap-4">
@@ -417,7 +618,36 @@ export default function ProfilePage() {
           </button>
         </div>
       </div>
-
+      {/* Bonus Balance */}
+      {(user?.bonusBalance || 0) > 0 && (
+        <div className="rounded-2xl p-5 mb-6" style={{ background: 'linear-gradient(135deg, #78350f 0%, #451a03 100%)', border: '1px solid rgba(234, 179, 8, 0.3)' }}>
+          <p className="text-yellow-400/80 text-sm mb-1">Bonus Balance</p>
+          <p className="text-3xl font-black text-yellow-400">KSh {(user.bonusBalance || 0).toLocaleString()}</p>
+          <div className="flex gap-3 mt-4">
+            <button
+              onClick={() => setShowBonusWithdraw(true)}
+              disabled={(user.bonusBalance || 0) < 500}
+              className="flex-1 text-sm py-2.5 rounded-xl font-semibold transition-colors"
+              style={{
+                background: (user.bonusBalance || 0) >= 500 ? '#eab308' : '#374151',
+                color: (user.bonusBalance || 0) >= 500 ? '#000' : '#6b7280',
+              }}
+            >
+              Withdraw Bonus
+            </button>
+            <button
+              onClick={() => setShowBonusTransfer(true)}
+              className="flex-1 text-sm py-2.5 rounded-xl font-semibold transition-colors"
+              style={{ background: 'rgba(234, 179, 8, 0.15)', color: '#eab308', border: '1px solid rgba(234, 179, 8, 0.3)' }}
+            >
+              Transfer to Balance
+            </button>
+          </div>
+          {(user.bonusBalance || 0) < 500 && (
+            <p className="text-yellow-400/60 text-xs mt-2">Minimum KSh 500 to withdraw bonus</p>
+          )}
+        </div>
+      )}
       {/* Referral Section */}
       <div className="card mb-6">
         <h3 className="font-bold text-lg mb-1">🤝 Referral Program</h3>
