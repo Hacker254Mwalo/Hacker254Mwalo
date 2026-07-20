@@ -408,13 +408,23 @@ export async function getAllLoans() {
   if (!isSupabaseConfigured) {
     return JSON.parse(localStorage.getItem('dp_loan_requests') || '[]')
   }
+  const fields = 'id, user_phone, amount, purpose, status, created_at'
   const { data, error } = await supabase
     .from('loans')
-    .select('id, user_phone, amount, purpose, status, created_at, users!user_phone(name)')
+    .select(`${fields}, users!user_phone(name)`)
     .order('created_at', { ascending: false })
     .limit(200)
-  if (error) throw error
-  return data || []
+  
+  if (!error) return data || []
+
+  // Fallback: query without the users relation if it fails
+  const fallback = await supabase
+    .from('loans')
+    .select(fields)
+    .order('created_at', { ascending: false })
+    .limit(200)
+  if (fallback.error) throw fallback.error
+  return fallback.data || []
 }
 
 export async function getUserLoans(userPhone) {

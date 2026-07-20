@@ -161,6 +161,20 @@ export default function Navbar() {
             Support
           </a>
         )}
+
+        {isAdmin && (
+          <NavLink
+            to="/admin"
+            className={({ isActive }) =>
+              `flex-1 flex flex-col items-center py-3 text-xs font-medium transition-colors ${
+                isActive ? 'text-yellow-500' : 'text-gray-500'
+              }`
+            }
+          >
+            <span className="text-xl mb-0.5">⚙️</span>
+            Admin
+          </NavLink>
+        )}
       </nav>
     </>
   )
