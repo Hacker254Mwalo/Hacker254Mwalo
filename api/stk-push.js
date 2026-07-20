@@ -13,7 +13,8 @@
  */
 
 import { createClient } from '@supabase/supabase-js'
-
+// Singleton Supabase client (persists across Vercel warm invocations)
+let supabaseClient = null
 // Simple in-memory rate limiter
 const rateLimitMap = new Map()
 const RATE_LIMIT_WINDOW_MS = 60_000 // 1 minute
@@ -77,8 +78,11 @@ export default async function handler(req, res) {
     })
   }
 
-  // ── Supabase setup ────────────────────────────────────────────────────────
-  const supabase = createClient('https://jwnhluxftefqciwomqig.supabase.co', 'sb_publishable_it2B68etQCyh9Irq6s9kbg_yUhVRcr_')
+  // ── Supabase singleton client (reused across cold-start invocations) ─────
+  const supabase = supabaseClient || (supabaseClient = createClient(
+    process.env.SUPABASE_URL,
+    process.env.SUPABASE_SERVICE_ROLE_KEY
+  ))
 
   try {
     // Step 1: Get access token from PayKit

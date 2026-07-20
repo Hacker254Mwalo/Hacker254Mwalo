@@ -64,7 +64,7 @@ async function getUserRaw(phone) {
   if (!isSupabaseConfigured) return local.getUser(phone)
   const { data, error } = await supabase
     .from('users')
-    .select('*')
+    .select('phone, name, balance, bonus_balance, referral_code, referred_by, is_admin, created_at, must_change_password')
     .eq('phone', phone)
     .maybeSingle()
   if (error && !isNoRowsError(error)) throw error
@@ -115,7 +115,7 @@ export async function verifyUser(phone, pin) {
   }
   const { data, error } = await supabase
     .from('users')
-    .select('*')
+    .select('phone, name, balance, bonus_balance, referral_code, referred_by, is_admin, created_at, must_change_password, pin_hash, status')
     .eq('phone', phone)
     .maybeSingle()
   if (error && !isNoRowsError(error)) throw error
@@ -142,7 +142,7 @@ export async function findUserByReferralCode(code) {
   if (!isSupabaseConfigured) return local.findUserByReferralCode(code)
   const { data, error } = await supabase
     .from('users')
-    .select('*')
+    .select('phone, name, balance, bonus_balance, referral_code, referred_by, is_admin, created_at, must_change_password')
     .eq('referral_code', code)
     .maybeSingle()
   if (error && !isNoRowsError(error)) throw error
@@ -154,7 +154,7 @@ export async function getInvestments(userPhone) {
   if (!isSupabaseConfigured) return local.getInvestments(userPhone)
   const { data, error } = await supabase
     .from('investments')
-    .select('*')
+    .select('id, plan_id, plan_name, amount, daily_return, total_return, profit, status, created_at, started_at, ends_at, last_profit_at')
     .eq('user_phone', userPhone)
     .order('created_at', { ascending: false })
   if (error) throw error
@@ -201,7 +201,7 @@ export async function getDeposits(userPhone) {
   if (!isSupabaseConfigured) return local.getDeposits(userPhone)
   const { data, error } = await supabase
     .from('deposits')
-    .select('*')
+    .select('id, user_phone, amount, checkout_id, mpesa_receipt, status, created_at, method')
     .eq('user_phone', userPhone)
     .order('created_at', { ascending: false })
   if (error) throw error
@@ -248,7 +248,7 @@ export async function getReferrals(userPhone) {
   if (!isSupabaseConfigured) return local.getReferrals(userPhone)
   const { data, error } = await supabase
     .from('referrals')
-    .select('*')
+    .select('referred_name, level, commission, plan_name, created_at')
     .eq('referrer_phone', userPhone)
     .order('created_at', { ascending: false })
   if (error) throw error
@@ -312,7 +312,7 @@ export async function getWithdrawals(userPhone) {
   if (!isSupabaseConfigured) return local.getWithdrawals(userPhone)
   const { data, error } = await supabase
     .from('withdrawals')
-    .select('*')
+    .select('id, user_phone, amount, fee, net_amount, mpesa_phone, status, created_at, updated_at')
     .eq('user_phone', userPhone)
     .order('created_at', { ascending: false })
   if (error) throw error
@@ -380,7 +380,7 @@ export async function getUserLoans(userPhone) {
   }
   const { data, error } = await supabase
     .from('loans')
-    .select('*')
+    .select('id, user_phone, amount, purpose, status, created_at, updated_at')
     .eq('user_phone', userPhone)
     .order('created_at', { ascending: false })
   if (error) throw error
