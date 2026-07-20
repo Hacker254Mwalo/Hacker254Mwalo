@@ -68,14 +68,20 @@ function ConfirmDialog({ message, onConfirm, onCancel }) {
 function DepositsTab({ showToast }) {
   const [deposits, setDeposits] = useState([])
   const [loading, setLoading] = useState(true)
-  const [filter, setFilter] = useState('pending')
+  const [filter, setFilter] = useState('all')
   const [confirm, setConfirm] = useState(null)
 
   const load = useCallback(async () => {
     setLoading(true)
-    try { setDeposits(await getAllDeposits()) } catch { }
-    setLoading(false)
-  }, [])
+    try {
+      setDeposits(await getAllDeposits())
+    } catch (error) {
+      setDeposits([])
+      showToast(error instanceof Error ? error.message : 'Failed to load deposits', 'error')
+    } finally {
+      setLoading(false)
+    }
+  }, [showToast])
 
   useEffect(() => { load() }, [load])
 
@@ -121,7 +127,7 @@ function DepositsTab({ showToast }) {
       ) : filtered.length === 0 ? (
         <div className="card text-center py-12">
           <p className="text-4xl mb-3">💳</p>
-          <p style={{ color: 'var(--text-muted)' }}>No {filter} deposits</p>
+          <p style={{ color: 'var(--text-muted)' }}>No deposits found</p>
         </div>
       ) : (
         <div className="space-y-3">

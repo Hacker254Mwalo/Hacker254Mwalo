@@ -210,13 +210,24 @@ export async function getDeposits(userPhone) {
 
 export async function getAllDeposits() {
   if (!isSupabaseConfigured) return local.getAllDeposits()
+
+  const fields = 'id, user_phone, amount, mpesa_receipt, status, created_at, method'
   const { data, error } = await supabase
     .from('deposits')
-    .select('id, user_phone, amount, mpesa_receipt, status, created_at, method, users!user_phone(name)')
+    .select(`${fields}, users!user_phone(name)`)
     .order('created_at', { ascending: false })
     .limit(200)
-  if (error) throw error
-  return data || []
+
+  if (!error) return data || []
+
+  // The user-name relation is only supplementary. Never hide deposits if it is unavailable.
+  const fallback = await supabase
+    .from('deposits')
+    .select(fields)
+    .order('created_at', { ascending: false })
+    .limit(200)
+  if (fallback.error) throw fallback.error
+  return fallback.data || []
 }
 
 // Uses atomic DB function to prevent double-crediting
