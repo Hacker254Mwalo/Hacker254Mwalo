@@ -895,7 +895,7 @@ export async function deleteTransaction(id) {
   if (fetchErr) throw fetchErr
 
   // Delete matching deposit record by mpesa_receipt (if exists)
-  if (tx.reference) {
+  if (tx.reference && (tx.type === 'deposit' || tx.type === 'invest')) {
     await supabase.from('deposits').delete().eq('mpesa_receipt', tx.reference).eq('user_phone', tx.user_phone)
   }
 
@@ -911,8 +911,8 @@ export async function deleteTransaction(id) {
   }
 
   // Delete the transaction itself
-  const { error } = await supabase.from('transactions').delete().eq('id', id)
-  if (error) throw error
+  const { error: txError } = await supabase.from('transactions').delete().eq('id', id)
+  if (txError) throw txError
 }
 
 // ── Admin Stats ───────────────────────────────────────────────────────────────
