@@ -524,6 +524,9 @@ export async function deleteKeyword(id) {
     localStorage.setItem('dp_admin_keywords', JSON.stringify(keywords.filter(k => k.id !== String(id))))
     return
   }
+  // Delete associated claims first to avoid FK constraint error
+  const { error: claimsError } = await supabase.from('keyword_claims').delete().eq('keyword_id', id)
+  if (claimsError) throw claimsError
   const { error } = await supabase.from('keywords').delete().eq('id', id)
   if (error) throw error
 }
