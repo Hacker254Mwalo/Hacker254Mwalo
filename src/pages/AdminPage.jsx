@@ -12,6 +12,7 @@ import {
   getPasswordResetRequests, adminResetPassword,
   getWhatsAppSettings, updateAppSetting,
   getAllReferrals, getReferrals,
+  getAllTransactions, deleteTransaction,
 } from '../lib/db'
 
 // ── Shared helpers ────────────────────────────────────────────────────────────
@@ -1126,6 +1127,78 @@ function PasswordResetsTab({ showToast }) {
   )
 }
 
+// ── Transactions Tab ──────────────────────────────────────────────────────────
+function TransactionsTab({ showToast }) {
+  const [txs, setTxs] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [confirmDelete, setConfirmDelete] = useState(null)
+
+  const load = useCallback(async () => {
+    setLoading(true)
+    try {
+      const data = await getAllTransactions()
+      setTxs(data)
+    } catch { }
+    setLoading(false)
+  }, [])
+
+  useEffect(() => { load() }, [load])
+
+  async function handleDelete() {
+    if (!confirmDelete) return
+    try {
+      await deleteTransaction(confirmDelete.id)
+      showToast(`✅ Transaction deleted`)
+      setConfirmDelete(null)
+      load()
+    } catch { showToast('❌ Failed to delete transaction', 'error') }
+  }
+
+  if (loading) return <div className="text-center py-12 text-gray-500">Loading...</div>
+
+  return (
+    <div>
+      <SectionHeader title="All Transactions" count={txs.length} subtitle="Recent platform transactions" />
+
+      {txs.length === 0 ? (
+        <div className="card text-center py-12">
+          <p className="text-4xl mb-3">📋</p>
+          <p style={{ color: 'var(--text-muted)' }}>No transactions found</p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {txs.map(tx => (
+            <div key={tx.id} className="card flex items-center justify-between gap-3 hover:border-gray-600 transition-colors">
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="font-semibold text-sm">{tx.user_phone}</span>
+                  <StatusBadge status={tx.status} />
+                </div>
+                <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
+                  {tx.type} · KSh {Number(tx.amount).toLocaleString()} · {fmt(tx.created_at)}
+                </p>
+                {tx.reference && <p className="text-[10px]" style={{ color: 'var(--text-muted)' }}>Ref: {tx.reference}</p>}
+              </div>
+              <button onClick={() => setConfirmDelete(tx)}
+                className="px-3 py-1.5 bg-red-900/30 hover:bg-red-900/60 text-red-300 text-xs font-semibold rounded-lg transition-colors flex-shrink-0">
+                🗑 Delete
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {confirmDelete && (
+        <ConfirmDialog
+          message={`Delete this transaction (${confirmDelete.type} · KSh ${Number(confirmDelete.amount).toLocaleString()})? This cannot be undone.`}
+          onConfirm={handleDelete}
+          onCancel={() => setConfirmDelete(null)}
+        />
+      )}
+    </div>
+  )
+}
+
 // ── Overview / Stats Tab ──────────────────────────────────────────────────────
 function OverviewTab() {
   const [stats, setStats] = useState(null)
@@ -1305,6 +1378,7 @@ const TABS = [
   { id: 'promo',       label: 'Promo Codes', icon: '🎟️' },
   { id: 'support',     label: 'Support',     icon: '💬' },
   { id: 'resets',      label: 'PIN Resets',  icon: '🔑' },
+  { id: 'transactions', label: 'Transactions', icon: '📋' },
   { id: 'settings',    label: 'Settings',    icon: '⚙️' },
 ]
 
@@ -1408,6 +1482,7 @@ export default function AdminPage() {
             {tab === 'promo'       && <PromoTab showToast={showToast} />}
             {tab === 'support'     && <SupportTab showToast={showToast} />}
             {tab === 'resets'      && <PasswordResetsTab showToast={showToast} />}
+            {tab === 'transactions' && <TransactionsTab showToast={showToast} />}
             {tab === 'settings'    && <SettingsTab user={user} showToast={showToast} />}
           </div>
         </main>

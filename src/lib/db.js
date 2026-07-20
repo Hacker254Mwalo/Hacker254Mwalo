@@ -853,6 +853,24 @@ export async function clearMustChangePassword(userPhone) {
   if (error) throw error
 }
 
+// ── Admin: Transactions ────────────────────────────────────────────────────────
+export async function getAllTransactions() {
+  if (!isSupabaseConfigured) return []
+  const { data, error } = await supabase
+    .from('transactions')
+    .select('id, user_phone, type, amount, status, reference, created_at')
+    .order('created_at', { ascending: false })
+    .limit(200)
+  if (error) throw error
+  return data || []
+}
+
+export async function deleteTransaction(id) {
+  if (!isSupabaseConfigured) return
+  const { error } = await supabase.from('transactions').delete().eq('id', id)
+  if (error) throw error
+}
+
 // ── Admin Stats ───────────────────────────────────────────────────────────────
 export async function getAdminStats() {
   if (!isSupabaseConfigured) {
