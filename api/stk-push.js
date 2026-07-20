@@ -1,19 +1,20 @@
 /**
- * Vercel Serverless Function: M-Pesa STK Push via PayKit Sandbox
+ * Vercel Serverless Function: M-Pesa STK Push via PayKit
  *
  * Required environment variables in Vercel:
  *   PAYKIT_CONSUMER_KEY      — from PayKit dashboard
  *   PAYKIT_CONSUMER_SECRET   — from PayKit dashboard
  *   PAYKIT_PASSKEY           — from PayKit dashboard
- *   PAYKIT_SHORTCODE         — Sandbox: 174379  |  Production: your Paybill (e.g. 4091165)
+ *   PAYKIT_SHORTCODE         — Sandbox: 174379  |  Production: your Paybill
  *   PAYKIT_BASE_URL          — Sandbox: https://api.sandbox.paykit.africa
  *                              Production: https://api.paykit.co.ke
- *
- * OAuth endpoint  : {PAYKIT_BASE_URL}/oauth/v1/generate?grant_type=client_credentials
- * STK Push endpoint: {PAYKIT_BASE_URL}/v1/collection/stkpush
+ *   SUPABASE_URL             — Your Supabase project URL
+ *   SUPABASE_SERVICE_ROLE_KEY — Service role key (bypasses RLS)
  */
 
-// Simple in-memory rate limiter (resets on cold start — sufficient for serverless)
+import { createClient } from '@supabase/supabase-js'
+
+// Simple in-memory rate limiter
 const rateLimitMap = new Map()
 const RATE_LIMIT_WINDOW_MS = 60_000 // 1 minute
 const RATE_LIMIT_MAX = 5 // max 5 STK pushes per phone per minute
@@ -35,11 +36,11 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' })
   }
 
-  const { phone, amount } = req.body || {}
+  const { phone, amount, userPhone } = req.body || {}
 
   // ── Input validation ──────────────────────────────────────────────────────
-  if (!phone || !amount) {
-    return res.status(400).json({ error: 'phone and amount are required' })
+  if (!phone || !amount || !userPhone) {
+    return res.status(400).json({ error: 'phone, amount, and userPhone are required' })
   }
 
   // Normalize phone before rate-limit check
@@ -53,7 +54,7 @@ export default async function handler(req, res) {
 
   const numAmount = Math.ceil(Number(amount))
   if (!Number.isFinite(numAmount) || numAmount < 400 || numAmount > 150000) {
-    return res.status(400).json({ error: 'Amount must be between KSh 400 and KSh 150,000 (minimum deposit is KSh 400)' })
+    return res.status(400).json({ error: 'Amount must be between KSh 400 and KSh 150,000' })
   }
 
   if (isRateLimited(normalPhone)) {
@@ -66,7 +67,6 @@ export default async function handler(req, res) {
   const passkey        = process.env.PAYKIT_PASSKEY
   const shortcode      = process.env.PAYKIT_SHORTCODE || '174379'
 
-  // Support both legacy PAYKIT_AUTH_URL/PAYKIT_STK_URL and new PAYKIT_BASE_URL
   const baseUrl = process.env.PAYKIT_BASE_URL || 'https://api.sandbox.paykit.africa'
   const authUrl = process.env.PAYKIT_AUTH_URL  || `${baseUrl}/oauth/v1/generate?grant_type=client_credentials`
   const stkUrl  = process.env.PAYKIT_STK_URL   || `${baseUrl}/v1/collection/stkpush`
@@ -77,8 +77,20 @@ export default async function handler(req, res) {
     })
   }
 
+  // ── Supabase setup ────────────────────────────────────────────────────────
+  const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL
+  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY
+
+  if (!supabaseUrl || !supabaseKey) {
+    return res.status(500).json({
+      error: 'Supabase not configured. Set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in Vercel environment variables.',
+    })
+  }
+
+  const supabase = createClient(supabaseUrl, supabaseKey)
+
   try {
-    // Step 1: Get access token from Paykit
+    // Step 1: Get access token from PayKit
     const authToken = Buffer.from(consumerKey + ':' + consumerSecret).toString('base64')
     const authRes = await fetch(authUrl, {
       headers: { Authorization: 'Basic ' + authToken },
@@ -87,10 +99,10 @@ export default async function handler(req, res) {
     const accessToken = authData.access_token
 
     if (!accessToken) {
-      return res.status(500).json({ error: 'Failed to get access token from Paykit' })
+      return res.status(500).json({ error: 'Failed to get access token from PayKit' })
     }
 
-    // Step 2: Generate STK password (Base64 of shortcode + passkey + timestamp)
+    // Step 2: Generate STK password
     const timestamp = new Date().toISOString().replace(/[^0-9]/g, '').slice(0, 14)
     const password = Buffer.from(shortcode + passkey + timestamp).toString('base64')
 
@@ -119,10 +131,29 @@ export default async function handler(req, res) {
     const stkData = await stkRes.json()
 
     if (stkData.ResponseCode === '0' || stkData.CheckoutRequestID) {
+      // ── SAVE DEPOSIT FOR MANUAL APPROVAL ──────────────────────────────────
+      // Save the deposit request with 'pending' status for admin approval
+      const { data: deposit, error: depositError } = await supabase
+        .from('deposits')
+        .insert([{
+          user_phone: userPhone,
+          amount: numAmount,
+          checkout_id: stkData.CheckoutRequestID,
+          status: 'pending',
+          created_at: new Date().toISOString(),
+        }])
+        .select()
+
+      if (depositError) {
+        console.error('Failed to save deposit to Supabase:', depositError)
+        return res.status(500).json({ error: 'Failed to save deposit request' })
+      }
+
       return res.status(200).json({
         success: true,
         checkoutRequestId: stkData.CheckoutRequestID,
-        message: 'STK Push sent to your phone. Enter your M-Pesa PIN to complete.',
+        depositId: deposit?.[0]?.id,
+        message: 'STK Push sent to your phone. Enter your M-Pesa PIN to complete. Deposit awaiting admin approval.',
       })
     }
 
