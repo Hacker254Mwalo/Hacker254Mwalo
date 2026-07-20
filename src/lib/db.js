@@ -867,20 +867,28 @@ export async function getAllTransactions() {
 
 export async function deleteTransaction(id) {
   if (!isSupabaseConfigured) return
-  // First get the transaction to find linked records
+  // Get the transaction to find user phone and reference
   const { data: tx, error: fetchErr } = await supabase
     .from('transactions')
-    .select('id, user_phone, reference, type')
+    .select('id, user_phone, reference, type, amount, created_at')
     .eq('id', id)
     .single()
   if (fetchErr) throw fetchErr
 
-  // Delete related deposit/withdrawal records by reference to free storage
+  // Delete matching deposit record by mpesa_receipt (if exists)
   if (tx.reference) {
-    await Promise.all([
-      supabase.from('deposits').delete().eq('mpesa_receipt', tx.reference).eq('user_phone', tx.user_phone),
-      supabase.from('withdrawals').delete().eq('mpesa_phone', tx.user_phone).eq('created_at', tx.created_at || '1970-01-01'),
-    ])
+    await supabase.from('deposits').delete().eq('mpesa_receipt', tx.reference).eq('user_phone', tx.user_phone)
+  }
+
+  // Delete matching withdrawal record by user_phone + same amount (within 5 min window)
+  if (tx.type === 'withdrawal' || tx.type === 'withdraw') {
+    const createdAt = tx.created_at ? new Date(tx.created_at).toISOString() : '1970-01-01T00:00:00'
+    const fiveMinAfter = new Date(new Date(createdAt).getTime() + 5 * 60000).toISOString()
+    await supabase.from('withdrawals').delete()
+      .eq('user_phone', tx.user_phone)
+      .eq('amount', tx.amount)
+      .gte('created_at', createdAt)
+      .lt('created_at', fiveMinAfter)
   }
 
   // Delete the transaction itself
