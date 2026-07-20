@@ -470,7 +470,8 @@ export default function ProfilePage() {
   }, [])
 
   const refCode = user ? (user.referralCode || generateReferralCode(user.phone)) : ''
-  const refLink = `${window.location.origin}/login?ref=${refCode}`
+  const baseUrl = import.meta.env.NEXT_PUBLIC_APP_URL
+  const link = `${baseUrl}/r/${refCode}`
   const totalL1 = referrals.filter(r => r.level === 1).reduce((s, r) => s + Number(r.commission || 0), 0)
   const totalL2 = referrals.filter(r => r.level === 2).reduce((s, r) => s + Number(r.commission || 0), 0)
   const mustChangePw = user?.must_change_password
@@ -488,7 +489,7 @@ export default function ProfilePage() {
   }
 
   function copyLink() {
-    navigator.clipboard.writeText(refLink).then(() => {
+    navigator.clipboard.writeText(link).then(() => {
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
     })
@@ -692,7 +693,7 @@ export default function ProfilePage() {
         </div>
 
         <div className="flex items-center gap-2 rounded-xl p-3 mb-3" style={{ background: 'var(--bg-elevated)' }}>
-          <p className="text-xs flex-1 truncate" style={{ color: 'var(--text-primary)' }}>{refLink}</p>
+          <p className="text-xs flex-1 truncate" style={{ color: 'var(--text-primary)' }}>{link}</p>
           <button onClick={copyLink} className="text-xs bg-red-600 hover:bg-red-500 text-white px-3 py-1.5 rounded-lg flex-shrink-0 transition-colors">
             {copied ? '✓ Copied' : 'Copy'}
           </button>

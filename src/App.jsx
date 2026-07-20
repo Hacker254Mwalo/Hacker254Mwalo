@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate, useParams } from 'react-router-dom'
 import { AuthProvider } from './context/AuthContext'
 import { ThemeProvider } from './context/ThemeContext'
 import Layout from './components/Layout'
@@ -9,6 +9,11 @@ import ProfilePage from './pages/ProfilePage'
 import HistoryPage from './pages/HistoryPage'
 import AdminPage from './pages/AdminPage'
 
+function ReferralRedirect() {
+  const { code = '' } = useParams()
+  return <Navigate to={`/login?ref=${encodeURIComponent(code)}`} replace />
+}
+
 export default function App() {
   return (
     <ThemeProvider>
@@ -16,6 +21,7 @@ export default function App() {
         <AuthProvider>
           <Routes>
             <Route path="/login" element={<AuthPage />} />
+            <Route path="/r/:code" element={<ReferralRedirect />} />
             <Route path="/admin" element={<AdminPage />} />
             <Route element={<Layout />}>
               <Route path="/dashboard" element={<Dashboard />} />
