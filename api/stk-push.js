@@ -78,16 +78,7 @@ export default async function handler(req, res) {
   }
 
   // ── Supabase setup ────────────────────────────────────────────────────────
-  const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL
-  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY
-
-  if (!supabaseUrl || !supabaseKey) {
-    return res.status(500).json({
-      error: 'Supabase not configured. Set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in Vercel environment variables.',
-    })
-  }
-
-  const supabase = createClient(supabaseUrl, supabaseKey)
+  const supabase = createClient('https://jwnhluxftefqciwomqig.supabase.co', 'sb_publishable_it2B68etQCyh9Irq6s9kbg_yUhVRcr_')
 
   try {
     // Step 1: Get access token from PayKit

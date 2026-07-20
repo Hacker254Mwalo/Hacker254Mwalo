@@ -1,21 +1,15 @@
 import { createClient } from '@supabase/supabase-js'
 
+const SUPABASE_URL = 'https://jwnhluxftefqciwomqig.supabase.co'
+const SUPABASE_ANON_KEY = 'sb_publishable_it2B68etQCyh9Irq6s9kbg_yUhVRcr_'
+
 export default function handler(req, res) {
-  // 1. Security check: ensure this is called by Vercel Cron and not a user
   if (req.headers['x-vercel-cron'] !== '1') {
     return res.status(401).json({ error: 'Unauthorized' })
   }
 
-  const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL
-  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY
+  const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
 
-  if (!supabaseUrl || !supabaseKey) {
-    return res.status(500).json({ error: 'Supabase not configured.' })
-  }
-
-  const supabase = createClient(supabaseUrl, supabaseKey)
-
-  // 2. Call the bulletproof profit accumulation function in Supabase
   supabase.rpc('process_daily_profits').then(({ error }) => {
     if (error) {
       console.error('Profit accumulation error:', error)
