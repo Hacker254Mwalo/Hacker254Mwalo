@@ -412,7 +412,7 @@ export default function Dashboard() {
     try {
       const result = await claimKeyword(user.phone || user.id, code)
       if (result.success) {
-        if (result.balance !== undefined) updateUser({ balance: result.balance })
+        if (result.bonus_balance !== undefined) updateUser({ bonus_balance: result.bonus_balance })
         else await refreshUser()
         // Refresh claimed codes list
         try {
