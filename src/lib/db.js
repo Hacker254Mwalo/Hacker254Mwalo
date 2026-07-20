@@ -553,6 +553,22 @@ export async function claimKeyword(userPhone, code) {
   return data
 }
 
+export async function getClaimedKeywords(userPhone) {
+  if (!isSupabaseConfigured) {
+    const claims = JSON.parse(localStorage.getItem('dp_kw_claims') || '{}')
+    return Object.entries(claims).flatMap(([kwId, phones]) =>
+      phones.includes(userPhone) ? [{ keyword_id: kwId }] : []
+    )
+  }
+  const { data, error } = await supabase
+    .from('keyword_claims')
+    .select('keyword_id, bonus_amount, created_at')
+    .eq('user_phone', userPhone)
+    .order('created_at', { ascending: false })
+  if (error && !isNoRowsError(error)) throw error
+  return data || []
+}
+
 // ── Bonus Claims (Daily Bonus / Lucky Spin) — server-enforced ────────────────
 function todayStr() {
   return new Date().toISOString().slice(0, 10) // YYYY-MM-DD (UTC)

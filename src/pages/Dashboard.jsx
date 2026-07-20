@@ -12,6 +12,7 @@ import {
   addLoan,
   getWhatsAppSettings,
   checkIsAdmin,
+  getClaimedKeywords,
 } from '../lib/db'
 
 const SPIN_DAYS = [1, 5] // Monday=1, Friday=5
@@ -263,6 +264,7 @@ export default function Dashboard() {
   const [spinAnimPrize, setSpinAnimPrize] = useState(0)
   const [showSpinResult, setShowSpinResult] = useState(false)
   const [claimingBonus, setClaimingBonus] = useState(false)
+  const [claimedCodes, setClaimedCodes] = useState([])
   const [waPhone, setWaPhone] = useState('')
   const [waGroupLink, setWaGroupLink] = useState('')
 
@@ -286,6 +288,8 @@ export default function Dashboard() {
       setSpinClaimed(spinStatus)
       setWaPhone(waSettings.whatsapp_phone || '')
       setWaGroupLink(waSettings.whatsapp_group_link || '')
+      const claimed = await getClaimedKeywords(phone)
+      setClaimedCodes((claimed || []).map(c => c.keyword_id))
     } catch { /* silent */ }
   }, [user])
   useEffect(() => { loadData() }, [loadData])
@@ -410,6 +414,13 @@ export default function Dashboard() {
       if (result.success) {
         if (result.balance !== undefined) updateUser({ balance: result.balance })
         else await refreshUser()
+        // Refresh claimed codes list
+        try {
+          const claimed = await getClaimedKeywords(user.phone || user.id)
+          setClaimedCodes((claimed || []).map(c => c.keyword_id))
+        } catch { /* silent */ }
+      } else if (result.message?.includes('already claimed')) {
+        showToast(result.message, 'error')
       }
       return result
     } catch (err) {
