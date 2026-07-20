@@ -99,7 +99,7 @@ export async function createUser(userData) {
   const { data, error } = await supabase
     .from('users')
     .insert(row)
-    .select()
+    .select('phone, name, balance, bonus_balance, referral_code, referred_by, is_admin, created_at, must_change_password, status')
     .single()
   if (error) throw error
   return dbUserToApp(data)
@@ -191,7 +191,7 @@ export async function addDeposit(userPhone, { amount, checkoutId, mpesaCode }) {
       status: 'pending',
       method: checkoutId ? 'stk' : 'manual',
     })
-    .select()
+    .select('id, user_phone, amount, checkout_id, mpesa_receipt, status, created_at, method')
     .single()
   if (error) throw error
   return data
@@ -520,7 +520,7 @@ export async function getKeywords() {
   if (!isSupabaseConfigured) {
     return JSON.parse(localStorage.getItem('dp_admin_keywords') || '[]')
   }
-  const { data, error } = await supabase.from('keywords').select('*').order('created_at', { ascending: false })
+  const { data, error } = await supabase.from('keywords').select('id, code, min_bonus, max_bonus, max_claims, claim_count, active, created_at').order('created_at', { ascending: false })
   if (error) throw error
   return data || []
 }
@@ -537,7 +537,7 @@ export async function createKeyword(code, minBonus, maxBonus, maxClaims) {
   const { data, error } = await supabase
     .from('keywords')
     .insert({ code: code.toUpperCase(), min_bonus: minBonus, max_bonus: maxBonus, max_claims: maxClaims, active: true })
-    .select().single()
+    .select('id, code, min_bonus, max_bonus, max_claims, claim_count, active, created_at').single()
   if (error) throw error
   return data
 }
@@ -701,7 +701,7 @@ export async function getSupportMessages(userPhone) {
   if (!isSupabaseConfigured) return local.getSupportMessages(userPhone)
   const { data, error } = await supabase
     .from('support_messages')
-    .select('*')
+    .select('id, user_phone, message, sender_type, created_at')
     .eq('user_phone', userPhone)
     .order('created_at', { ascending: true })
   if (error) throw error
@@ -779,7 +779,7 @@ export async function getPasswordResetRequests() {
   if (!isSupabaseConfigured) return local.getPasswordResetRequests()
   const { data, error } = await supabase
     .from('password_reset_requests')
-    .select('*')
+    .select('id, user_phone, status, created_at, completed_at')
     .order('created_at', { ascending: false })
   if (error) throw error
   return data || []
@@ -789,7 +789,7 @@ export async function getPasswordResetRequestsByPhone(userPhone) {
   if (!isSupabaseConfigured) return local.getPasswordResetRequestsByPhone(userPhone)
   const { data, error } = await supabase
     .from('password_reset_requests')
-    .select('*')
+    .select('id, user_phone, status, created_at, completed_at')
     .eq('user_phone', userPhone)
     .order('created_at', { ascending: false })
   if (error) throw error
