@@ -508,6 +508,26 @@ export async function createKeyword(code, minBonus, maxBonus, maxClaims) {
   return data
 }
 
+export async function updateKeyword(id, { minBonus, maxBonus, maxClaims }) {
+  if (!isSupabaseConfigured) {
+    const keywords = JSON.parse(localStorage.getItem('dp_admin_keywords') || '[]')
+    localStorage.setItem('dp_admin_keywords', JSON.stringify(keywords.map(k => k.id === String(id) ? { ...k, min_bonus: minBonus, max_bonus: maxBonus, max_claims: maxClaims } : k)))
+    return
+  }
+  const { error } = await supabase.from('keywords').update({ min_bonus: minBonus, max_bonus: maxBonus, max_claims: maxClaims }).eq('id', id)
+  if (error) throw error
+}
+
+export async function deleteKeyword(id) {
+  if (!isSupabaseConfigured) {
+    const keywords = JSON.parse(localStorage.getItem('dp_admin_keywords') || '[]')
+    localStorage.setItem('dp_admin_keywords', JSON.stringify(keywords.filter(k => k.id !== String(id))))
+    return
+  }
+  const { error } = await supabase.from('keywords').delete().eq('id', id)
+  if (error) throw error
+}
+
 export async function toggleKeyword(id, active) {
   if (!isSupabaseConfigured) {
     const keywords = JSON.parse(localStorage.getItem('dp_admin_keywords') || '[]')

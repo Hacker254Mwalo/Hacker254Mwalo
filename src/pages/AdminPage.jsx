@@ -7,7 +7,7 @@ import {
   getAllLoans, approveLoan, rejectLoan,
   getAllUsers, adminSetBalance, adminSetBonusBalance,
   adminDeleteUser, adminUpdateUserStatus, getInvestments,
-  getKeywords, createKeyword, toggleKeyword,
+  getKeywords, createKeyword, updateKeyword, deleteKeyword, toggleKeyword,
   getAllSupportThreads, getSupportMessages, sendSupportMessage,
   getPasswordResetRequests, adminResetPassword,
   getWhatsAppSettings, updateAppSetting,
@@ -576,6 +576,14 @@ function PromoTab({ showToast }) {
   const [maxClaims, setMaxClaims] = useState('10')
   const [creating, setCreating] = useState(false)
 
+  // Edit modal state
+  const [editingKw, setEditingKw] = useState(null)
+  const [editMin, setEditMin] = useState('')
+  const [editMax, setEditMax] = useState('')
+  const [editMaxClaims, setEditMaxClaims] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [confirmDelete, setConfirmDelete] = useState(null)
+
   const load = useCallback(async () => {
     setLoading(true)
     try { setKeywords(await getKeywords()) } catch { }
@@ -597,6 +605,38 @@ function PromoTab({ showToast }) {
     setCreating(false)
   }
 
+  function openEdit(kw) {
+    setEditingKw(kw)
+    setEditMin(String(kw.min_bonus))
+    setEditMax(String(kw.max_bonus))
+    setEditMaxClaims(String(kw.max_claims))
+  }
+
+  async function handleSaveEdit() {
+    if (!editingKw) return
+    setSaving(true)
+    try {
+      await updateKeyword(editingKw.id, {
+        minBonus: Number(editMin),
+        maxBonus: Number(editMax),
+        maxClaims: Number(editMaxClaims),
+      })
+      showToast(`✅ Code "${editingKw.code}" updated`)
+      setEditingKw(null)
+      load()
+    } catch { showToast('❌ Failed to update code', 'error') }
+    setSaving(false)
+  }
+
+  async function handleDelete(kw) {
+    try {
+      await deleteKeyword(kw.id)
+      showToast(`✅ Code "${kw.code}" deleted`)
+      setConfirmDelete(null)
+      load()
+    } catch { showToast('❌ Failed to delete code', 'error') }
+  }
+
   async function handleToggle(kw) {
     try {
       await toggleKeyword(kw.id, !kw.active)
@@ -607,6 +647,50 @@ function PromoTab({ showToast }) {
 
   return (
     <div>
+      {editingKw && (
+        <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" onClick={() => setEditingKw(null)}>
+          <div className="card max-w-sm w-full" onClick={e => e.stopPropagation()}>
+            <h3 className="font-bold text-lg mb-1">Edit Code</h3>
+            <p className="font-mono tracking-widest text-sm mb-4" style={{ color: 'var(--text-muted)' }}>{editingKw.code}</p>
+            <div className="space-y-3">
+              <div>
+                <label className="text-xs mb-1 block" style={{ color: 'var(--text-muted)' }}>Min Bonus (KSh)</label>
+                <input className="input-field" type="number" min="1" value={editMin} onChange={e => setEditMin(e.target.value)} />
+              </div>
+              <div>
+                <label className="text-xs mb-1 block" style={{ color: 'var(--text-muted)' }}>Max Bonus (KSh)</label>
+                <input className="input-field" type="number" min="1" value={editMax} onChange={e => setEditMax(e.target.value)} />
+              </div>
+              <div>
+                <label className="text-xs mb-1 block" style={{ color: 'var(--text-muted)' }}>Max Claims</label>
+                <input className="input-field" type="number" min="1" value={editMaxClaims} onChange={e => setEditMaxClaims(e.target.value)} />
+              </div>
+            </div>
+            <div className="flex gap-3 mt-4">
+              <button onClick={() => setEditingKw(null)} className="btn-secondary flex-1">Cancel</button>
+              <button onClick={handleSaveEdit} disabled={saving} className="btn-primary flex-1">
+                {saving ? 'Saving...' : 'Save'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {confirmDelete && (
+        <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" onClick={() => setConfirmDelete(null)}>
+          <div className="card max-w-sm w-full" onClick={e => e.stopPropagation()}>
+            <h3 className="font-bold text-lg mb-2">Delete Code</h3>
+            <p className="text-sm mb-4" style={{ color: 'var(--text-muted)' }}>
+              Permanently delete <span className="font-mono">{confirmDelete.code}</span>? This cannot be undone.
+            </p>
+            <div className="flex gap-3">
+              <button onClick={() => setConfirmDelete(null)} className="btn-secondary flex-1">Cancel</button>
+              <button onClick={() => handleDelete(confirmDelete)} className="px-4 py-2 rounded-xl font-semibold text-sm bg-red-700 hover:bg-red-600 text-white flex-1">Delete</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <SectionHeader title="Promo Codes" count={keywords.filter(k => k.active).length} subtitle="Create and manage bonus redemption codes" />
 
       <div className="card mb-6">
@@ -647,22 +731,32 @@ function PromoTab({ showToast }) {
       ) : (
         <div className="space-y-3">
           {keywords.map(kw => (
-            <div key={kw.id} className="card flex items-center justify-between gap-4 hover:border-gray-600 transition-colors">
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-1">
+            <div key={kw.id} className={`card hover:border-gray-600 transition-colors ${kw.status === 'suspended' ? 'opacity-60' : ''}`}>
+              <div className="flex items-center justify-between gap-4 mb-2">
+                <div className="flex items-center gap-2">
                   <span className="font-mono font-bold tracking-widest">{kw.code}</span>
                   <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${kw.active ? 'bg-green-900/50 text-green-400' : 'bg-gray-800 text-gray-500'}`}>
                     {kw.active ? 'Active' : 'Inactive'}
                   </span>
                 </div>
-                <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
-                  KSh {Number(kw.min_bonus).toLocaleString()} – {Number(kw.max_bonus).toLocaleString()} bonus · {kw.claim_count}/{kw.max_claims} claimed
+                <p className="text-xs text-right" style={{ color: 'var(--text-muted)' }}>
+                  {kw.claim_count}/{kw.max_claims} claimed
                 </p>
               </div>
-              <button onClick={() => handleToggle(kw)}
-                className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors flex-shrink-0 ${kw.active ? 'bg-red-900/50 text-red-400 hover:bg-red-800' : 'bg-green-900/50 text-green-400 hover:bg-green-800'}`}>
-                {kw.active ? 'Deactivate' : 'Activate'}
-              </button>
+              <p className="text-xs mb-3" style={{ color: 'var(--text-muted)' }}>
+                KSh {Number(kw.min_bonus).toLocaleString()} – {Number(kw.max_bonus).toLocaleString()} bonus
+              </p>
+              <div className="flex gap-2 flex-wrap pt-2 border-t" style={{ borderColor: 'var(--border)' }}>
+                <button onClick={() => openEdit(kw)} className="px-2 py-1 text-[10px] rounded bg-gray-800 hover:bg-gray-700 text-gray-300 transition-colors">
+                  ✏️ Edit
+                </button>
+                <button onClick={() => handleToggle(kw)} className={`px-2 py-1 text-[10px] rounded transition-colors ${kw.active ? 'bg-red-900/30 text-red-300 hover:bg-red-900/50' : 'bg-green-900/30 text-green-300 hover:bg-green-900/50'}`}>
+                  {kw.active ? '⏸️ Deactivate' : '▶️ Activate'}
+                </button>
+                <button onClick={() => setConfirmDelete(kw)} className="px-2 py-1 text-[10px] rounded bg-red-900/30 hover:bg-red-900/50 text-red-300 transition-colors">
+                  🗑️ Delete
+                </button>
+              </div>
             </div>
           ))}
         </div>
