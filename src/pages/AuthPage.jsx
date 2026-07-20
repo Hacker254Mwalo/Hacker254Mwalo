@@ -144,7 +144,8 @@ export default function AuthPage() {
             Dumiropay
           </h1>
         </div>
-        <p className="text-gray-400 mt-1 text-sm">Kenya's Top 1 Money Making</p>
+        <p className="text-gray-400 mt-1 text-sm">Kenya's Premier Investment Platform</p>
+        <p className="text-yellow-400 mt-0.5 text-xs font-bold tracking-wide">Kenya's Top 1 Money Making</p>
         <div className="mt-2 h-px w-24 mx-auto" style={{ background: 'linear-gradient(90deg, transparent, #FFD700, transparent)' }}/>
       </div>
 
