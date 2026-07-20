@@ -125,28 +125,36 @@ export default function AuthPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-4" style={{ background: 'radial-gradient(ellipse at 50% 30%, #1a1a2e 0%, #0d0d1a 60%, #050510 100%)' }}>
+    <div className="min-h-screen flex flex-col items-center justify-center p-4 relative overflow-hidden" style={{ background: 'linear-gradient(160deg, #050510 0%, #0a0a1a 30%, #0d0d25 60%, #050510 100%)' }}>
+      {/* Animated background orbs */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute -top-20 -left-20 w-72 h-72 rounded-full opacity-20" style={{ background: 'radial-gradient(circle, #FFD700 0%, transparent 70%)', animation: 'floatSymbol 12s ease-in-out infinite' }}/>
+        <div className="absolute -bottom-32 -right-20 w-96 h-96 rounded-full opacity-10" style={{ background: 'radial-gradient(circle, #DAA520 0%, transparent 70%)', animation: 'floatSymbol 15s ease-in-out infinite', animationDelay: '3s' }}/>
+        <div className="absolute top-1/3 right-1/4 w-48 h-48 rounded-full opacity-15" style={{ background: 'radial-gradient(circle, #B8860B 0%, transparent 70%)', animation: 'floatSymbol 10s ease-in-out infinite', animationDelay: '6s' }}/>
+      </div>
+
       {/* Branding */}
-      <div className="mb-2 text-center">
-        <div className="flex items-center justify-center gap-2 mb-1">
-          {/* Small diamond/gem icon */}
-          <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
-            <path d="M14 2L26 14L14 26L2 14L14 2Z" fill="url(#brandGrad)" stroke="#FFD700" strokeWidth="1.2"/>
-            <path d="M14 8L20 14L14 20L8 14L14 8Z" fill="#FFD700" opacity="0.4"/>
+      <div className="mb-3 text-center relative z-10">
+        <div className="flex items-center justify-center gap-3 mb-2">
+          {/* Premium diamond logo */}
+          <svg width="36" height="36" viewBox="0 0 36 36" fill="none" className="drop-shadow-lg">
+            <path d="M18 3L33 18L18 33L3 18L18 3Z" fill="url(#brandGrad)" stroke="#FFD700" strokeWidth="1.5"/>
+            <path d="M18 10L25 18L18 26L11 18L18 10Z" fill="#FFD700" opacity="0.3"/>
             <defs>
-              <linearGradient id="brandGrad" x1="2" y1="2" x2="26" y2="26">
+              <linearGradient id="brandGrad" x1="3" y1="3" x2="33" y2="33">
                 <stop offset="0%" stopColor="#FFD700"/>
+                <stop offset="50%" stopColor="#FFC125"/>
                 <stop offset="100%" stopColor="#DAA520"/>
               </linearGradient>
             </defs>
           </svg>
-          <h1 className="text-5xl font-black tracking-tight" style={{ background: 'linear-gradient(135deg, #FFD700 0%, #DAA520 40%, #FFD700 60%, #B8860B 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+          <h1 className="text-5xl font-black tracking-tight" style={{ background: 'linear-gradient(135deg, #FFD700 0%, #FFC125 30%, #DAA520 60%, #B8860B 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', textShadow: '0 0 40px rgba(255,215,0,0.15)' }}>
             Dumiropay
           </h1>
         </div>
-        <p className="text-gray-400 mt-1 text-sm">Kenya's Premier Investment Platform</p>
-        <p className="text-yellow-400 mt-0.5 text-xs font-bold tracking-wide">Kenya's Top 1 Money Making</p>
-        <div className="mt-2 h-px w-24 mx-auto" style={{ background: 'linear-gradient(90deg, transparent, #FFD700, transparent)' }}/>
+        <p className="text-gray-300 mt-1 text-sm tracking-wide">Kenya's Premier Investment Platform</p>
+        <p className="mt-0.5 text-xs font-bold tracking-widest uppercase" style={{ background: 'linear-gradient(90deg, #FFD700, #DAA520)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Invest Smart · Grow Wealth · Secure Future</p>
+        <div className="mt-3 h-px w-32 mx-auto" style={{ background: 'linear-gradient(90deg, transparent, #FFD700, #DAA520, transparent)' }}/>
       </div>
 
       {/* Phone + Gold Tree */}
@@ -358,18 +366,35 @@ export default function AuthPage() {
         </g>
       </svg>
 
-      <div className="w-full max-w-sm">
-        <div className="card">
+      <div className="w-full max-w-sm relative z-10">
+        {/* Investor Stats Banner */}
+        <div className="mb-4 grid grid-cols-3 gap-2">
+          <div className="text-center p-2.5 rounded-xl" style={{ background: 'linear-gradient(135deg, rgba(255,215,0,0.08) 0%, rgba(218,165,32,0.04) 100%)', border: '1px solid rgba(255,215,0,0.12)' }}>
+            <p className="text-lg font-bold" style={{ color: '#FFD700' }}>KES</p>
+            <p className="text-[10px] text-gray-400 tracking-wide">Secure Returns</p>
+          </div>
+          <div className="text-center p-2.5 rounded-xl" style={{ background: 'linear-gradient(135deg, rgba(255,215,0,0.08) 0%, rgba(218,165,32,0.04) 100%)', border: '1px solid rgba(255,215,0,0.12)' }}>
+            <p className="text-lg font-bold" style={{ color: '#FFD700' }}>24/7</p>
+            <p className="text-[10px] text-gray-400 tracking-wide">Platform Access</p>
+          </div>
+          <div className="text-center p-2.5 rounded-xl" style={{ background: 'linear-gradient(135deg, rgba(255,215,0,0.08) 0%, rgba(218,165,32,0.04) 100%)', border: '1px solid rgba(255,215,0,0.12)' }}>
+            <p className="text-lg font-bold" style={{ color: '#FFD700' }}>100%</p>
+            <p className="text-[10px] text-gray-400 tracking-wide">Encrypted</p>
+          </div>
+        </div>
+
+        <div className="card" style={{ background: 'linear-gradient(145deg, rgba(20,20,40,0.85) 0%, rgba(10,10,25,0.95) 100%)', border: '1px solid rgba(255,215,0,0.15)', boxShadow: '0 8px 32px rgba(0,0,0,0.4), 0 0 60px rgba(255,215,0,0.05)', backdropFilter: 'blur(12px)' }}>
           {!forgotMode ? (
             <>
-              <div className="flex gap-1 bg-gray-800 p-1 rounded-xl mb-6">
+              <div className="flex gap-1 p-1 rounded-xl mb-6" style={{ background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(255,215,0,0.1)' }}>
                 {['login', 'register'].map(t => (
                   <button
                     key={t}
                     onClick={() => { setTab(t); setError('') }}
-                    className={`flex-1 py-2.5 rounded-lg text-sm font-semibold capitalize transition-all ${
-                      tab === t ? 'bg-gradient-to-r from-red-600 to-pink-600 text-white shadow' : 'text-gray-400'
+                    className={`flex-1 py-2.5 rounded-lg text-sm font-semibold capitalize transition-all duration-300 ${
+                      tab === t ? 'text-white shadow-lg' : 'text-gray-500 hover:text-gray-300'
                     }`}
+                    style={tab === t ? { background: 'linear-gradient(135deg, #FFD700 0%, #DAA520 100%)', color: '#000' } : {}}
                   >
                     {t}
                   </button>
@@ -437,9 +462,19 @@ export default function AuthPage() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="btn-primary w-full text-center mt-2"
+                  className="w-full text-center mt-2 py-3.5 px-6 rounded-xl font-bold text-sm tracking-wide transition-all duration-300 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                  style={{
+                    background: loading ? 'linear-gradient(135deg, #996515 0%, #6B4C11 100%)' : 'linear-gradient(135deg, #FFD700 0%, #DAA520 50%, #B8860B 100%)',
+                    color: loading ? '#999' : '#000',
+                    boxShadow: loading ? 'none' : '0 4px 20px rgba(255,215,0,0.25), 0 0 40px rgba(255,215,0,0.08)',
+                  }}
                 >
-                  {loading ? 'Please wait...' : tab === 'login' ? 'Login' : 'Create Account'}
+                  {loading ? (
+                    <span className="flex items-center justify-center gap-2">
+                      <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+                      Processing...
+                    </span>
+                  ) : tab === 'login' ? 'Access Your Portfolio' : 'Start Investing Today'}
                 </button>
               </form>
 
@@ -448,7 +483,10 @@ export default function AuthPage() {
                   <button
                     type="button"
                     onClick={() => { setForgotMode(true); setError(''); setForgotSent(false) }}
-                    className="text-xs text-red-400 hover:text-red-300 transition-colors"
+                    className="text-xs transition-colors"
+                    style={{ color: '#DAA520' }}
+                    onMouseEnter={e => e.target.style.color = '#FFD700'}
+                    onMouseLeave={e => e.target.style.color = '#DAA520'}
                   >
                     Forgot Password?
                   </button>
@@ -457,7 +495,7 @@ export default function AuthPage() {
             </>
           ) : (
             <>
-              <h3 className="text-lg font-bold mb-1">Reset Password</h3>
+              <h3 className="text-lg font-bold mb-1" style={{ background: 'linear-gradient(135deg, #FFD700, #DAA520)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Reset Password</h3>
               <p className="text-gray-400 text-sm mb-6">
                 {forgotSent
                   ? 'Your request has been received. A verification code will be provided by admin or contact support via WhatsApp.'
@@ -486,26 +524,34 @@ export default function AuthPage() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="btn-primary w-full text-center"
+                  className="w-full text-center py-3.5 px-6 rounded-xl font-bold text-sm tracking-wide transition-all duration-300 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                  style={{
+                    background: loading ? 'linear-gradient(135deg, #996515 0%, #6B4C11 100%)' : 'linear-gradient(135deg, #FFD700 0%, #DAA520 50%, #B8860B 100%)',
+                    color: loading ? '#999' : '#000',
+                    boxShadow: loading ? 'none' : '0 4px 20px rgba(255,215,0,0.25), 0 0 40px rgba(255,215,0,0.08)',
+                  }}
                 >
-                  {loading ? 'Please wait...' : forgotSent ? 'Send Another Request' : 'Submit Request'}
+                  {loading ? 'Processing...' : forgotSent ? 'Send Another Request' : 'Submit Request'}
                 </button>
               </form>
 
-              <p className="text-center mt-4">
-                <button
-                  type="button"
-                  onClick={() => { setForgotMode(false); setError(''); setForgotSent(false) }}
-                  className="text-xs text-gray-400 hover:text-white transition-colors"
-                >
-                  ← Back to Login
-                </button>
-              </p>
+                <p className="text-center mt-4">
+                  <button
+                    type="button"
+                    onClick={() => { setForgotMode(false); setError(''); setForgotSent(false) }}
+                    className="text-xs transition-colors"
+                    style={{ color: '#DAA520' }}
+                    onMouseEnter={e => e.target.style.color = '#FFD700'}
+                    onMouseLeave={e => e.target.style.color = '#DAA520'}
+                  >
+                    ← Back to Login
+                  </button>
+                </p>
             </>
           )}
         </div>
 
-        <p className="text-center text-xs text-gray-600 mt-6">
+        <p className="text-center text-xs mt-6" style={{ color: 'rgba(218,165,32,0.5)' }}>
           By using Dumiropay you agree to our Terms & Conditions.
         </p>
       </div>
