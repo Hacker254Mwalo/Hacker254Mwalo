@@ -144,12 +144,12 @@ export default function AuthPage() {
             Dumiropay
           </h1>
         </div>
-        <p className="text-gray-400 mt-1 text-sm">Kenya's Premier Investment Platform</p>
+        <p className="text-gray-400 mt-1 text-sm">Kenya's Top 1 Money Making</p>
         <div className="mt-2 h-px w-24 mx-auto" style={{ background: 'linear-gradient(90deg, transparent, #FFD700, transparent)' }}/>
       </div>
 
-      {/* Gold Tree */}
-      <svg width="200" height="180" viewBox="0 0 240 210" fill="none" xmlns="http://www.w3.org/2000/svg" className="mb-3 mx-auto">
+      {/* Phone + Gold Tree */}
+      <svg width="260" height="200" viewBox="0 0 320 240" fill="none" xmlns="http://www.w3.org/2000/svg" className="mb-3 mx-auto">
         <defs>
           <radialGradient id="bgGlow" cx="50%" cy="45%" r="45%">
             <stop offset="0%" stopColor="#FFD700" stopOpacity="0.15"/>
@@ -182,6 +182,31 @@ export default function AuthPage() {
 
         {/* Ambient glow */}
         <circle cx="120" cy="95" r="85" fill="url(#bgGlow)"/>
+
+        {/* === PHONE === */}
+        <g filter="url(#leafShadow)">
+          {/* Phone body */}
+          <rect x="40" y="100" width="80" height="130" rx="10" ry="10" fill="#1a1a2e" stroke="#DAA520" strokeWidth="2"/>
+          {/* Screen */}
+          <rect x="46" y="115" width="68" height="100" rx="3" ry="3" fill="#0d0d1a"/>
+          {/* Top speaker */}
+          <rect x="70" y="107" width="20" height="3" rx="1.5" fill="#333"/>
+          {/* Screen content - money growth chart */}
+          <line x1="50" y1="200" x2="110" y2="160" stroke="#FFD700" strokeWidth="2" strokeLinecap="round"/>
+          <line x1="60" y1="200" x2="110" y2="175" stroke="#DAA520" strokeWidth="1.5" strokeLinecap="round"/>
+          {/* Small bars */}
+          <rect x="52" y="185" width="6" height="15" rx="1" fill="#FFD700" opacity="0.6"/>
+          <rect x="62" y="178" width="6" height="22" rx="1" fill="#FFD700" opacity="0.7"/>
+          <rect x="72" y="170" width="6" height="30" rx="1" fill="#FFD700" opacity="0.8"/>
+          <rect x="82" y="162" width="6" height="38" rx="1" fill="#FFD700" opacity="0.9"/>
+          <rect x="92" y="152" width="6" height="48" rx="1" fill="#FFD700"/>
+          {/* Home button */}
+          <circle cx="80" cy="224" r="4" fill="none" stroke="#DAA520" strokeWidth="1.5"/>
+          {/* Status bar dots */}
+          <circle cx="55" cy="122" r="2" fill="#FFD700" opacity="0.5"/>
+          <circle cx="62" cy="122" r="2" fill="#FFD700" opacity="0.5"/>
+          <circle cx="69" cy="122" r="2" fill="#FFD700" opacity="0.5"/>
+        </g>
 
         {/* === TREE TRUNK === */}
         <path d="M117 200 C117 180, 115 160, 112 140" stroke="url(#trunkG)" strokeWidth="8" strokeLinecap="round" fill="none"/>
