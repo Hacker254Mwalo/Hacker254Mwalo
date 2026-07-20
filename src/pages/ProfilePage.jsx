@@ -365,6 +365,8 @@ function BonusTransferModal({ bonusBalance, onClose, onTransfer }) {
   const [amount, setAmount] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const fee = Math.floor(parseInt(amount || 0) * 0.08)
+  const net = Math.max(0, parseInt(amount || 0) - fee)
   const canTransfer = parseInt(amount) > 0 && parseInt(amount) <= bonusBalance
 
   async function confirm() {
@@ -383,7 +385,7 @@ function BonusTransferModal({ bonusBalance, onClose, onTransfer }) {
     <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4" onClick={onClose}>
       <div className="card max-w-sm w-full" onClick={e => e.stopPropagation()}>
         <h3 className="text-xl font-bold mb-1">🔄 Transfer Bonus to Balance</h3>
-        <p className="text-xs mb-4" style={{ color: 'var(--text-secondary)' }}>Move bonus to your main balance (no fee)</p>
+        <p className="text-xs mb-4" style={{ color: 'var(--text-secondary)' }}>8% tax applies on transfer</p>
 
         <div className="space-y-4 mb-4">
           <div>
@@ -400,7 +402,24 @@ function BonusTransferModal({ bonusBalance, onClose, onTransfer }) {
           </div>
         </div>
 
-        <div className="rounded-xl p-4 mb-4 text-sm text-center" style={{ background: 'var(--bg-elevated)' }}>
+        {amount && parseInt(amount) > 0 && (
+          <div className="rounded-xl p-4 mb-4 space-y-2 text-sm" style={{ background: 'var(--bg-elevated)' }}>
+            <div className="flex justify-between">
+              <span style={{ color: 'var(--text-secondary)' }}>Transfer Amount</span>
+              <span>KSh {parseInt(amount).toLocaleString()}</span>
+            </div>
+            <div className="flex justify-between">
+              <span style={{ color: 'var(--text-secondary)' }}>Tax (8%)</span>
+              <span className="text-red-400">-KSh {fee.toLocaleString()}</span>
+            </div>
+            <hr style={{ borderColor: 'var(--border)' }} />
+            <div className="flex justify-between font-bold">
+              <span>Added to Balance</span>
+              <span className="text-green-400">KSh {net.toLocaleString()}</span>
+            </div>
+          </div>
+        )}
+        <div className="rounded-xl p-3 mb-4 text-sm text-center" style={{ background: 'var(--bg-elevated)' }}>
           <p style={{ color: 'var(--text-secondary)' }}>Available Bonus</p>
           <p className="text-xl font-black text-yellow-400">KSh {bonusBalance.toLocaleString()}</p>
         </div>
@@ -523,7 +542,8 @@ export default function ProfilePage() {
       if (result?.new_balance !== undefined) {
         updateUser({ balance: result.new_balance, bonusBalance: result.new_bonus_balance })
       }
-      showToast(`✅ KSh ${amount.toLocaleString()} transferred from bonus to main balance!`)
+      const tax = Math.floor(amount * 0.08)
+      showToast(`✅ KSh ${(amount - tax).toLocaleString()} added to balance! (Tax: KSh ${tax.toLocaleString()})`)
     } catch (err) {
       showToast(err.message || 'Transfer failed', 'error')
     }
