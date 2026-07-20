@@ -212,8 +212,9 @@ export async function getAllDeposits() {
   if (!isSupabaseConfigured) return local.getAllDeposits()
   const { data, error } = await supabase
     .from('deposits')
-    .select('*, users!user_phone(name, phone)')
+    .select('id, user_phone, amount, mpesa_receipt, status, created_at, method, users!user_phone(name)')
     .order('created_at', { ascending: false })
+    .limit(200)
   if (error) throw error
   return data || []
 }
@@ -254,33 +255,30 @@ export async function getReferrals(userPhone) {
   if (error) throw error
   const refs = data || []
 
-  // Check investment status for each referred user
-  const result = []
-  for (const r of refs) {
-    let isActive = false
-    if (r.referred_phone) {
-      try {
-        const { data: invs, error: invErr } = await supabase
-          .from('investments')
-          .select('status')
-          .eq('user_phone', r.referred_phone)
-          .limit(1)
-        if (!invErr && invs && invs.length > 0) {
-          isActive = invs[0].status === 'active'
-        }
-      } catch { /* silently skip */ }
-    }
-    result.push({
-      referredName: r.referred_name,
-      referredPhone: r.referred_phone || '',
-      level: r.level,
-      commission: Number(r.commission),
-      planName: r.plan_name,
-      date: r.created_at,
-      isActive,
-    })
+  // Batch check investment status for all referred users
+  const phones = [...new Set(refs.map(r => r.referred_phone).filter(Boolean))]
+  let activePhones = new Set()
+  if (phones.length > 0) {
+    try {
+      const { data: invs, error: invErr } = await supabase
+        .from('investments')
+        .select('user_phone, status')
+        .in('user_phone', phones)
+      if (!invErr && invs) {
+        invs.filter(i => i.status === 'active').forEach(i => activePhones.add(i.user_phone))
+      }
+    } catch { /* silently skip */ }
   }
-  return result
+
+  return refs.map(r => ({
+    referredName: r.referred_name,
+    referredPhone: r.referred_phone || '',
+    level: r.level,
+    commission: Number(r.commission),
+    planName: r.plan_name,
+    date: r.created_at,
+    isActive: activePhones.has(r.referred_phone),
+  }))
 }
 
 // Admin: Get ALL referrals across the platform
@@ -324,8 +322,9 @@ export async function getAllWithdrawals() {
   if (!isSupabaseConfigured) return local.getAllWithdrawals()
   const { data, error } = await supabase
     .from('withdrawals')
-    .select('*, users!user_phone(name, phone)')
+    .select('id, user_phone, amount, fee, net_amount, mpesa_phone, status, created_at, users!user_phone(name)')
     .order('created_at', { ascending: false })
+    .limit(200)
   if (error) throw error
   return data || []
 }
@@ -389,8 +388,9 @@ export async function getAllLoans() {
   }
   const { data, error } = await supabase
     .from('loans')
-    .select('*, users!user_phone(name, phone)')
+    .select('id, user_phone, amount, purpose, status, created_at, users!user_phone(name)')
     .order('created_at', { ascending: false })
+    .limit(200)
   if (error) throw error
   return data || []
 }

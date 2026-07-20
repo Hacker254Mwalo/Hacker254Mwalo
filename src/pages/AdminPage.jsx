@@ -1309,7 +1309,7 @@ const TABS = [
 ]
 
 export default function AdminPage() {
-  const { user } = useAuth()
+  const { user, loading } = useAuth()
   const navigate = useNavigate()
   const [tab, setTab] = useState('overview')
   const [toast, setToast] = useState(null)
