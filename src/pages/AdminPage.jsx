@@ -438,7 +438,9 @@ function UsersTab({ showToast }) {
       await adminDeleteUser(u.phone)
       showToast(`✅ Account ${u.phone} deleted permanently`)
       load()
-    } catch { showToast('❌ Failed to delete account', 'error') }
+    } catch (error) { 
+      showToast(error instanceof Error ? `❌ ${error.message}` : '❌ Failed to delete account', 'error') 
+    }
   }
 
   async function handleViewInvestments(u) {
