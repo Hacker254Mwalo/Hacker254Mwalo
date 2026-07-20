@@ -211,7 +211,23 @@ export default function HistoryPage() {
                   <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>Expected Earnings</p>
                 </div>
               </div>
-              {investments.map(inv => (
+              {investments.map(inv => {
+                const startDate = inv.startedAt ? new Date(inv.startedAt) : new Date(inv.date)
+                const endDate = inv.endsAt ? new Date(inv.endsAt) : new Date(startDate.getTime() + 90 * 86400000)
+                const now = new Date()
+                const totalDays = Math.max(1, Math.ceil((endDate - startDate) / 86400000))
+                const daysPassed = inv.status === 'active'
+                  ? Math.max(0, Math.floor((now - startDate) / 86400000))
+                  : totalDays
+                const progress = Math.min(100, Math.round((daysPassed / totalDays) * 100))
+                const dailyReturn = Number(inv.dailyReturn || 0)
+                const baseProfit = Number(inv.profit || 0)
+                const accumulatedProfit = inv.status === 'active'
+                  ? baseProfit + (daysPassed * dailyReturn)
+                  : Number(inv.totalReturn || 0)
+                const targetTotal = Number(inv.totalReturn || 0)
+
+                return (
                 <div key={inv.id} className="card hover:border-gray-600 transition-colors">
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex-1 min-w-0">
@@ -223,31 +239,29 @@ export default function HistoryPage() {
                     </div>
                     <div className="text-right flex-shrink-0">
                       <p className="font-bold text-red-400">-KSh {Number(inv.amount).toLocaleString()}</p>
-                      <p className="text-green-400 text-sm">+KSh {Number(inv.dailyReturn).toLocaleString()}/day</p>
-                      <p className="text-yellow-400 text-xs">Total: KSh {Number(inv.totalReturn).toLocaleString()}</p>
+                      <p className="text-green-400 text-sm">+KSh {dailyReturn.toLocaleString()}/day</p>
+                      <p className="text-yellow-400 text-xs">Total: KSh {targetTotal.toLocaleString()}</p>
                     </div>
                   </div>
-                  {/* Progress bar for 90-day duration */}
-                  {inv.status === 'active' && inv.date && (() => {
-                    const days = Math.min(90, Math.floor((Date.now() - new Date(inv.date)) / 86400000))
-                    const pct = Math.round((days / 90) * 100)
-                    return (
-                      <div className="mt-3">
-                        <div className="flex justify-between text-xs mb-1" style={{ color: 'var(--text-muted)' }}>
-                          <span>Day {days} of 90</span>
-                          <span>{pct}% complete</span>
-                        </div>
-                        <div className="h-1.5 rounded-full" style={{ background: 'var(--bg-input)' }}>
-                          <div
-                            className="h-full rounded-full bg-gradient-to-r from-red-500 to-pink-500 transition-all"
-                            style={{ width: `${pct}%` }}
-                          />
-                        </div>
-                      </div>
-                    )
-                  })()}
+                  <div className="mt-3 rounded-lg px-3 py-2" style={{ background: 'rgba(0,0,0,0.2)' }}>
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="text-xs" style={{ color: 'var(--text-secondary)' }}>+ Total Earned</span>
+                      <span className="text-green-400 font-bold text-sm">KSh {accumulatedProfit.toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between text-xs mb-1" style={{ color: 'var(--text-muted)' }}>
+                      <span>Day {daysPassed} of {totalDays}</span>
+                      <span>{progress}% complete</span>
+                    </div>
+                    <div className="h-1.5 rounded-full" style={{ background: 'var(--bg-input)' }}>
+                      <div
+                        className="h-full rounded-full bg-gradient-to-r from-red-500 to-pink-500 transition-all"
+                        style={{ width: `${progress}%` }}
+                      />
+                    </div>
+                  </div>
                 </div>
-              ))}
+              )
+              })}
             </>
           )}
         </div>
