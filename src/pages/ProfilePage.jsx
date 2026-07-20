@@ -392,9 +392,9 @@ function BonusTransferModal({ bonusBalance, onClose, onTransfer }) {
             <label className="text-xs mb-1 block" style={{ color: 'var(--text-secondary)' }}>Amount (KSh)</label>
             <input
               className="input-field"
-              placeholder={`Max KSh ${bonusBalance.toLocaleString()}`}
+              placeholder={`Min KSh 100 · Max KSh ${bonusBalance.toLocaleString()}`}
               type="number"
-              min={1}
+              min={100}
               max={bonusBalance}
               value={amount}
               onChange={e => { setAmount(e.target.value); setError('') }}
@@ -663,9 +663,9 @@ export default function ProfilePage() {
               Transfer to Balance
             </button>
           </div>
-          {(user.bonusBalance || 0) < 500 && (
-            <p className="text-yellow-400/60 text-xs mt-2">Minimum KSh 500 to withdraw bonus</p>
-          )}
+          <p className="text-yellow-400/60 text-xs mt-2">
+            Min KSh 500 to withdraw bonus · Min KSh 100 to transfer to balance
+          </p>
         </div>
       )}
       {/* Referral Section */}
