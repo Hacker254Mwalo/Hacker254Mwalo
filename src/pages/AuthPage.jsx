@@ -187,12 +187,12 @@ export default function AuthPage() {
           </h1>
         </div>
         <p className="text-gray-300 mt-1 text-sm tracking-wide">Kenya's Premier Investment Platform</p>
-        <p className="mt-0.5 text-xs font-bold tracking-widest uppercase" style={{ background: 'linear-gradient(90deg, #FFD700, #DAA520)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Invest Smart · Grow Wealth · Secure Future</p>
+        <p className="mt-0.5 text-xs font-bold tracking-widest uppercase" style={{ background: 'linear-gradient(90deg, #FFD700, #DAA520)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Top Earning Platform Online</p>
         <div className="mt-3 h-px w-32 mx-auto" style={{ background: 'linear-gradient(90deg, transparent, #FFD700, #DAA520, transparent)' }}/>
       </div>
 
-      {/* Phone + Gold Tree */}
-      <svg width="280" height="220" viewBox="0 0 340 260" fill="none" xmlns="http://www.w3.org/2000/svg" className="mb-3 mx-auto">
+      {/* Professional Money Tree */}
+      <svg width="300" height="240" viewBox="0 0 340 260" fill="none" xmlns="http://www.w3.org/2000/svg" className="mb-4 mx-auto">
         <defs>
           <radialGradient id="bgGlow" cx="50%" cy="45%" r="45%">
             <stop offset="0%" stopColor="#FFD700" stopOpacity="0.15"/>
@@ -405,11 +405,11 @@ export default function AuthPage() {
         <div className="mb-4 grid grid-cols-3 gap-2">
           <div className="text-center p-2.5 rounded-xl" style={{ background: 'linear-gradient(135deg, rgba(255,215,0,0.08) 0%, rgba(218,165,32,0.04) 100%)', border: '1px solid rgba(255,215,0,0.12)' }}>
             <p className="text-lg font-bold" style={{ color: '#FFD700' }}>KES</p>
-            <p className="text-[10px] text-gray-400 tracking-wide">Secure Returns</p>
+            <p className="text-[10px] text-gray-400 tracking-wide">Make Money Online Watching Grow</p>
           </div>
           <div className="text-center p-2.5 rounded-xl" style={{ background: 'linear-gradient(135deg, rgba(255,215,0,0.08) 0%, rgba(218,165,32,0.04) 100%)', border: '1px solid rgba(255,215,0,0.12)' }}>
             <p className="text-lg font-bold" style={{ color: '#FFD700' }}>24/7</p>
-            <p className="text-[10px] text-gray-400 tracking-wide">Platform Access</p>
+            <p className="text-[10px] text-gray-400 tracking-wide">Withdrawal</p>
           </div>
           <div className="text-center p-2.5 rounded-xl" style={{ background: 'linear-gradient(135deg, rgba(255,215,0,0.08) 0%, rgba(218,165,32,0.04) 100%)', border: '1px solid rgba(255,215,0,0.12)' }}>
             <p className="text-lg font-bold" style={{ color: '#FFD700' }}>100%</p>
