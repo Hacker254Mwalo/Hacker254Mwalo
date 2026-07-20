@@ -26,6 +26,15 @@ export default function AuthPage() {
     const check = () => setMobile(window.innerWidth < 768)
     check()
     window.addEventListener('resize', check)
+
+    // Automatically capture referral code from URL (e.g. ?ref=DUM123456)
+    const params = new URLSearchParams(window.location.search)
+    const ref = params.get('ref')
+    if (ref) {
+      setRefCode(ref.toUpperCase())
+      setTab('register') // Switch to register tab if coming from a referral link
+    }
+
     return () => window.removeEventListener('resize', check)
   }, [])
 
