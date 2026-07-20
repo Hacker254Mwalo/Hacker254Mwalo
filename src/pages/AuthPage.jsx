@@ -12,6 +12,9 @@ export default function AuthPage() {
   const [refCode, setRefCode] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [showSuccess, setShowSuccess] = useState(false)
+  const [shaking, setShaking] = useState(false)
+  const [focusedField, setFocusedField] = useState('')
   const [forgotMode, setForgotMode] = useState(false)
   const [forgotSent, setForgotSent] = useState(false)
   const failRef = useRef({ count: 0, lockedUntil: 0 })
@@ -87,11 +90,16 @@ export default function AuthPage() {
             setError('Invalid phone number or PIN')
           }
           setLoading(false)
+          setShaking(true)
+          setTimeout(() => setShaking(false), 600)
           return
         }
         failRef.current = { count: 0, lockedUntil: 0 }
         login(userData)
-        navigate('/dashboard')
+        setShowSuccess(true)
+        setLoading(false)
+        setTimeout(() => navigate('/dashboard'), 600)
+        return
       } else {
         if (!name.trim()) { setError('Please enter your full name'); setLoading(false); return }
 
@@ -120,6 +128,10 @@ export default function AuthPage() {
     } catch (err) {
       console.error(err)
       setError('Something went wrong. Please try again.')
+      setLoading(false)
+      setShaking(true)
+      setTimeout(() => setShaking(false), 600)
+      return
     }
     setLoading(false)
   }
@@ -131,6 +143,20 @@ export default function AuthPage() {
         <div className="absolute -top-20 -left-20 w-72 h-72 rounded-full opacity-20" style={{ background: 'radial-gradient(circle, #FFD700 0%, transparent 70%)', animation: 'floatSymbol 12s ease-in-out infinite' }}/>
         <div className="absolute -bottom-32 -right-20 w-96 h-96 rounded-full opacity-10" style={{ background: 'radial-gradient(circle, #DAA520 0%, transparent 70%)', animation: 'floatSymbol 15s ease-in-out infinite', animationDelay: '3s' }}/>
         <div className="absolute top-1/3 right-1/4 w-48 h-48 rounded-full opacity-15" style={{ background: 'radial-gradient(circle, #B8860B 0%, transparent 70%)', animation: 'floatSymbol 10s ease-in-out infinite', animationDelay: '6s' }}/>
+        {/* 20 Gold Particles floating up */}
+        {Array.from({ length: 20 }).map((_, i) => (
+          <div
+            key={i}
+            className="gold-particle"
+            style={{
+              left: `${5 + (i * 4.5)}%`,
+              animationDuration: `${10 + (i % 5) * 3}s`,
+              animationDelay: `${(i % 7) * 1.5}s`,
+              width: `${2 + (i % 3)}px`,
+              height: `${2 + (i % 3)}px`,
+            }}
+          />
+        ))}
       </div>
 
       {/* Branding */}
@@ -383,7 +409,7 @@ export default function AuthPage() {
           </div>
         </div>
 
-        <div className="card" style={{ background: 'linear-gradient(145deg, rgba(20,20,40,0.85) 0%, rgba(10,10,25,0.95) 100%)', border: '1px solid rgba(255,215,0,0.15)', boxShadow: '0 8px 32px rgba(0,0,0,0.4), 0 0 60px rgba(255,215,0,0.05)', backdropFilter: 'blur(12px)' }}>
+        <div className={`card ${shaking ? 'shake-card' : ''}`} style={{ background: 'linear-gradient(145deg, rgba(20,20,40,0.85) 0%, rgba(10,10,25,0.95) 100%)', border: '1px solid rgba(255,215,0,0.15)', boxShadow: '0 8px 32px rgba(0,0,0,0.4), 0 0 60px rgba(255,215,0,0.05)', backdropFilter: 'blur(12px)' }}>
           {!forgotMode ? (
             <>
               <div className="flex gap-1 p-1 rounded-xl mb-6" style={{ background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(255,215,0,0.1)' }}>
@@ -416,27 +442,37 @@ export default function AuthPage() {
                 )}
 
                 <div>
-                  <label className="text-xs text-gray-400 mb-1 block">Phone Number</label>
+                  <label className="text-xs text-gray-400 mb-1 flex items-center gap-1">
+                    <span style={{ color: focusedField === 'phone' ? '#FFD700' : '#9ca3af', transition: 'color 0.2s' }}>📞</span>
+                    Phone Number
+                  </label>
                   <input
-                    className="input-field"
+                    className={`input-field ${focusedField === 'phone' ? 'input-gold-focus' : ''}`}
                     placeholder="0712 345 678"
                     value={phone}
                     onChange={e => setPhone(e.target.value)}
+                    onFocus={() => setFocusedField('phone')}
+                    onBlur={() => setFocusedField('')}
                     type="tel"
                     required
                   />
                 </div>
 
                 <div>
-                  <label className="text-xs text-gray-400 mb-1 block">PIN (4–6 digits)</label>
+                  <label className="text-xs text-gray-400 mb-1 flex items-center gap-1">
+                    <span style={{ color: focusedField === 'pin' ? '#FFD700' : '#9ca3af', transition: 'color 0.2s' }}>🔒</span>
+                    PIN (4–6 digits)
+                  </label>
                   <input
-                    className="input-field"
+                    className={`input-field ${focusedField === 'pin' ? 'input-gold-focus' : ''}`}
                     placeholder="••••"
                     type="password"
                     inputMode="numeric"
                     maxLength={6}
                     value={pin}
                     onChange={e => setPin(e.target.value.replace(/\D/g, ''))}
+                    onFocus={() => setFocusedField('pin')}
+                    onBlur={() => setFocusedField('')}
                     required
                   />
                 </div>
@@ -461,20 +497,25 @@ export default function AuthPage() {
 
                 <button
                   type="submit"
-                  disabled={loading}
-                  className="w-full text-center mt-2 py-3.5 px-6 rounded-xl font-bold text-sm tracking-wide transition-all duration-300 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                  disabled={loading || showSuccess}
+                  className="w-full text-center mt-2 py-3.5 px-6 rounded-xl font-bold text-sm tracking-wide transition-all duration-300 active:scale-95 disabled:cursor-not-allowed"
                   style={{
-                    background: loading ? 'linear-gradient(135deg, #996515 0%, #6B4C11 100%)' : 'linear-gradient(135deg, #FFD700 0%, #DAA520 50%, #B8860B 100%)',
-                    color: loading ? '#999' : '#000',
-                    boxShadow: loading ? 'none' : '0 4px 20px rgba(255,215,0,0.25), 0 0 40px rgba(255,215,0,0.08)',
+                    background: showSuccess ? 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)' : loading ? 'linear-gradient(135deg, #996515 0%, #6B4C11 100%)' : 'linear-gradient(135deg, #FFD700 0%, #DAA520 50%, #B8860B 100%)',
+                    color: showSuccess ? '#fff' : loading ? '#999' : '#000',
+                    boxShadow: showSuccess ? '0 4px 20px rgba(34,197,94,0.3)' : loading ? 'none' : '0 4px 20px rgba(255,215,0,0.25), 0 0 40px rgba(255,215,0,0.08)',
                   }}
                 >
-                  {loading ? (
+                  {showSuccess ? (
+                    <span className="flex items-center justify-center gap-2 check-pop">
+                      <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"/></svg>
+                      Success!
+                    </span>
+                  ) : loading ? (
                     <span className="flex items-center justify-center gap-2">
                       <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
-                      Processing...
+                      Signing In...
                     </span>
-                  ) : tab === 'login' ? 'Access Your Portfolio' : 'Start Investing Today'}
+                  ) : tab === 'login' ? 'Access Dashboard →' : 'Start Investing Today'}
                 </button>
               </form>
 
