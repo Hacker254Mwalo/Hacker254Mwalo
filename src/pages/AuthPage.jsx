@@ -291,9 +291,6 @@ export default function AuthPage() {
 
       <div className="w-full max-w-sm">
         <div className="card">
-
-      <div className="w-full max-w-md">
-        <div className="card">
           {!forgotMode ? (
             <>
               <div className="flex gap-1 bg-gray-800 p-1 rounded-xl mb-6">
