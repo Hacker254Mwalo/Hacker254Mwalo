@@ -126,12 +126,81 @@ export default function AuthPage() {
 
   return (
     <div className="min-h-screen bg-gray-950 flex flex-col items-center justify-center p-4">
-      <div className="mb-8 text-center">
+      <div className="mb-4 text-center">
         <h1 className="text-4xl font-black bg-gradient-to-r from-red-500 to-pink-500 bg-clip-text text-transparent">
           Dumiropay
         </h1>
         <p className="text-gray-400 mt-1 text-sm">Kenya's Premier Investment Platform</p>
       </div>
+
+      {/* Gold Financial Tree */}
+      <svg width="180" height="160" viewBox="0 0 200 170" fill="none" xmlns="http://www.w3.org/2000/svg" className="mb-4 mx-auto">
+        {/* Glow effect */}
+        <defs>
+          <radialGradient id="goldGlow" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stop-color="#FFD700" stopOpacity="0.3"/>
+            <stop offset="100%" stop-color="#FFD700" stopOpacity="0"/>
+          </radialGradient>
+          <linearGradient id="goldGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#FFD700"/>
+            <stop offset="50%" stop-color="#DAA520"/>
+            <stop offset="100%" stop-color="#B8860B"/>
+          </linearGradient>
+          <linearGradient id="trunkGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#B8860B"/>
+            <stop offset="100%" stop-color="#8B6914"/>
+          </linearGradient>
+          <linearGradient id="leafGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#FFD700"/>
+            <stop offset="100%" stop-color="#DAA520"/>
+          </linearGradient>
+        </defs>
+
+        {/* Background glow */}
+        <circle cx="100" cy="80" r="70" fill="url(#goldGlow)"/>
+
+        {/* Tree trunk */}
+        <path d="M95 155 C95 140, 92 125, 88 115" stroke="url(#trunkGrad)" strokeWidth="6" strokeLinecap="round" fill="none"/>
+        <path d="M100 155 C100 135, 100 120, 100 100" stroke="url(#trunkGrad)" strokeWidth="7" strokeLinecap="round" fill="none"/>
+        <path d="M105 155 C105 140, 108 125, 112 115" stroke="url(#trunkGrad)" strokeWidth="6" strokeLinecap="round" fill="none"/>
+
+        {/* Main branches */}
+        <path d="M88 115 C70 100, 50 85, 40 70" stroke="url(#goldGrad)" strokeWidth="4" strokeLinecap="round" fill="none"/>
+        <path d="M112 115 C130 100, 150 85, 160 70" stroke="url(#goldGrad)" strokeWidth="4" strokeLinecap="round" fill="none"/>
+        <path d="M100 100 C80 90, 55 80, 45 60" stroke="url(#goldGrad)" strokeWidth="4" strokeLinecap="round" fill="none"/>
+        <path d="M100 100 C120 90, 145 80, 155 60" stroke="url(#goldGrad)" strokeWidth="4" strokeLinecap="round" fill="none"/>
+        <path d="M100 100 C95 75, 100 55, 100 35" stroke="url(#goldGrad)" strokeWidth="4" strokeLinecap="round" fill="none"/>
+
+        {/* Sub-branches */}
+        <path d="M70 90 C60 80, 55 70, 50 55" stroke="url(#goldGrad)" strokeWidth="2.5" strokeLinecap="round" fill="none"/>
+        <path d="M130 90 C140 80, 145 70, 150 55" stroke="url(#goldGrad)" strokeWidth="2.5" strokeLinecap="round" fill="none"/>
+        <path d="M80 82 C72 68, 65 55, 60 42" stroke="url(#goldGrad)" strokeWidth="2.5" strokeLinecap="round" fill="none"/>
+        <path d="M120 82 C128 68, 135 55, 140 42" stroke="url(#goldGrad)" strokeWidth="2.5" strokeLinecap="round" fill="none"/>
+
+        {/* Coin/fruit circles on branches — representing money growing */}
+        <circle cx="40" cy="68" r="7" fill="url(#leafGrad)" stroke="#B8860B" strokeWidth="1" opacity="0.9"/>
+        <circle cx="50" cy="53" r="5" fill="url(#leafGrad)" stroke="#B8860B" strokeWidth="1" opacity="0.85"/>
+        <circle cx="45" cy="58" r="4" fill="url(#leafGrad)" stroke="#B8860B" strokeWidth="1" opacity="0.8"/>
+        <circle cx="160" cy="68" r="7" fill="url(#leafGrad)" stroke="#B8860B" strokeWidth="1" opacity="0.9"/>
+        <circle cx="150" cy="53" r="5" fill="url(#leafGrad)" stroke="#B8860B" strokeWidth="1" opacity="0.85"/>
+        <circle cx="155" cy="58" r="4" fill="url(#leafGrad)" stroke="#B8860B" strokeWidth="1" opacity="0.8"/>
+        <circle cx="60" cy="40" r="6" fill="url(#leafGrad)" stroke="#B8860B" strokeWidth="1" opacity="0.9"/>
+        <circle cx="65" cy="35" r="4.5" fill="url(#leafGrad)" stroke="#B8860B" strokeWidth="1" opacity="0.85"/>
+        <circle cx="140" cy="40" r="6" fill="url(#leafGrad)" stroke="#B8860B" strokeWidth="1" opacity="0.9"/>
+        <circle cx="135" cy="35" r="4.5" fill="url(#leafGrad)" stroke="#B8860B" strokeWidth="1" opacity="0.85"/>
+        <circle cx="100" cy="32" r="8" fill="url(#leafGrad)" stroke="#B8860B" strokeWidth="1.2" opacity="0.95"/>
+        <circle cx="92" cy="42" r="5" fill="url(#leafGrad)" stroke="#B8860B" strokeWidth="1" opacity="0.85"/>
+        <circle cx="108" cy="42" r="5" fill="url(#leafGrad)" stroke="#B8860B" strokeWidth="1" opacity="0.85"/>
+        <circle cx="96" cy="22" r="4" fill="url(#leafGrad)" stroke="#B8860B" strokeWidth="1" opacity="0.8"/>
+        <circle cx="104" cy="22" r="4" fill="url(#leafGrad)" stroke="#B8860B" strokeWidth="1" opacity="0.8"/>
+
+        {/* Dollar signs on the coins */}
+        <text x="40" y="72" textAnchor="middle" fontSize="7" fill="#8B6914" fontWeight="bold">K</text>
+        <text x="160" y="72" textAnchor="middle" fontSize="7" fill="#8B6914" fontWeight="bold">K</text>
+        <text x="100" y="37" textAnchor="middle" fontSize="9" fill="#8B6914" fontWeight="bold">K</text>
+        <text x="60" y="44" textAnchor="middle" fontSize="6" fill="#8B6914" fontWeight="bold">K</text>
+        <text x="140" y="44" textAnchor="middle" fontSize="6" fill="#8B6914" fontWeight="bold">K</text>
+      </svg>
 
       <div className="w-full max-w-md">
         <div className="card">
