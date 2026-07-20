@@ -867,6 +867,23 @@ export async function getAllTransactions() {
 
 export async function deleteTransaction(id) {
   if (!isSupabaseConfigured) return
+  // First get the transaction to find linked records
+  const { data: tx, error: fetchErr } = await supabase
+    .from('transactions')
+    .select('id, user_phone, reference, type')
+    .eq('id', id)
+    .single()
+  if (fetchErr) throw fetchErr
+
+  // Delete related deposit/withdrawal records by reference to free storage
+  if (tx.reference) {
+    await Promise.all([
+      supabase.from('deposits').delete().eq('mpesa_receipt', tx.reference).eq('user_phone', tx.user_phone),
+      supabase.from('withdrawals').delete().eq('mpesa_phone', tx.user_phone).eq('created_at', tx.created_at || '1970-01-01'),
+    ])
+  }
+
+  // Delete the transaction itself
   const { error } = await supabase.from('transactions').delete().eq('id', id)
   if (error) throw error
 }
