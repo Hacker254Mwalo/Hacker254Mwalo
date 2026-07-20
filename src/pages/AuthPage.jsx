@@ -79,7 +79,7 @@ export default function AuthPage() {
             failRef.current.count = 0
             setError('Too many failed attempts. Locked for 60 seconds.')
           } else {
-            setError('Account not found or incorrect PIN')
+            setError('Invalid phone number or PIN')
           }
           setLoading(false)
           return
@@ -230,8 +230,8 @@ export default function AuthPage() {
               <h3 className="text-lg font-bold mb-1">Reset Password</h3>
               <p className="text-gray-400 text-sm mb-6">
                 {forgotSent
-                  ? 'If the account exists, your request has been received. Our team will contact you shortly.'
-                  : 'Enter your registered phone number to request a password reset.'}
+                  ? 'Your request has been received. A verification code will be provided by admin or contact support via WhatsApp.'
+                  : 'Enter your registered phone number to request a password reset. A code will be provided by admin.'}
               </p>
 
               <form onSubmit={handleSubmit} className="space-y-4">
