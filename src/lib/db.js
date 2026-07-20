@@ -51,8 +51,12 @@ function dbInvToApp(row) {
     amount: Number(row.amount || 0),
     dailyReturn: Number(row.daily_return || 0),
     totalReturn: Number(row.total_return || 0),
+    profit: Number(row.profit || 0),
     status: row.status,
     date: row.created_at,
+    startedAt: row.started_at,
+    endsAt: row.ends_at,
+    lastProfitAt: row.last_profit_at,
   }
 }
 

@@ -701,18 +701,50 @@ export default function Dashboard() {
             Active Investments
           </h3>
           <div className="space-y-3">
-            {activeInvestments.slice(0, 3).map(inv => (
-              <div key={inv.id} className="flex items-center justify-between rounded-xl px-4 py-3" style={{ background: 'var(--bg-elevated)' }}>
-                <div>
-                  <p className="font-medium text-sm">{inv.planName}</p>
-                  <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>KSh {Number(inv.amount).toLocaleString()}</p>
+            {activeInvestments.slice(0, 3).map(inv => {
+              const startDate = inv.startedAt ? new Date(inv.startedAt) : new Date(inv.date)
+              const endDate = inv.endsAt ? new Date(inv.endsAt) : new Date(startDate.getTime() + 30 * 86400000)
+              const now = new Date()
+              const totalDays = Math.max(1, Math.ceil((endDate - startDate) / 86400000))
+              const daysPassed = Math.max(0, Math.floor((now - startDate) / 86400000))
+              const progress = Math.min(100, Math.round((daysPassed / totalDays) * 100))
+              const dailyReturn = Number(inv.dailyReturn || 0)
+              const baseProfit = Number(inv.profit || 0)
+              const accumulatedProfit = baseProfit + (daysPassed * dailyReturn)
+              const targetTotal = Number(inv.totalReturn || 0)
+              const remaining = Math.max(0, targetTotal - accumulatedProfit)
+              return (
+                <div key={inv.id} className="rounded-xl px-4 py-3" style={{ background: 'var(--bg-elevated)' }}>
+                  <div className="flex items-center justify-between mb-2">
+                    <div>
+                      <p className="font-medium text-sm">{inv.planName}</p>
+                      <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>{startDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-red-400 text-sm font-semibold">-KSh {Number(inv.amount).toLocaleString()}</p>
+                      <p className="text-green-400 text-xs">+KSh {dailyReturn.toLocaleString()}/day</p>
+                    </div>
+                  </div>
+                  <div className="rounded-lg p-3 mb-2" style={{ background: 'rgba(0,0,0,0.2)' }}>
+                    <div className="flex justify-between items-center mb-1">
+                      <span className="text-xs" style={{ color: 'var(--text-secondary)' }}>Total Earned So Far</span>
+                      <span className="text-green-400 font-bold text-sm">KSh {accumulatedProfit.toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs" style={{ color: 'var(--text-secondary)' }}>Day {daysPassed + 1} of {totalDays}</span>
+                      <span className="text-yellow-400 text-xs">{progress}% complete</span>
+                    </div>
+                    <div className="w-full bg-gray-700 rounded-full h-1.5 mt-2">
+                      <div className="bg-gradient-to-r from-green-500 to-emerald-400 h-1.5 rounded-full transition-all" style={{ width: `${progress}%` }}></div>
+                    </div>
+                  </div>
+                  <div className="flex justify-between text-xs" style={{ color: 'var(--text-secondary)' }}>
+                    <span>Target: KSh {targetTotal.toLocaleString()}</span>
+                    <span>Remaining: KSh {remaining.toLocaleString()}</span>
+                  </div>
                 </div>
-                <div className="text-right">
-                  <p className="text-green-400 text-sm font-semibold">+KSh {Number(inv.dailyReturn || 0).toLocaleString()}/day</p>
-                  <p className="text-yellow-400 text-xs">Total: KSh {Number(inv.totalReturn || 0).toLocaleString()}</p>
-                </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
         </div>
       )}
