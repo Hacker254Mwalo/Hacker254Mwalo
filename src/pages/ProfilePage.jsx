@@ -367,7 +367,8 @@ function BonusTransferModal({ bonusBalance, onClose, onTransfer }) {
   const [error, setError] = useState('')
   const fee = Math.floor(parseInt(amount || 0) * 0.08)
   const net = Math.max(0, parseInt(amount || 0) - fee)
-  const canTransfer = parseInt(amount) > 0 && parseInt(amount) <= bonusBalance
+  const MIN_TRANSFER = 100
+  const canTransfer = parseInt(amount) >= MIN_TRANSFER && parseInt(amount) <= bonusBalance
 
   async function confirm() {
     setLoading(true)
@@ -385,16 +386,16 @@ function BonusTransferModal({ bonusBalance, onClose, onTransfer }) {
     <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4" onClick={onClose}>
       <div className="card max-w-sm w-full" onClick={e => e.stopPropagation()}>
         <h3 className="text-xl font-bold mb-1">🔄 Transfer Bonus to Balance</h3>
-        <p className="text-xs mb-4" style={{ color: 'var(--text-secondary)' }}>8% tax applies on transfer</p>
+        <p className="text-xs mb-4" style={{ color: 'var(--text-secondary)' }}>Minimum KSh 100 · 8% tax applies on transfer</p>
 
         <div className="space-y-4 mb-4">
           <div>
             <label className="text-xs mb-1 block" style={{ color: 'var(--text-secondary)' }}>Amount (KSh)</label>
             <input
               className="input-field"
-              placeholder={`Min KSh 100 · Max KSh ${bonusBalance.toLocaleString()}`}
+              placeholder={`Min KSh ${MIN_TRANSFER} · Max KSh ${bonusBalance.toLocaleString()}`}
               type="number"
-              min={100}
+              min={MIN_TRANSFER}
               max={bonusBalance}
               value={amount}
               onChange={e => { setAmount(e.target.value); setError('') }}
