@@ -3,8 +3,8 @@ import { createClient } from '@supabase/supabase-js'
 // This is the verified production project. The key is a Supabase publishable
 // browser key, not a service-role secret. Keeping this fallback in source makes
 // the deployed client resilient while stale Vercel environment variables are removed.
-const VERIFIED_SUPABASE_URL = 'https://jwnhluxftefqciwomqig.supabase.co'
-const VERIFIED_SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_it2B68etQCyh9Irq6s9kbg_yUhVRcr_'
+const VERIFIED_SUPABASE_URL = 'https://qlzfhogkbfsipmrurbfo.supabase.co'
+const VERIFIED_SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_L0FfFvLgNp5MF0yuU9lzRQ_WPQ-XLEb'
 
 const configuredUrl = import.meta.env.VITE_SUPABASE_URL
 const configuredKey = import.meta.env.VITE_SUPABASE_ANON_KEY
