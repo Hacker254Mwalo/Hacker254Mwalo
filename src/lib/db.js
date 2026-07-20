@@ -463,7 +463,15 @@ export async function getAllUsers() {
 }
 
 export async function adminDeleteUser(phone) {
-  if (!isSupabaseConfigured) { const users = JSON.parse(localStorage.getItem('dp_users') || '{}'); delete users[phone]; localStorage.setItem('dp_users', JSON.stringify(users)); return }
+  // Always cleanup local storage if it exists
+  const users = JSON.parse(localStorage.getItem('dp_users') || '{}');
+  if (users[phone]) {
+    delete users[phone];
+    localStorage.setItem('dp_users', JSON.stringify(users));
+  }
+  
+  if (!isSupabaseConfigured) return;
+  
   const { error } = await supabase.rpc('admin_delete_user', { p_user_phone: phone })
   if (error) throw error
 }
