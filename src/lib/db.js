@@ -331,13 +331,24 @@ export async function addWithdrawal(userPhone, { amount, fee, netAmount, mpesaPh
 
 export async function getAllWithdrawals() {
   if (!isSupabaseConfigured) return local.getAllWithdrawals()
+
+  const fields = 'id, user_phone, amount, fee, net_amount, mpesa_phone, status, created_at'
   const { data, error } = await supabase
     .from('withdrawals')
-    .select('id, user_phone, amount, fee, net_amount, mpesa_phone, status, created_at, users!user_phone(name)')
+    .select(`${fields}, users!user_phone(name)`)
     .order('created_at', { ascending: false })
     .limit(200)
-  if (error) throw error
-  return data || []
+
+  if (!error) return data || []
+
+  // Fallback: query without the users relation if it fails
+  const fallback = await supabase
+    .from('withdrawals')
+    .select(fields)
+    .order('created_at', { ascending: false })
+    .limit(200)
+  if (fallback.error) throw fallback.error
+  return fallback.data || []
 }
 
 export async function getWithdrawals(userPhone) {
@@ -906,6 +917,17 @@ export async function deleteTransaction(id) {
     await supabase.from('withdrawals').delete()
       .eq('user_phone', tx.user_phone)
       .eq('amount', tx.amount)
+      .gte('created_at', createdAt)
+      .lt('created_at', fiveMinAfter)
+  }
+
+  // Delete matching deposit record directly (fallback if reference didn't match)
+  if (tx.type === 'deposit' || tx.type === 'invest') {
+    const createdAt = tx.created_at ? new Date(tx.created_at).toISOString() : '1970-01-01T00:00:00'
+    const fiveMinAfter = new Date(new Date(createdAt).getTime() + 5 * 60000).toISOString()
+    await supabase.from('deposits').delete()
+      .eq('user_phone', tx.user_phone)
+      .eq('amount', Math.abs(tx.amount))
       .gte('created_at', createdAt)
       .lt('created_at', fiveMinAfter)
   }
