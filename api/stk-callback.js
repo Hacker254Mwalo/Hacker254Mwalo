@@ -56,6 +56,9 @@ export default async function handler(req, res) {
     }
 
     // ── Payment succeeded ──────────────────────────────────────────────────
+    // NOTE: Payment was successful on M-Pesa side, but we keep the deposit
+    // in 'pending' status for manual admin approval. The admin will review
+    // and approve/reject in the admin panel.
     const items       = CallbackMetadata?.Item || []
     const getItem     = (name) => items.find((i) => i.Name === name)?.Value
     const mpesaReceipt = String(getItem('MpesaReceiptNumber') || '')
@@ -84,31 +87,17 @@ export default async function handler(req, res) {
       return res.status(200).json({ received: true })
     }
 
-    // Mark deposit approved (add mpesa_receipt if column exists)
+    // Store M-Pesa receipt but keep status as 'pending' for admin approval
     await supabase
       .from('deposits')
-      .update({ status: 'approved', mpesa_receipt: mpesaReceipt || null })
+      .update({ mpesa_receipt: mpesaReceipt || null })
       .eq('id', deposit.id)
 
-    // Credit user balance atomically
-    const { data: user } = await supabase
-      .from('users')
-      .select('balance')
-      .eq('phone', deposit.user_phone)
-      .maybeSingle()
-
-    if (user) {
-      await supabase
-        .from('users')
-        .update({ balance: Number(user.balance) + Number(deposit.amount) })
-        .eq('phone', deposit.user_phone)
-    }
-
     console.log(
-      `stk-callback: deposit ${deposit.id} approved — KSh ${deposit.amount} credited to ${deposit.user_phone} (receipt: ${mpesaReceipt})`
+      `stk-callback: M-Pesa payment confirmed for deposit ${deposit.id} — KSh ${deposit.amount} from ${deposit.user_phone} (receipt: ${mpesaReceipt}). Awaiting admin approval.`
     )
 
-    return res.status(200).json({ received: true, success: true })
+    return res.status(200).json({ received: true, success: true, message: 'Payment confirmed. Awaiting admin approval.' })
   } catch (err) {
     console.error('stk-callback error:', err)
     // Always return 200 to prevent PayKit from retrying with bad data
