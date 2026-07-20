@@ -15,8 +15,13 @@ export default function Navbar() {
 
   useEffect(() => {
     if (!user?.phone) return
-    // Verify admin status server-side
-    checkIsAdmin(user.phone).then(setIsAdmin).catch(() => setIsAdmin(false))
+    // Verify admin status server-side — only override if RPC succeeds
+    checkIsAdmin(user.phone).then(serverAdmin => {
+      setIsAdmin(serverAdmin === true)
+    }).catch(() => {
+      // On error, fall back to the value from login session (user.isAdmin)
+      setIsAdmin(user.isAdmin === true)
+    })
     // Load WhatsApp settings from DB
     getWhatsAppSettings().then(s => {
       setWaPhone(s.whatsapp_phone || '')
@@ -24,10 +29,10 @@ export default function Navbar() {
     }).catch(() => {})
   }, [user?.phone])
 
-  // Keep isAdmin in user object in sync
+  // Keep isAdmin in user object in sync — only update if server confirmed
   useEffect(() => {
-    if (user && user.isAdmin !== isAdmin) {
-      updateUser({ isAdmin })
+    if (user && isAdmin === true && user.isAdmin !== true) {
+      updateUser({ isAdmin: true })
     }
   }, [isAdmin]) // eslint-disable-line react-hooks/exhaustive-deps
 

@@ -703,14 +703,17 @@ export default function Dashboard() {
           <div className="space-y-3">
             {activeInvestments.slice(0, 3).map(inv => {
               const startDate = inv.startedAt ? new Date(inv.startedAt) : new Date(inv.date)
-              const endDate = inv.endsAt ? new Date(inv.endsAt) : new Date(startDate.getTime() + 30 * 86400000)
+              const endDate = inv.endsAt ? new Date(inv.endsAt) : new Date(startDate.getTime() + 90 * 86400000)
               const now = new Date()
               const totalDays = Math.max(1, Math.ceil((endDate - startDate) / 86400000))
+              // Calculate days passed since investment started
               const daysPassed = Math.max(0, Math.floor((now - startDate) / 86400000))
+              // Progress based on calendar days (investment is active for N days)
               const progress = Math.min(100, Math.round((daysPassed / totalDays) * 100))
               const dailyReturn = Number(inv.dailyReturn || 0)
-              const baseProfit = Number(inv.profit || 0)
-              const accumulatedProfit = baseProfit + (daysPassed * dailyReturn)
+              // Show ACTUAL credited profit from server, NOT estimated from elapsed time
+              // This ensures the 24-hour rule is respected — profit only shows when the cron job credits it
+              const accumulatedProfit = Number(inv.profit || 0)
               const targetTotal = Number(inv.totalReturn || 0)
               const remaining = Math.max(0, targetTotal - accumulatedProfit)
               return (

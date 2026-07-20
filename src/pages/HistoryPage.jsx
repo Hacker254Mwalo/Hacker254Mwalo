@@ -84,7 +84,8 @@ export default function HistoryPage() {
   const totalInvested = investments.reduce((s, i) => s + Number(i.amount || 0), 0)
   const totalExpectedReturn = investments.reduce((s, i) => s + Number(i.totalReturn || 0), 0)
   const activeInvestments = investments.filter(i => i.status === 'active')
-  const todayInterest = activeInvestments.reduce((s, i) => s + Number(i.dailyReturn || 0), 0)
+  // Show actual credited profit from all active investments (from server-side cron accrual)
+  const todayInterest = activeInvestments.reduce((s, i) => s + Number(i.profit || 0), 0)
 
   const combinedLedger = [
     ...deposits.map(d => ({ ...d, type: 'deposit' })),
@@ -222,8 +223,10 @@ export default function HistoryPage() {
                 const progress = Math.min(100, Math.round((daysPassed / totalDays) * 100))
                 const dailyReturn = Number(inv.dailyReturn || 0)
                 const baseProfit = Number(inv.profit || 0)
+                // Show ACTUAL credited profit from server for active investments
+                // Completed investments show their full total return
                 const accumulatedProfit = inv.status === 'active'
-                  ? baseProfit + (daysPassed * dailyReturn)
+                  ? Number(inv.profit || 0)
                   : Number(inv.totalReturn || 0)
                 const targetTotal = Number(inv.totalReturn || 0)
 
