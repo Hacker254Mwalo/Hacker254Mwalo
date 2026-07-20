@@ -665,6 +665,32 @@ export async function sendSupportMessage(userPhone, message, senderType = 'user'
   if (error) throw error
 }
 
+// ── App Settings (WhatsApp / Support) ────────────────────────────────────────
+export async function getWhatsAppSettings() {
+  if (!isSupabaseConfigured) return { whatsapp_phone: '', whatsapp_group_link: '' }
+  const { data, error } = await supabase.rpc('get_whatsapp_settings')
+  if (error) throw error
+  return data
+}
+
+export async function updateAppSetting(callerPhone, key, value) {
+  if (!isSupabaseConfigured) return { success: false, message: 'Supabase not configured' }
+  const { data, error } = await supabase.rpc('update_app_setting', {
+    p_caller_phone: callerPhone,
+    p_key: key,
+    p_value: value,
+  })
+  if (error) throw error
+  return data
+}
+
+export async function checkIsAdmin(phone) {
+  if (!isSupabaseConfigured) return false
+  const { data, error } = await supabase.rpc('check_is_admin', { p_phone: phone })
+  if (error) throw error
+  return !!data
+}
+
 // ── Password Reset ────────────────────────────────────────────────────────────
 export async function createPasswordResetRequest(userPhone) {
   if (!isSupabaseConfigured) {

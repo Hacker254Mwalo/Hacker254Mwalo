@@ -474,8 +474,7 @@ export default function ProfilePage() {
   const totalL2 = referrals.filter(r => r.level === 2).reduce((s, r) => s + Number(r.commission || 0), 0)
   const mustChangePw = user?.must_change_password
 
-  const adminPhone = import.meta.env.VITE_ADMIN_PHONE
-  const isAdmin = user && (user.isAdmin === true || (adminPhone && user.phone === adminPhone))
+  const isAdmin = user?.isAdmin === true
 
   useEffect(() => {
     if (!user) return

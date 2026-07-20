@@ -10,6 +10,8 @@ import {
   getSupportMessages,
   claimKeyword,
   addLoan,
+  getWhatsAppSettings,
+  checkIsAdmin,
 } from '../lib/db'
 
 const SPIN_DAYS = [1, 5] // Monday=1, Friday=5
@@ -261,6 +263,8 @@ export default function Dashboard() {
   const [spinAnimPrize, setSpinAnimPrize] = useState(0)
   const [showSpinResult, setShowSpinResult] = useState(false)
   const [claimingBonus, setClaimingBonus] = useState(false)
+  const [waPhone, setWaPhone] = useState('')
+  const [waGroupLink, setWaGroupLink] = useState('')
 
   function showToast(msg, type = 'success') {
     setToast({ msg, type })
@@ -271,17 +275,19 @@ export default function Dashboard() {
     if (!user) return
     const phone = user.phone || user.id
     try {
-      const [invs, bonusStatus, spinStatus] = await Promise.all([
+      const [invs, bonusStatus, spinStatus, waSettings] = await Promise.all([
         getInvestments(phone),
         hasClaimedBonusToday(phone, 'login_bonus'),
         hasClaimedBonusToday(phone, 'spin'),
+        getWhatsAppSettings(),
       ])
       setActiveInvestments((invs || []).filter(i => i.status === 'active'))
       setBonusClaimed(bonusStatus)
       setSpinClaimed(spinStatus)
+      setWaPhone(waSettings.whatsapp_phone || '')
+      setWaGroupLink(waSettings.whatsapp_group_link || '')
     } catch { /* silent */ }
   }, [user])
-
   useEffect(() => { loadData() }, [loadData])
 
   const hasActiveInvestment = activeInvestments.length > 0
@@ -428,9 +434,9 @@ export default function Dashboard() {
     return addLoan(user.phone || user.id, { amount, purpose })
   }
 
-  const adminPhone = import.meta.env.VITE_ADMIN_PHONE
-  const isAdmin = user && (user.isAdmin === true || (adminPhone && user.phone === adminPhone))
+  const isAdmin = user?.isAdmin === true
   const todayIsSpinDay = isTodaySpinDay()
+  const waDigits = waPhone.replace(/\D/g, '')
 
   return (
     <div className="pt-4 md:pt-20 pb-24 md:pb-8 px-4 max-w-2xl mx-auto">
@@ -701,20 +707,37 @@ export default function Dashboard() {
       )}
 
       {/* WhatsApp Support */}
-      {adminPhone && (
-        <a
-          href={`https://wa.me/${adminPhone.replace(/\D/g, '')}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="card mb-6 flex items-center gap-4 cursor-pointer transition-all active:scale-95 ring-2 ring-green-500/30 hover:ring-green-500/50 no-underline"
-        >
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-green-600 to-emerald-600 flex items-center justify-center text-xl flex-shrink-0">💬</div>
-          <div className="flex-1">
-            <p className="font-semibold">WhatsApp Support</p>
-            <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>Chat with us on WhatsApp</p>
-          </div>
-          <span className="text-xs bg-green-800 text-green-300 px-3 py-1 rounded-full font-medium flex-shrink-0">Live</span>
-        </a>
+      {waDigits && (
+        <div className="card mb-6 flex flex-col gap-3 ring-2 ring-green-500/30">
+          <a
+            href={`https://wa.me/${waDigits}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-4 cursor-pointer transition-all active:scale-95 no-underline p-2 -m-2"
+          >
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-green-600 to-emerald-600 flex items-center justify-center text-xl flex-shrink-0">💬</div>
+            <div className="flex-1">
+              <p className="font-semibold">WhatsApp Support</p>
+              <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>Chat with us on WhatsApp</p>
+            </div>
+            <span className="text-xs bg-green-800 text-green-300 px-3 py-1 rounded-full font-medium flex-shrink-0">Live</span>
+          </a>
+          {waGroupLink && (
+            <a
+              href={waGroupLink}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-4 cursor-pointer transition-all active:scale-95 no-underline p-2 -m-2 border-t border-gray-700/50"
+            >
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 to-cyan-600 flex items-center justify-center text-xl flex-shrink-0">👥</div>
+              <div className="flex-1">
+                <p className="font-semibold">Join WhatsApp Group</p>
+                <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>Get updates, tips & announcements</p>
+              </div>
+              <span className="text-xs bg-blue-800 text-blue-300 px-3 py-1 rounded-full font-medium flex-shrink-0">Join</span>
+            </a>
+          )}
+        </div>
       )}
     </div>
   )

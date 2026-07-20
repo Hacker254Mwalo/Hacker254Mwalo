@@ -1,15 +1,35 @@
+import { useState, useEffect } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useTheme } from '../context/ThemeContext'
+import { getWhatsAppSettings, checkIsAdmin } from '../lib/db'
 
 export default function Navbar() {
-  const { user, logout } = useAuth()
+  const { user, logout, updateUser } = useAuth()
   const { theme, toggleTheme } = useTheme()
   const navigate = useNavigate()
 
-  const adminPhone = import.meta.env.VITE_ADMIN_PHONE
-  const isAdmin = user && (user.isAdmin === true || (adminPhone && user.phone === adminPhone))
-  const waPhone = adminPhone ? adminPhone.replace(/\D/g, '') : ''
+  const [isAdmin, setIsAdmin] = useState(false)
+  const [waPhone, setWaPhone] = useState('')
+  const [waGroupLink, setWaGroupLink] = useState('')
+
+  useEffect(() => {
+    if (!user?.phone) return
+    // Verify admin status server-side
+    checkIsAdmin(user.phone).then(setIsAdmin).catch(() => setIsAdmin(false))
+    // Load WhatsApp settings from DB
+    getWhatsAppSettings().then(s => {
+      setWaPhone(s.whatsapp_phone || '')
+      setWaGroupLink(s.whatsapp_group_link || '')
+    }).catch(() => {})
+  }, [user?.phone])
+
+  // Keep isAdmin in user object in sync
+  useEffect(() => {
+    if (user && user.isAdmin !== isAdmin) {
+      updateUser({ isAdmin })
+    }
+  }, [isAdmin]) // eslint-disable-line react-hooks/exhaustive-deps
 
   function handleLogout() {
     logout()
@@ -22,6 +42,8 @@ export default function Navbar() {
     { to: '/history',   label: 'History',   icon: '📋' },
     { to: '/profile',   label: 'Profile',   icon: '👤' },
   ]
+
+  const waDigits = waPhone.replace(/\D/g, '')
 
   return (
     <>
@@ -73,9 +95,9 @@ export default function Navbar() {
             {theme === 'dark' ? '☀️' : '🌙'}
           </button>
 
-          {user && waPhone && (
+          {user && waDigits && (
             <a
-              href={`https://wa.me/${waPhone}`}
+              href={`https://wa.me/${waDigits}`}
               target="_blank"
               rel="noopener noreferrer"
               className="ml-1 px-3 py-2 rounded-lg text-sm font-medium bg-green-600 hover:bg-green-500 text-white transition-colors flex items-center gap-1.5"
@@ -123,9 +145,9 @@ export default function Navbar() {
           {theme === 'dark' ? 'Light' : 'Dark'}
         </button>
 
-        {user && waPhone && (
+        {user && waDigits && (
           <a
-            href={`https://wa.me/${waPhone}`}
+            href={`https://wa.me/${waDigits}`}
             target="_blank"
             rel="noopener noreferrer"
             className="flex-1 flex flex-col items-center py-3 text-xs font-medium text-gray-500"

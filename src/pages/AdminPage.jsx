@@ -10,6 +10,7 @@ import {
   getKeywords, createKeyword, toggleKeyword,
   getAllSupportThreads, getSupportMessages, sendSupportMessage,
   getPasswordResetRequests, adminResetPassword,
+  getWhatsAppSettings, updateAppSetting,
 } from '../lib/db'
 
 // ── Shared helpers ────────────────────────────────────────────────────────────
@@ -946,6 +947,118 @@ function OverviewTab() {
   )
 }
 
+// ── Settings Tab ──────────────────────────────────────────────────────────────
+function SettingsTab({ user, showToast }) {
+  const [phone, setPhone] = useState('')
+  const [groupLink, setGroupLink] = useState('')
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const callerPhone = user?.phone || ''
+
+  const load = useCallback(async () => {
+    setLoading(true)
+    try {
+      const s = await getWhatsAppSettings()
+      setPhone(s.whatsapp_phone || '')
+      setGroupLink(s.whatsapp_group_link || '')
+    } catch { }
+    setLoading(false)
+  }, [])
+
+  useEffect(() => { load() }, [load])
+
+  async function handleSavePhone() {
+    if (!phone.trim()) return
+    setSaving(true)
+    try {
+      const res = await updateAppSetting(callerPhone, 'whatsapp_phone', phone.trim())
+      if (res.success) showToast('WhatsApp phone updated')
+      else showToast(res.message || 'Failed', 'error')
+    } catch { showToast('Failed to save phone', 'error') }
+    setSaving(false)
+  }
+
+  async function handleSaveGroup() {
+    setSaving(true)
+    try {
+      const res = await updateAppSetting(callerPhone, 'whatsapp_group_link', groupLink.trim())
+      if (res.success) showToast('WhatsApp group link updated')
+      else showToast(res.message || 'Failed', 'error')
+    } catch { showToast('Failed to save group link', 'error') }
+    setSaving(false)
+  }
+
+  return (
+    <div>
+      <SectionHeader title="App Settings" subtitle="Configure WhatsApp support number and group link" />
+
+      {loading ? (
+        <div className="text-center py-12 text-gray-500">Loading...</div>
+      ) : (
+        <div className="space-y-6">
+          {/* WhatsApp Phone */}
+          <div className="card">
+            <h4 className="font-semibold mb-4 flex items-center gap-2">
+              <span className="text-xl">💬</span> WhatsApp Support Number
+            </h4>
+            <p className="text-sm mb-4" style={{ color: 'var(--text-muted)' }}>
+              This number will be shown to all users for WhatsApp support.
+            </p>
+            <div className="flex gap-3">
+              <input
+                className="input-field flex-1"
+                placeholder="e.g. +254707976424"
+                value={phone}
+                onChange={e => setPhone(e.target.value)}
+              />
+              <button
+                onClick={handleSavePhone}
+                disabled={saving || !phone.trim()}
+                className="btn-primary flex-shrink-0"
+              >
+                {saving ? 'Saving...' : 'Save'}
+              </button>
+            </div>
+            {phone && (
+              <p className="text-xs mt-2" style={{ color: 'var(--text-muted)' }}>
+                Preview: <a href={`https://wa.me/${phone.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer" className="text-green-400 underline">wa.me/{phone.replace(/\D/g, '')}</a>
+              </p>
+            )}
+          </div>
+
+          {/* WhatsApp Group Link */}
+          <div className="card">
+            <h4 className="font-semibold mb-4 flex items-center gap-2">
+              <span className="text-xl">👥</span> WhatsApp Group Link
+            </h4>
+            <p className="text-sm mb-4" style={{ color: 'var(--text-muted)' }}>
+              Users will see a "Join WhatsApp Group" button. Leave empty to hide it.
+            </p>
+            <div className="flex gap-3">
+              <input
+                className="input-field flex-1"
+                placeholder="https://chat.whatsapp.com/..."
+                value={groupLink}
+                onChange={e => setGroupLink(e.target.value)}
+              />
+              <button
+                onClick={handleSaveGroup}
+                disabled={saving}
+                className="btn-primary flex-shrink-0"
+              >
+                {saving ? 'Saving...' : 'Save'}
+              </button>
+            </div>
+            <p className="text-xs mt-2" style={{ color: 'var(--text-muted)' }}>
+              Get a group invite link from WhatsApp: Group Info → Invite via Link
+            </p>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ── Main Admin Page ───────────────────────────────────────────────────────────
 const TABS = [
   { id: 'overview',    label: 'Overview',    icon: '📊' },
@@ -956,6 +1069,7 @@ const TABS = [
   { id: 'promo',       label: 'Promo Codes', icon: '🎟️' },
   { id: 'support',     label: 'Support',     icon: '💬' },
   { id: 'resets',      label: 'PIN Resets',  icon: '🔑' },
+  { id: 'settings',    label: 'Settings',    icon: '⚙️' },
 ]
 
 export default function AdminPage() {
@@ -964,8 +1078,7 @@ export default function AdminPage() {
   const [tab, setTab] = useState('overview')
   const [toast, setToast] = useState(null)
 
-  const adminPhone = import.meta.env.VITE_ADMIN_PHONE
-  const isAdmin = user && (user.isAdmin === true || (adminPhone && user.phone === adminPhone))
+  const isAdmin = user?.isAdmin === true
 
   useEffect(() => {
     if (user === null) navigate('/login')
@@ -1047,6 +1160,7 @@ export default function AdminPage() {
             {tab === 'promo'       && <PromoTab showToast={showToast} />}
             {tab === 'support'     && <SupportTab showToast={showToast} />}
             {tab === 'resets'      && <PasswordResetsTab showToast={showToast} />}
+            {tab === 'settings'    && <SettingsTab user={user} showToast={showToast} />}
           </div>
         </main>
       </div>
