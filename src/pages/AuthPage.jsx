@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { verifyUser, createUser, findUserByReferralCode, getUser, generateReferralCode, createPasswordResetRequest } from '../lib/db'
@@ -20,6 +20,14 @@ export default function AuthPage() {
   const failRef = useRef({ count: 0, lockedUntil: 0 })
   const { login } = useAuth()
   const navigate = useNavigate()
+  const [mobile, setMobile] = useState(false)
+
+  useEffect(() => {
+    const check = () => setMobile(window.innerWidth < 768)
+    check()
+    window.addEventListener('resize', check)
+    return () => window.removeEventListener('resize', check)
+  }, [])
 
   function normalizePhone(p) {
     p = p.replace(/\s/g, '')
@@ -143,17 +151,17 @@ export default function AuthPage() {
         <div className="absolute -top-20 -left-20 w-72 h-72 rounded-full opacity-20" style={{ background: 'radial-gradient(circle, #FFD700 0%, transparent 70%)', animation: 'floatSymbol 12s ease-in-out infinite' }}/>
         <div className="absolute -bottom-32 -right-20 w-96 h-96 rounded-full opacity-10" style={{ background: 'radial-gradient(circle, #DAA520 0%, transparent 70%)', animation: 'floatSymbol 15s ease-in-out infinite', animationDelay: '3s' }}/>
         <div className="absolute top-1/3 right-1/4 w-48 h-48 rounded-full opacity-15" style={{ background: 'radial-gradient(circle, #B8860B 0%, transparent 70%)', animation: 'floatSymbol 10s ease-in-out infinite', animationDelay: '6s' }}/>
-        {/* 20 Gold Particles floating up */}
-        {Array.from({ length: 20 }).map((_, i) => (
+        {/* Gold Particles — 10 on mobile, 20 on desktop */}
+        {Array.from({ length: mobile ? 10 : 20 }).map((_, i) => (
           <div
             key={i}
             className="gold-particle"
             style={{
-              left: `${5 + (i * 4.5)}%`,
-              animationDuration: `${10 + (i % 5) * 3}s`,
+              left: `${5 + (i * (mobile ? 9 : 4.5))}%`,
+              animationDuration: `${12 + (i % 5) * 3}s`,
               animationDelay: `${(i % 7) * 1.5}s`,
-              width: `${2 + (i % 3)}px`,
-              height: `${2 + (i % 3)}px`,
+              width: `${2 + (i % 2)}px`,
+              height: `${2 + (i % 2)}px`,
             }}
           />
         ))}

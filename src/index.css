@@ -289,4 +289,44 @@
     border-color: #FFD700 !important;
     box-shadow: 0 0 0 3px rgba(255,215,0,0.2) !important;
   }
+
+  /* ── Reduced Motion for Battery/Accessibility ─────────────────────────────── */
+  @media (prefers-reduced-motion: reduce) {
+    .gold-particle,
+    .coin-particle,
+    .sparkle-particle,
+    .money-symbol,
+    .balance-shimmer,
+    .money-tree-bg,
+    .balance-gradient {
+      animation: none !important;
+    }
+    .shake-card { animation: none !important; }
+    .check-pop { animation: none !important; }
+    .animate-fadeIn, .animate-slideDown { animation-duration: 0.01s !important; }
+  }
+
+  /* ── Mobile Optimizations ─────────────────────────────────────────────────── */
+  @media (max-width: 640px) {
+    .gold-particle {
+      width: 2px !important;
+      height: 2px !important;
+      animation-duration: 15s !important;
+    }
+    .shake-card {
+      animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both;
+    }
+    .input-gold-focus {
+      box-shadow: 0 0 0 2px rgba(255,215,0,0.15) !important;
+    }
+    /* Reduce background orbs on mobile */
+    .absolute.inset-0 > div:first-child { width: 8rem !important; height: 8rem !important; }
+  }
+
+  @media (max-width: 480px) {
+    .gold-particle {
+      animation-duration: 18s !important;
+      opacity: 0.06 !important;
+    }
+  }
 }
