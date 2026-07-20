@@ -125,82 +125,172 @@ export default function AuthPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-950 flex flex-col items-center justify-center p-4">
-      <div className="mb-4 text-center">
-        <h1 className="text-4xl font-black bg-gradient-to-r from-red-500 to-pink-500 bg-clip-text text-transparent">
-          Dumiropay
-        </h1>
-        <p className="text-gray-400 mt-1 text-sm">Kenya's Premier Investment Platform</p>
+    <div className="min-h-screen flex flex-col items-center justify-center p-4" style={{ background: 'radial-gradient(ellipse at 50% 30%, #1a1a2e 0%, #0d0d1a 60%, #050510 100%)' }}>
+      {/* Branding */}
+      <div className="mb-2 text-center">
+        <div className="flex items-center justify-center gap-2 mb-1">
+          {/* Small diamond/gem icon */}
+          <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+            <path d="M14 2L26 14L14 26L2 14L14 2Z" fill="url(#brandGrad)" stroke="#FFD700" strokeWidth="1.2"/>
+            <path d="M14 8L20 14L14 20L8 14L14 8Z" fill="#FFD700" opacity="0.4"/>
+            <defs>
+              <linearGradient id="brandGrad" x1="2" y1="2" x2="26" y2="26">
+                <stop offset="0%" stopColor="#FFD700"/>
+                <stop offset="100%" stopColor="#DAA520"/>
+              </linearGradient>
+            </defs>
+          </svg>
+          <h1 className="text-5xl font-black tracking-tight" style={{ background: 'linear-gradient(135deg, #FFD700 0%, #DAA520 40%, #FFD700 60%, #B8860B 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+            Dumiropay
+          </h1>
+        </div>
+        <p className="text-xs tracking-[0.3em] uppercase" style={{ color: '#8a8a9a' }}>Grow Your Wealth</p>
+        <div className="mt-2 h-px w-24 mx-auto" style={{ background: 'linear-gradient(90deg, transparent, #FFD700, transparent)' }}/>
       </div>
 
-      {/* Gold Financial Tree */}
-      <svg width="180" height="160" viewBox="0 0 200 170" fill="none" xmlns="http://www.w3.org/2000/svg" className="mb-4 mx-auto">
-        {/* Glow effect */}
+      {/* Gold Tree with Money Leaves */}
+      <svg width="200" height="180" viewBox="0 0 240 210" fill="none" xmlns="http://www.w3.org/2000/svg" className="mb-3 mx-auto">
         <defs>
-          <radialGradient id="goldGlow" cx="50%" cy="50%" r="50%">
-            <stop offset="0%" stop-color="#FFD700" stopOpacity="0.3"/>
-            <stop offset="100%" stop-color="#FFD700" stopOpacity="0"/>
+          <radialGradient id="bgGlow" cx="50%" cy="45%" r="45%">
+            <stop offset="0%" stopColor="#FFD700" stopOpacity="0.15"/>
+            <stop offset="100%" stopColor="#FFD700" stopOpacity="0"/>
           </radialGradient>
-          <linearGradient id="goldGrad" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stop-color="#FFD700"/>
-            <stop offset="50%" stop-color="#DAA520"/>
-            <stop offset="100%" stop-color="#B8860B"/>
+          <linearGradient id="trunkG" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#DAA520"/>
+            <stop offset="100%" stopColor="#6B4C11"/>
           </linearGradient>
-          <linearGradient id="trunkGrad" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stop-color="#B8860B"/>
-            <stop offset="100%" stop-color="#8B6914"/>
+          <linearGradient id="branchG" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#FFD700"/>
+            <stop offset="100%" stopColor="#B8860B"/>
           </linearGradient>
-          <linearGradient id="leafGrad" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stop-color="#FFD700"/>
-            <stop offset="100%" stop-color="#DAA520"/>
-          </linearGradient>
+          <radialGradient id="coinG" cx="35%" cy="35%" r="65%">
+            <stop offset="0%" stopColor="#FFF8DC"/>
+            <stop offset="30%" stopColor="#FFD700"/>
+            <stop offset="70%" stopColor="#DAA520"/>
+            <stop offset="100%" stopColor="#996515"/>
+          </radialGradient>
+          <radialGradient id="coinG2" cx="35%" cy="35%" r="65%">
+            <stop offset="0%" stopColor="#FFFACD"/>
+            <stop offset="30%" stopColor="#FFEC8B"/>
+            <stop offset="70%" stopColor="#DAA520"/>
+            <stop offset="100%" stopColor="#8B7508"/>
+          </radialGradient>
+          <filter id="coinShadow" x="-20%" y="-20%" width="140%" height="140%">
+            <feDropShadow dx="0" dy="1" stdDeviation="1.5" floodColor="#000" floodOpacity="0.4"/>
+          </filter>
         </defs>
 
-        {/* Background glow */}
-        <circle cx="100" cy="80" r="70" fill="url(#goldGlow)"/>
+        {/* Ambient glow */}
+        <circle cx="120" cy="95" r="85" fill="url(#bgGlow)"/>
 
-        {/* Tree trunk */}
-        <path d="M95 155 C95 140, 92 125, 88 115" stroke="url(#trunkGrad)" strokeWidth="6" strokeLinecap="round" fill="none"/>
-        <path d="M100 155 C100 135, 100 120, 100 100" stroke="url(#trunkGrad)" strokeWidth="7" strokeLinecap="round" fill="none"/>
-        <path d="M105 155 C105 140, 108 125, 112 115" stroke="url(#trunkGrad)" strokeWidth="6" strokeLinecap="round" fill="none"/>
+        {/* === TREE TRUNK === */}
+        {/* Main trunk */}
+        <path d="M117 200 C117 180, 115 160, 112 140" stroke="url(#trunkG)" strokeWidth="8" strokeLinecap="round" fill="none"/>
+        <path d="M123 200 C123 180, 125 160, 128 140" stroke="url(#trunkG)" strokeWidth="8" strokeLinecap="round" fill="none"/>
+        <path d="M120 200 C120 175, 120 155, 120 130" stroke="url(#trunkG)" strokeWidth="9" strokeLinecap="round" fill="none"/>
 
-        {/* Main branches */}
-        <path d="M88 115 C70 100, 50 85, 40 70" stroke="url(#goldGrad)" strokeWidth="4" strokeLinecap="round" fill="none"/>
-        <path d="M112 115 C130 100, 150 85, 160 70" stroke="url(#goldGrad)" strokeWidth="4" strokeLinecap="round" fill="none"/>
-        <path d="M100 100 C80 90, 55 80, 45 60" stroke="url(#goldGrad)" strokeWidth="4" strokeLinecap="round" fill="none"/>
-        <path d="M100 100 C120 90, 145 80, 155 60" stroke="url(#goldGrad)" strokeWidth="4" strokeLinecap="round" fill="none"/>
-        <path d="M100 100 C95 75, 100 55, 100 35" stroke="url(#goldGrad)" strokeWidth="4" strokeLinecap="round" fill="none"/>
+        {/* === MAIN BRANCHES === */}
+        {/* Left lower */}
+        <path d="M112 140 C90 125, 65 110, 45 95" stroke="url(#branchG)" strokeWidth="5" strokeLinecap="round" fill="none"/>
+        {/* Right lower */}
+        <path d="M128 140 C150 125, 175 110, 195 95" stroke="url(#branchG)" strokeWidth="5" strokeLinecap="round" fill="none"/>
+        {/* Left mid */}
+        <path d="M120 130 C95 118, 65 108, 40 90" stroke="url(#branchG)" strokeWidth="4.5" strokeLinecap="round" fill="none"/>
+        {/* Right mid */}
+        <path d="M120 130 C145 118, 175 108, 200 90" stroke="url(#branchG)" strokeWidth="4.5" strokeLinecap="round" fill="none"/>
+        {/* Center top */}
+        <path d="M120 130 C115 105, 120 80, 120 55" stroke="url(#branchG)" strokeWidth="4.5" strokeLinecap="round" fill="none"/>
 
-        {/* Sub-branches */}
-        <path d="M70 90 C60 80, 55 70, 50 55" stroke="url(#goldGrad)" strokeWidth="2.5" strokeLinecap="round" fill="none"/>
-        <path d="M130 90 C140 80, 145 70, 150 55" stroke="url(#goldGrad)" strokeWidth="2.5" strokeLinecap="round" fill="none"/>
-        <path d="M80 82 C72 68, 65 55, 60 42" stroke="url(#goldGrad)" strokeWidth="2.5" strokeLinecap="round" fill="none"/>
-        <path d="M120 82 C128 68, 135 55, 140 42" stroke="url(#goldGrad)" strokeWidth="2.5" strokeLinecap="round" fill="none"/>
+        {/* === SUB BRANCHES === */}
+        <path d="M75 118 C60 105, 50 90, 42 72" stroke="url(#branchG)" strokeWidth="3" strokeLinecap="round" fill="none"/>
+        <path d="M165 118 C180 105, 190 90, 198 72" stroke="url(#branchG)" strokeWidth="3" strokeLinecap="round" fill="none"/>
+        <path d="M55 100 C42 85, 35 70, 30 52" stroke="url(#branchG)" strokeWidth="2.5" strokeLinecap="round" fill="none"/>
+        <path d="M185 100 C198 85, 205 70, 210 52" stroke="url(#branchG)" strokeWidth="2.5" strokeLinecap="round" fill="none"/>
+        <path d="M120 80 C105 65, 95 50, 85 35" stroke="url(#branchG)" strokeWidth="2.5" strokeLinecap="round" fill="none"/>
+        <path d="M120 80 C135 65, 145 50, 155 35" stroke="url(#branchG)" strokeWidth="2.5" strokeLinecap="round" fill="none"/>
 
-        {/* Coin/fruit circles on branches — representing money growing */}
-        <circle cx="40" cy="68" r="7" fill="url(#leafGrad)" stroke="#B8860B" strokeWidth="1" opacity="0.9"/>
-        <circle cx="50" cy="53" r="5" fill="url(#leafGrad)" stroke="#B8860B" strokeWidth="1" opacity="0.85"/>
-        <circle cx="45" cy="58" r="4" fill="url(#leafGrad)" stroke="#B8860B" strokeWidth="1" opacity="0.8"/>
-        <circle cx="160" cy="68" r="7" fill="url(#leafGrad)" stroke="#B8860B" strokeWidth="1" opacity="0.9"/>
-        <circle cx="150" cy="53" r="5" fill="url(#leafGrad)" stroke="#B8860B" strokeWidth="1" opacity="0.85"/>
-        <circle cx="155" cy="58" r="4" fill="url(#leafGrad)" stroke="#B8860B" strokeWidth="1" opacity="0.8"/>
-        <circle cx="60" cy="40" r="6" fill="url(#leafGrad)" stroke="#B8860B" strokeWidth="1" opacity="0.9"/>
-        <circle cx="65" cy="35" r="4.5" fill="url(#leafGrad)" stroke="#B8860B" strokeWidth="1" opacity="0.85"/>
-        <circle cx="140" cy="40" r="6" fill="url(#leafGrad)" stroke="#B8860B" strokeWidth="1" opacity="0.9"/>
-        <circle cx="135" cy="35" r="4.5" fill="url(#leafGrad)" stroke="#B8860B" strokeWidth="1" opacity="0.85"/>
-        <circle cx="100" cy="32" r="8" fill="url(#leafGrad)" stroke="#B8860B" strokeWidth="1.2" opacity="0.95"/>
-        <circle cx="92" cy="42" r="5" fill="url(#leafGrad)" stroke="#B8860B" strokeWidth="1" opacity="0.85"/>
-        <circle cx="108" cy="42" r="5" fill="url(#leafGrad)" stroke="#B8860B" strokeWidth="1" opacity="0.85"/>
-        <circle cx="96" cy="22" r="4" fill="url(#leafGrad)" stroke="#B8860B" strokeWidth="1" opacity="0.8"/>
-        <circle cx="104" cy="22" r="4" fill="url(#leafGrad)" stroke="#B8860B" strokeWidth="1" opacity="0.8"/>
+        {/* === GOLD COIN LEAVES === */}
+        {/* Outer left coins */}
+        <g filter="url(#coinShadow)">
+          <circle cx="45" cy="93" r="9" fill="url(#coinG)" stroke="#996515" strokeWidth="1.2"/>
+          <text x="45" y="97" textAnchor="middle" fontSize="9" fill="#6B4C11" fontWeight="900" fontFamily="serif">K</text>
+        </g>
+        <g filter="url(#coinShadow)">
+          <circle cx="42" cy="70" r="7.5" fill="url(#coinG2)" stroke="#996515" strokeWidth="1"/>
+          <text x="42" y="74" textAnchor="middle" fontSize="7" fill="#6B4C11" fontWeight="900" fontFamily="serif">K</text>
+        </g>
+        <g filter="url(#coinShadow)">
+          <circle cx="30" cy="50" r="8.5" fill="url(#coinG)" stroke="#996515" strokeWidth="1.2"/>
+          <text x="30" y="54" textAnchor="middle" fontSize="8" fill="#6B4C11" fontWeight="900" fontFamily="serif">K</text>
+        </g>
 
-        {/* Dollar signs on the coins */}
-        <text x="40" y="72" textAnchor="middle" fontSize="7" fill="#8B6914" fontWeight="bold">K</text>
-        <text x="160" y="72" textAnchor="middle" fontSize="7" fill="#8B6914" fontWeight="bold">K</text>
-        <text x="100" y="37" textAnchor="middle" fontSize="9" fill="#8B6914" fontWeight="bold">K</text>
-        <text x="60" y="44" textAnchor="middle" fontSize="6" fill="#8B6914" fontWeight="bold">K</text>
-        <text x="140" y="44" textAnchor="middle" fontSize="6" fill="#8B6914" fontWeight="bold">K</text>
+        {/* Outer right coins */}
+        <g filter="url(#coinShadow)">
+          <circle cx="195" cy="93" r="9" fill="url(#coinG)" stroke="#996515" strokeWidth="1.2"/>
+          <text x="195" y="97" textAnchor="middle" fontSize="9" fill="#6B4C11" fontWeight="900" fontFamily="serif">K</text>
+        </g>
+        <g filter="url(#coinShadow)">
+          <circle cx="198" cy="70" r="7.5" fill="url(#coinG2)" stroke="#996515" strokeWidth="1"/>
+          <text x="198" y="74" textAnchor="middle" fontSize="7" fill="#6B4C11" fontWeight="900" fontFamily="serif">K</text>
+        </g>
+        <g filter="url(#coinShadow)">
+          <circle cx="210" cy="50" r="8.5" fill="url(#coinG)" stroke="#996515" strokeWidth="1.2"/>
+          <text x="210" y="54" textAnchor="middle" fontSize="8" fill="#6B4C11" fontWeight="900" fontFamily="serif">K</text>
+        </g>
+
+        {/* Inner left coins */}
+        <g filter="url(#coinShadow)">
+          <circle cx="70" cy="80" r="8" fill="url(#coinG)" stroke="#996515" strokeWidth="1"/>
+          <text x="70" y="84" textAnchor="middle" fontSize="8" fill="#6B4C11" fontWeight="900" fontFamily="serif">K</text>
+        </g>
+        <g filter="url(#coinShadow)">
+          <circle cx="55" cy="60" r="7" fill="url(#coinG2)" stroke="#996515" strokeWidth="1"/>
+          <text x="55" y="64" textAnchor="middle" fontSize="7" fill="#6B4C11" fontWeight="900" fontFamily="serif">K</text>
+        </g>
+
+        {/* Inner right coins */}
+        <g filter="url(#coinShadow)">
+          <circle cx="170" cy="80" r="8" fill="url(#coinG)" stroke="#996515" strokeWidth="1"/>
+          <text x="170" y="84" textAnchor="middle" fontSize="8" fill="#6B4C11" fontWeight="900" fontFamily="serif">K</text>
+        </g>
+        <g filter="url(#coinShadow)">
+          <circle cx="185" cy="60" r="7" fill="url(#coinG2)" stroke="#996515" strokeWidth="1"/>
+          <text x="185" y="64" textAnchor="middle" fontSize="7" fill="#6B4C11" fontWeight="900" fontFamily="serif">K</text>
+        </g>
+
+        {/* Top coins */}
+        <g filter="url(#coinShadow)">
+          <circle cx="85" cy="33" r="9" fill="url(#coinG)" stroke="#996515" strokeWidth="1.2"/>
+          <text x="85" y="37" textAnchor="middle" fontSize="9" fill="#6B4C11" fontWeight="900" fontFamily="serif">K</text>
+        </g>
+        <g filter="url(#coinShadow)">
+          <circle cx="155" cy="33" r="9" fill="url(#coinG)" stroke="#996515" strokeWidth="1.2"/>
+          <text x="155" y="37" textAnchor="middle" fontSize="9" fill="#6B4C11" fontWeight="900" fontFamily="serif">K</text>
+        </g>
+        <g filter="url(#coinShadow)">
+          <circle cx="120" cy="25" r="11" fill="url(#coinG)" stroke="#996515" strokeWidth="1.5"/>
+          <text x="120" y="30" textAnchor="middle" fontSize="11" fill="#6B4C11" fontWeight="900" fontFamily="serif">K</text>
+        </g>
+        <g filter="url(#coinShadow)">
+          <circle cx="105" cy="50" r="6" fill="url(#coinG2)" stroke="#996515" strokeWidth="0.8"/>
+          <text x="105" y="53" textAnchor="middle" fontSize="6" fill="#6B4C11" fontWeight="900" fontFamily="serif">K</text>
+        </g>
+        <g filter="url(#coinShadow)">
+          <circle cx="135" cy="50" r="6" fill="url(#coinG2)" stroke="#996515" strokeWidth="0.8"/>
+          <text x="135" y="53" textAnchor="middle" fontSize="6" fill="#6B4C11" fontWeight="900" fontFamily="serif">K</text>
+        </g>
+        <g filter="url(#coinShadow)">
+          <circle cx="110" cy="68" r="7" fill="url(#coinG)" stroke="#996515" strokeWidth="1"/>
+          <text x="110" y="72" textAnchor="middle" fontSize="7" fill="#6B4C11" fontWeight="900" fontFamily="serif">K</text>
+        </g>
+        <g filter="url(#coinShadow)">
+          <circle cx="130" cy="68" r="7" fill="url(#coinG)" stroke="#996515" strokeWidth="1"/>
+          <text x="130" y="72" textAnchor="middle" fontSize="7" fill="#6B4C11" fontWeight="900" fontFamily="serif">K</text>
+        </g>
       </svg>
+
+      <div className="w-full max-w-sm">
+        <div className="card">
 
       <div className="w-full max-w-md">
         <div className="card">
