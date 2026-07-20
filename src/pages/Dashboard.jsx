@@ -257,6 +257,9 @@ export default function Dashboard() {
   const [bonusClaimed, setBonusClaimed] = useState(false)
   const [spinClaimed, setSpinClaimed] = useState(false)
   const [spinning, setSpinning] = useState(false)
+  const [spinAnimAmount, setSpinAnimAmount] = useState(0)
+  const [spinAnimPrize, setSpinAnimPrize] = useState(0)
+  const [showSpinResult, setShowSpinResult] = useState(false)
   const [claimingBonus, setClaimingBonus] = useState(false)
 
   function showToast(msg, type = 'success') {
@@ -340,22 +343,47 @@ export default function Dashboard() {
       setShowInvestFirst(true)
       return
     }
+    setShowSpinResult(false)
     setSpinning(true)
+    setSpinAnimAmount(0)
+    setSpinAnimPrize(0)
+
+    // Show spinning numbers animation immediately
+    const bigAmounts = [500, 1000, 1500, 2000, 2500, 3000, 5000, 7500, 10000, 3000]
+    let animIdx = 0
+    const spinInterval = setInterval(() => {
+      setSpinAnimAmount(bigAmounts[animIdx % bigAmounts.length])
+      animIdx++
+    }, 100)
+
     try {
-      await new Promise(resolve => setTimeout(resolve, 900))
+      // Spin for 2.5 seconds of animation
+      await new Promise(resolve => setTimeout(resolve, 2500))
+      clearInterval(spinInterval)
+
+      // Now call the real RPC to get the actual prize
       const result = await claimLuckySpin(user.phone || user.id)
+
       if (result.success) {
         setSpinClaimed(true)
         if (result.balance !== undefined) updateUser({ balance: result.balance })
         else await refreshUser()
-        showToast(`🎰 You won KSh ${Number(result.amount).toLocaleString()} — 3% of the KSh ${Number(result.daily_profit).toLocaleString()} daily profit from ${result.plan_name || 'your active investment'}!`)
+
+        const realPrize = Number(result.amount)
+        // Show the big animated number then reveal real prize
+        setSpinAnimAmount(realPrize)
+        setSpinAnimPrize(realPrize)
+        setShowSpinResult(true)
       } else if (result.code === 'NO_ACTIVE_INVESTMENT') {
+        clearInterval(spinInterval)
         setShowInvestFirst(true)
       } else {
+        clearInterval(spinInterval)
         showToast(result.message || 'Already spun today.', 'error')
         if (result.code === 'ALREADY_SPUN') setSpinClaimed(true)
       }
     } catch (err) {
+      clearInterval(spinInterval)
       showToast(err.message || 'Spin failed', 'error')
     }
     setSpinning(false)
@@ -535,35 +563,64 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Lucky Spin */}
+      {/* Lucky Spin Card */}
       <div className={`card mb-6 ${!todayIsSpinDay ? 'opacity-60' : ''}`}>
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="font-bold">🎰 Lucky Spin</p>
-            <p className="text-xs mt-0.5" style={{ color: 'var(--text-secondary)' }}>
-              {!todayIsSpinDay
-                ? 'Available on Mondays & Fridays'
-                : !hasActiveInvestment
-                  ? 'Requires active investment to spin'
-                  : spinClaimed
-                    ? 'Already spun today!'
-                    : 'Random active investment • reward is 3% of its daily profit'}
+        {showSpinResult ? (
+          <div className="text-center py-4">
+            <p className="text-3xl mb-2">🎉</p>
+            <p className="text-xl font-bold text-green-400 mb-1">
+              KSh {spinAnimPrize.toLocaleString()}
+            </p>
+            <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
+              Your lucky spin prize has been added to your balance!
             </p>
           </div>
-          <button
-            onClick={handleSpin}
-            disabled={spinClaimed || spinning || !todayIsSpinDay}
-            className={`text-sm px-4 py-2 rounded-xl font-semibold transition-all ${
-              spinClaimed || !todayIsSpinDay
-                ? 'bg-gray-700 text-gray-500 cursor-not-allowed'
-                : !hasActiveInvestment
-                  ? 'bg-gray-700 text-gray-400 cursor-pointer hover:bg-yellow-800'
-                  : 'bg-yellow-600 hover:bg-yellow-500 text-white active:scale-95'
-            }`}
-          >
-            {spinning ? '🌀' : spinClaimed ? '✓ Done' : !hasActiveInvestment ? '🔒' : 'Spin!'}
-          </button>
-        </div>
+        ) : spinning ? (
+          <div className="text-center py-4">
+            <p className="text-4xl mb-3">🎰</p>
+            <div className="relative overflow-hidden h-12 flex items-center justify-center">
+              <p
+                className="text-2xl font-black text-yellow-400"
+                style={{
+                  animation: 'spinFlash 0.15s ease-in-out infinite',
+                }}
+              >
+                KSh {spinAnimAmount.toLocaleString()}
+              </p>
+            </div>
+            <p className="text-xs mt-2" style={{ color: 'var(--text-secondary)' }}>
+              Spinning the wheel...
+            </p>
+          </div>
+        ) : (
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="font-bold">🎰 Lucky Spin</p>
+              <p className="text-xs mt-0.5" style={{ color: 'var(--text-secondary)' }}>
+                {!todayIsSpinDay
+                  ? 'Available on Mondays & Fridays'
+                  : !hasActiveInvestment
+                    ? 'Requires active investment to spin'
+                    : spinClaimed
+                      ? 'Already spun today!'
+                      : 'Random active investment • reward is 3% of its daily profit'}
+              </p>
+            </div>
+            <button
+              onClick={handleSpin}
+              disabled={spinClaimed || spinning || !todayIsSpinDay}
+              className={`text-sm px-4 py-2 rounded-xl font-semibold transition-all ${
+                spinClaimed || !todayIsSpinDay
+                  ? 'bg-gray-700 text-gray-500 cursor-not-allowed'
+                  : !hasActiveInvestment
+                    ? 'bg-gray-700 text-gray-400 cursor-pointer hover:bg-yellow-800'
+                    : 'bg-yellow-600 hover:bg-yellow-500 text-white active:scale-95'
+              }`}
+            >
+              {spinClaimed ? '✓ Done' : !hasActiveInvestment ? '🔒' : 'Spin!'}
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Quick Services */}
