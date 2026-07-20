@@ -144,11 +144,11 @@ export default function AuthPage() {
             Dumiropay
           </h1>
         </div>
-        <p className="text-xs tracking-[0.3em] uppercase" style={{ color: '#8a8a9a' }}>Grow Your Wealth</p>
+        <p className="text-gray-400 mt-1 text-sm">Kenya's Premier Investment Platform</p>
         <div className="mt-2 h-px w-24 mx-auto" style={{ background: 'linear-gradient(90deg, transparent, #FFD700, transparent)' }}/>
       </div>
 
-      {/* Gold Tree with Money Leaves */}
+      {/* Gold Tree */}
       <svg width="200" height="180" viewBox="0 0 240 210" fill="none" xmlns="http://www.w3.org/2000/svg" className="mb-3 mx-auto">
         <defs>
           <radialGradient id="bgGlow" cx="50%" cy="45%" r="45%">
@@ -163,20 +163,20 @@ export default function AuthPage() {
             <stop offset="0%" stopColor="#FFD700"/>
             <stop offset="100%" stopColor="#B8860B"/>
           </linearGradient>
-          <radialGradient id="coinG" cx="35%" cy="35%" r="65%">
+          <linearGradient id="leafG1" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stopColor="#FFF8DC"/>
             <stop offset="30%" stopColor="#FFD700"/>
             <stop offset="70%" stopColor="#DAA520"/>
             <stop offset="100%" stopColor="#996515"/>
-          </radialGradient>
-          <radialGradient id="coinG2" cx="35%" cy="35%" r="65%">
+          </linearGradient>
+          <linearGradient id="leafG2" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stopColor="#FFFACD"/>
             <stop offset="30%" stopColor="#FFEC8B"/>
             <stop offset="70%" stopColor="#DAA520"/>
             <stop offset="100%" stopColor="#8B7508"/>
-          </radialGradient>
-          <filter id="coinShadow" x="-20%" y="-20%" width="140%" height="140%">
-            <feDropShadow dx="0" dy="1" stdDeviation="1.5" floodColor="#000" floodOpacity="0.4"/>
+          </linearGradient>
+          <filter id="leafShadow" x="-20%" y="-20%" width="140%" height="140%">
+            <feDropShadow dx="0" dy="1" stdDeviation="1" floodColor="#000" floodOpacity="0.3"/>
           </filter>
         </defs>
 
@@ -184,21 +184,15 @@ export default function AuthPage() {
         <circle cx="120" cy="95" r="85" fill="url(#bgGlow)"/>
 
         {/* === TREE TRUNK === */}
-        {/* Main trunk */}
         <path d="M117 200 C117 180, 115 160, 112 140" stroke="url(#trunkG)" strokeWidth="8" strokeLinecap="round" fill="none"/>
         <path d="M123 200 C123 180, 125 160, 128 140" stroke="url(#trunkG)" strokeWidth="8" strokeLinecap="round" fill="none"/>
         <path d="M120 200 C120 175, 120 155, 120 130" stroke="url(#trunkG)" strokeWidth="9" strokeLinecap="round" fill="none"/>
 
         {/* === MAIN BRANCHES === */}
-        {/* Left lower */}
         <path d="M112 140 C90 125, 65 110, 45 95" stroke="url(#branchG)" strokeWidth="5" strokeLinecap="round" fill="none"/>
-        {/* Right lower */}
         <path d="M128 140 C150 125, 175 110, 195 95" stroke="url(#branchG)" strokeWidth="5" strokeLinecap="round" fill="none"/>
-        {/* Left mid */}
         <path d="M120 130 C95 118, 65 108, 40 90" stroke="url(#branchG)" strokeWidth="4.5" strokeLinecap="round" fill="none"/>
-        {/* Right mid */}
         <path d="M120 130 C145 118, 175 108, 200 90" stroke="url(#branchG)" strokeWidth="4.5" strokeLinecap="round" fill="none"/>
-        {/* Center top */}
         <path d="M120 130 C115 105, 120 80, 120 55" stroke="url(#branchG)" strokeWidth="4.5" strokeLinecap="round" fill="none"/>
 
         {/* === SUB BRANCHES === */}
@@ -209,84 +203,39 @@ export default function AuthPage() {
         <path d="M120 80 C105 65, 95 50, 85 35" stroke="url(#branchG)" strokeWidth="2.5" strokeLinecap="round" fill="none"/>
         <path d="M120 80 C135 65, 145 50, 155 35" stroke="url(#branchG)" strokeWidth="2.5" strokeLinecap="round" fill="none"/>
 
-        {/* === GOLD COIN LEAVES === */}
-        {/* Outer left coins */}
-        <g filter="url(#coinShadow)">
-          <circle cx="45" cy="93" r="9" fill="url(#coinG)" stroke="#996515" strokeWidth="1.2"/>
-          <text x="45" y="97" textAnchor="middle" fontSize="9" fill="#6B4C11" fontWeight="900" fontFamily="serif">K</text>
-        </g>
-        <g filter="url(#coinShadow)">
-          <circle cx="42" cy="70" r="7.5" fill="url(#coinG2)" stroke="#996515" strokeWidth="1"/>
-          <text x="42" y="74" textAnchor="middle" fontSize="7" fill="#6B4C11" fontWeight="900" fontFamily="serif">K</text>
-        </g>
-        <g filter="url(#coinShadow)">
-          <circle cx="30" cy="50" r="8.5" fill="url(#coinG)" stroke="#996515" strokeWidth="1.2"/>
-          <text x="30" y="54" textAnchor="middle" fontSize="8" fill="#6B4C11" fontWeight="900" fontFamily="serif">K</text>
-        </g>
+        {/* === GOLDEN LEAF SVG PATHS (leaf shape) === */}
+        {/* Outer left leaves */}
+        <g filter="url(#leafShadow)"><ellipse cx="45" cy="92" rx="10" ry="6" fill="url(#leafG1)" transform="rotate(-35 45 92)" stroke="#996515" strokeWidth="0.8" opacity="0.95"/></g>
+        <g filter="url(#leafShadow)"><ellipse cx="38" cy="68" rx="9" ry="5.5" fill="url(#leafG2)" transform="rotate(-50 38 68)" stroke="#996515" strokeWidth="0.8" opacity="0.9"/></g>
+        <g filter="url(#leafShadow)"><ellipse cx="28" cy="48" rx="8" ry="5" fill="url(#leafG1)" transform="rotate(-60 28 48)" stroke="#996515" strokeWidth="0.8" opacity="0.9"/></g>
+        <g filter="url(#leafShadow)"><ellipse cx="50" cy="55" rx="7.5" ry="4.5" fill="url(#leafG2)" transform="rotate(-20 50 55)" stroke="#996515" strokeWidth="0.7" opacity="0.85"/></g>
 
-        {/* Outer right coins */}
-        <g filter="url(#coinShadow)">
-          <circle cx="195" cy="93" r="9" fill="url(#coinG)" stroke="#996515" strokeWidth="1.2"/>
-          <text x="195" y="97" textAnchor="middle" fontSize="9" fill="#6B4C11" fontWeight="900" fontFamily="serif">K</text>
-        </g>
-        <g filter="url(#coinShadow)">
-          <circle cx="198" cy="70" r="7.5" fill="url(#coinG2)" stroke="#996515" strokeWidth="1"/>
-          <text x="198" y="74" textAnchor="middle" fontSize="7" fill="#6B4C11" fontWeight="900" fontFamily="serif">K</text>
-        </g>
-        <g filter="url(#coinShadow)">
-          <circle cx="210" cy="50" r="8.5" fill="url(#coinG)" stroke="#996515" strokeWidth="1.2"/>
-          <text x="210" y="54" textAnchor="middle" fontSize="8" fill="#6B4C11" fontWeight="900" fontFamily="serif">K</text>
-        </g>
+        {/* Outer right leaves */}
+        <g filter="url(#leafShadow)"><ellipse cx="195" cy="92" rx="10" ry="6" fill="url(#leafG1)" transform="rotate(35 195 92)" stroke="#996515" strokeWidth="0.8" opacity="0.95"/></g>
+        <g filter="url(#leafShadow)"><ellipse cx="202" cy="68" rx="9" ry="5.5" fill="url(#leafG2)" transform="rotate(50 202 68)" stroke="#996515" strokeWidth="0.8" opacity="0.9"/></g>
+        <g filter="url(#leafShadow)"><ellipse cx="212" cy="48" rx="8" ry="5" fill="url(#leafG1)" transform="rotate(60 212 48)" stroke="#996515" strokeWidth="0.8" opacity="0.9"/></g>
+        <g filter="url(#leafShadow)"><ellipse cx="190" cy="55" rx="7.5" ry="4.5" fill="url(#leafG2)" transform="rotate(20 190 55)" stroke="#996515" strokeWidth="0.7" opacity="0.85"/></g>
 
-        {/* Inner left coins */}
-        <g filter="url(#coinShadow)">
-          <circle cx="70" cy="80" r="8" fill="url(#coinG)" stroke="#996515" strokeWidth="1"/>
-          <text x="70" y="84" textAnchor="middle" fontSize="8" fill="#6B4C11" fontWeight="900" fontFamily="serif">K</text>
-        </g>
-        <g filter="url(#coinShadow)">
-          <circle cx="55" cy="60" r="7" fill="url(#coinG2)" stroke="#996515" strokeWidth="1"/>
-          <text x="55" y="64" textAnchor="middle" fontSize="7" fill="#6B4C11" fontWeight="900" fontFamily="serif">K</text>
-        </g>
+        {/* Inner left leaves */}
+        <g filter="url(#leafShadow)"><ellipse cx="72" cy="78" rx="8" ry="5" fill="url(#leafG1)" transform="rotate(-40 72 78)" stroke="#996515" strokeWidth="0.7" opacity="0.9"/></g>
+        <g filter="url(#leafShadow)"><ellipse cx="58" cy="58" rx="7" ry="4.5" fill="url(#leafG2)" transform="rotate(-30 58 58)" stroke="#996515" strokeWidth="0.7" opacity="0.85"/></g>
+        <g filter="url(#leafShadow)"><ellipse cx="48" cy="82" rx="6.5" ry="4" fill="url(#leafG2)" transform="rotate(-55 48 82)" stroke="#996515" strokeWidth="0.6" opacity="0.8"/></g>
 
-        {/* Inner right coins */}
-        <g filter="url(#coinShadow)">
-          <circle cx="170" cy="80" r="8" fill="url(#coinG)" stroke="#996515" strokeWidth="1"/>
-          <text x="170" y="84" textAnchor="middle" fontSize="8" fill="#6B4C11" fontWeight="900" fontFamily="serif">K</text>
-        </g>
-        <g filter="url(#coinShadow)">
-          <circle cx="185" cy="60" r="7" fill="url(#coinG2)" stroke="#996515" strokeWidth="1"/>
-          <text x="185" y="64" textAnchor="middle" fontSize="7" fill="#6B4C11" fontWeight="900" fontFamily="serif">K</text>
-        </g>
+        {/* Inner right leaves */}
+        <g filter="url(#leafShadow)"><ellipse cx="168" cy="78" rx="8" ry="5" fill="url(#leafG1)" transform="rotate(40 168 78)" stroke="#996515" strokeWidth="0.7" opacity="0.9"/></g>
+        <g filter="url(#leafShadow)"><ellipse cx="182" cy="58" rx="7" ry="4.5" fill="url(#leafG2)" transform="rotate(30 182 58)" stroke="#996515" strokeWidth="0.7" opacity="0.85"/></g>
+        <g filter="url(#leafShadow)"><ellipse cx="192" cy="82" rx="6.5" ry="4" fill="url(#leafG2)" transform="rotate(55 192 82)" stroke="#996515" strokeWidth="0.6" opacity="0.8"/></g>
 
-        {/* Top coins */}
-        <g filter="url(#coinShadow)">
-          <circle cx="85" cy="33" r="9" fill="url(#coinG)" stroke="#996515" strokeWidth="1.2"/>
-          <text x="85" y="37" textAnchor="middle" fontSize="9" fill="#6B4C11" fontWeight="900" fontFamily="serif">K</text>
-        </g>
-        <g filter="url(#coinShadow)">
-          <circle cx="155" cy="33" r="9" fill="url(#coinG)" stroke="#996515" strokeWidth="1.2"/>
-          <text x="155" y="37" textAnchor="middle" fontSize="9" fill="#6B4C11" fontWeight="900" fontFamily="serif">K</text>
-        </g>
-        <g filter="url(#coinShadow)">
-          <circle cx="120" cy="25" r="11" fill="url(#coinG)" stroke="#996515" strokeWidth="1.5"/>
-          <text x="120" y="30" textAnchor="middle" fontSize="11" fill="#6B4C11" fontWeight="900" fontFamily="serif">K</text>
-        </g>
-        <g filter="url(#coinShadow)">
-          <circle cx="105" cy="50" r="6" fill="url(#coinG2)" stroke="#996515" strokeWidth="0.8"/>
-          <text x="105" y="53" textAnchor="middle" fontSize="6" fill="#6B4C11" fontWeight="900" fontFamily="serif">K</text>
-        </g>
-        <g filter="url(#coinShadow)">
-          <circle cx="135" cy="50" r="6" fill="url(#coinG2)" stroke="#996515" strokeWidth="0.8"/>
-          <text x="135" y="53" textAnchor="middle" fontSize="6" fill="#6B4C11" fontWeight="900" fontFamily="serif">K</text>
-        </g>
-        <g filter="url(#coinShadow)">
-          <circle cx="110" cy="68" r="7" fill="url(#coinG)" stroke="#996515" strokeWidth="1"/>
-          <text x="110" y="72" textAnchor="middle" fontSize="7" fill="#6B4C11" fontWeight="900" fontFamily="serif">K</text>
-        </g>
-        <g filter="url(#coinShadow)">
-          <circle cx="130" cy="68" r="7" fill="url(#coinG)" stroke="#996515" strokeWidth="1"/>
-          <text x="130" y="72" textAnchor="middle" fontSize="7" fill="#6B4C11" fontWeight="900" fontFamily="serif">K</text>
-        </g>
+        {/* Top leaves */}
+        <g filter="url(#leafShadow)"><ellipse cx="85" cy="32" rx="9" ry="5.5" fill="url(#leafG1)" transform="rotate(-25 85 32)" stroke="#996515" strokeWidth="0.8" opacity="0.95"/></g>
+        <g filter="url(#leafShadow)"><ellipse cx="155" cy="32" rx="9" ry="5.5" fill="url(#leafG1)" transform="rotate(25 155 32)" stroke="#996515" strokeWidth="0.8" opacity="0.95"/></g>
+        <g filter="url(#leafShadow)"><ellipse cx="120" cy="22" rx="10" ry="6" fill="url(#leafG1)" transform="rotate(5 120 22)" stroke="#996515" strokeWidth="0.9" opacity="0.95"/></g>
+        <g filter="url(#leafShadow)"><ellipse cx="105" cy="48" rx="7" ry="4.5" fill="url(#leafG2)" transform="rotate(-15 105 48)" stroke="#996515" strokeWidth="0.7" opacity="0.85"/></g>
+        <g filter="url(#leafShadow)"><ellipse cx="135" cy="48" rx="7" ry="4.5" fill="url(#leafG2)" transform="rotate(15 135 48)" stroke="#996515" strokeWidth="0.7" opacity="0.85"/></g>
+        <g filter="url(#leafShadow)"><ellipse cx="110" cy="66" rx="7.5" ry="4.5" fill="url(#leafG1)" transform="rotate(-10 110 66)" stroke="#996515" strokeWidth="0.7" opacity="0.9"/></g>
+        <g filter="url(#leafShadow)"><ellipse cx="130" cy="66" rx="7.5" ry="4.5" fill="url(#leafG1)" transform="rotate(10 130 66)" stroke="#996515" strokeWidth="0.7" opacity="0.9"/></g>
+        <g filter="url(#leafShadow)"><ellipse cx="100" cy="88" rx="6" ry="4" fill="url(#leafG2)" transform="rotate(-20 100 88)" stroke="#996515" strokeWidth="0.6" opacity="0.8"/></g>
+        <g filter="url(#leafShadow)"><ellipse cx="140" cy="88" rx="6" ry="4" fill="url(#leafG2)" transform="rotate(20 140 88)" stroke="#996515" strokeWidth="0.6" opacity="0.8"/></g>
       </svg>
 
       <div className="w-full max-w-sm">
