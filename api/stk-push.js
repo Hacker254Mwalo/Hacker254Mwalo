@@ -15,6 +15,24 @@
 import { createClient } from '@supabase/supabase-js'
 // Singleton Supabase client (persists across Vercel warm invocations)
 let supabaseClient = null
+
+// PayKit OAuth token cache (50 min TTL, refresh at 45 min)
+let paykitToken = null
+let paykitTokenExpiresAt = 0
+
+async function getPayKitToken(authUrl, consumerKey, consumerSecret) {
+  const now = Date.now()
+  if (paykitToken && now < paykitTokenExpiresAt) return paykitToken
+  const authToken = Buffer.from(consumerKey + ':' + consumerSecret).toString('base64')
+  const authRes = await fetch(authUrl, {
+    headers: { Authorization: 'Basic ' + authToken },
+  })
+  const authData = await authRes.json()
+  if (!authData.access_token) throw new Error('PayKit token fetch failed')
+  paykitToken = authData.access_token
+  paykitTokenExpiresAt = now + 45 * 60 * 1000 // refresh 5 min before actual expiry
+  return paykitToken
+}
 // Simple in-memory rate limiter
 const rateLimitMap = new Map()
 const RATE_LIMIT_WINDOW_MS = 60_000 // 1 minute
@@ -85,13 +103,8 @@ export default async function handler(req, res) {
   ))
 
   try {
-    // Step 1: Get access token from PayKit
-    const authToken = Buffer.from(consumerKey + ':' + consumerSecret).toString('base64')
-    const authRes = await fetch(authUrl, {
-      headers: { Authorization: 'Basic ' + authToken },
-    })
-    const authData = await authRes.json()
-    const accessToken = authData.access_token
+    // Step 1: Get access token from PayKit (cached for 50 min)
+    const accessToken = await getPayKitToken(authUrl, consumerKey, consumerSecret)
 
     if (!accessToken) {
       return res.status(500).json({ error: 'Failed to get access token from PayKit' })
@@ -126,19 +139,14 @@ export default async function handler(req, res) {
     const stkData = await stkRes.json()
 
     if (stkData.ResponseCode === '0' || stkData.CheckoutRequestID) {
-      // ── SAVE DEPOSIT FOR MANUAL APPROVAL ──────────────────────────────────
-      // Save the deposit request with 'pending' status for admin approval
+      // ── SAVE DEPOSIT FOR MANUAL APPROVAL (via RPC, single round-trip) ─────
       const { data: deposit, error: depositError } = await supabase
-        .from('deposits')
-        .insert([{
-          user_phone: userPhone,
-          amount: numAmount,
-          checkout_id: stkData.CheckoutRequestID,
-          status: 'pending',
-          method: 'stk',
-          created_at: new Date().toISOString(),
-        }])
-        .select()
+        .rpc('insert_deposit', {
+          p_user_phone: userPhone,
+          p_amount: numAmount,
+          p_checkout_id: stkData.CheckoutRequestID,
+          p_method: 'stk',
+        })
 
       if (depositError) {
         console.error('Failed to save deposit to Supabase:', depositError)
@@ -148,7 +156,7 @@ export default async function handler(req, res) {
       return res.status(200).json({
         success: true,
         checkoutRequestId: stkData.CheckoutRequestID,
-        depositId: deposit?.[0]?.id,
+        depositId: deposit?.deposit?.id,
         message: 'STK Push sent to your phone. Enter your M-Pesa PIN to complete. Deposit awaiting admin approval.',
       })
     }
