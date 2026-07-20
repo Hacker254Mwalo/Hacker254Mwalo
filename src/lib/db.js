@@ -607,29 +607,22 @@ export async function claimBonus(userPhone, claimType, amount) {
 }
 
 export async function claimDailyLoginBonus(userPhone) {
-  if (!isSupabaseConfigured) return claimBonus(userPhone, 'login_bonus', 10)
+  if (!isSupabaseConfigured) return { success: false, message: 'Supabase not configured' }
   const { data, error } = await supabase.rpc('claim_daily_login_bonus', {
     p_user_phone: userPhone,
-    p_amount: 10,
   })
   if (error) throw error
   return data
 }
 
 export async function claimLuckySpin(userPhone) {
-  if (!isSupabaseConfigured) {
-    const investments = local.getInvestments(userPhone).filter(i => i.status === 'active' && Number(i.dailyReturn || 0) > 0)
-    if (!investments.length) return { success: false, code: 'NO_ACTIVE_INVESTMENT', message: 'An active investment is required. Please deposit and invest first.' }
-    const selected = investments[Math.floor(Math.random() * investments.length)]
-    const reward = Math.round(Number(selected.dailyReturn) * 0.03 * 100) / 100
-    const result = await claimBonus(userPhone, 'spin', reward)
-    return { ...result, amount: reward, daily_profit: Number(selected.dailyReturn), plan_name: selected.planName }
-  }
-  const { data, error } = await supabase.rpc('claim_lucky_spin', { p_user_phone: userPhone })
+  if (!isSupabaseConfigured) return { success: false, message: 'Supabase not configured' }
+  const { data, error } = await supabase.rpc('claim_lucky_spin', {
+    p_user_phone: userPhone,
+  })
   if (error) throw error
   return data
 }
-
 // ── Support / Live Chat ───────────────────────────────────────────────────────
 export async function getSupportMessages(userPhone) {
   if (!isSupabaseConfigured) return local.getSupportMessages(userPhone)
