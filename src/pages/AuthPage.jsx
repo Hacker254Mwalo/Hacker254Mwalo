@@ -45,7 +45,12 @@ export default function AuthPage() {
         return
       }
       try {
-        await createPasswordResetRequest(normalPhone)
+        const result = await createPasswordResetRequest(normalPhone)
+        if (result && result.queued === false) {
+          setError('No account found with this phone number. Please register first.')
+          setLoading(false)
+          return
+        }
         recordPasswordResetRequest(normalPhone)
         setForgotSent(true)
       } catch (err) {
