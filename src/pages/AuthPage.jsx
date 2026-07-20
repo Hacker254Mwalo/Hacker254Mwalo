@@ -203,11 +203,6 @@ export default function AuthPage() {
             <stop offset="40%" stopColor="#DAA520"/>
             <stop offset="100%" stopColor="#5C3D0E"/>
           </linearGradient>
-          <linearGradient id="trunkG2" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#FFC125"/>
-            <stop offset="50%" stopColor="#B8860B"/>
-            <stop offset="100%" stopColor="#4A3508"/>
-          </linearGradient>
           <linearGradient id="branchG" x1="0" y1="0" x2="1" y2="1">
             <stop offset="0%" stopColor="#FFD700"/>
             <stop offset="60%" stopColor="#DAA520"/>
@@ -230,12 +225,6 @@ export default function AuthPage() {
             <stop offset="60%" stopColor="#DAA520"/>
             <stop offset="100%" stopColor="#8B7508"/>
           </linearGradient>
-          <linearGradient id="leafG3" x1="0" y1="0" x2="1" y2="0">
-            <stop offset="0%" stopColor="#FFF8DC"/>
-            <stop offset="30%" stopColor="#FFD700"/>
-            <stop offset="70%" stopColor="#B8860B"/>
-            <stop offset="100%" stopColor="#6B4C11"/>
-          </linearGradient>
           <radialGradient id="leafGlow" cx="50%" cy="50%" r="50%">
             <stop offset="0%" stopColor="#FFD700" stopOpacity="0.4"/>
             <stop offset="100%" stopColor="#FFD700" stopOpacity="0"/>
@@ -254,147 +243,113 @@ export default function AuthPage() {
         </defs>
 
         {/* Ambient glow */}
-        <circle cx="130.0" cy="84.6" r="84.4" fill="url(#bgGlow)"/>
-        <circle cx="130.0" cy="73.1" r="46.0" fill="url(#leafGlow)" opacity="0.3"/>
+        <circle cx="130" cy="90" r="80" fill="url(#bgGlow)"/>
+        <circle cx="130" cy="75" r="45" fill="url(#leafGlow)" opacity="0.3"/>
 
         {/* === PHONE === */}
         <g filter="url(#leafShadow)">
-          {/* Phone body */}
-          <rect x="30.6" y="76.9" width="61.2" height="100.0" rx="7.6" ry="7.7" fill="#1a1a2e" stroke="#DAA520" strokeWidth="1.5"/>
-          {/* Screen */}
-          <rect x="35.2" y="88.5" width="52.0" height="76.9" rx="2.3" ry="2.3" fill="#0d0d1a"/>
-          {/* Top speaker */}
-          <rect x="53.5" y="82.3" width="15.3" height="2.3" rx="1.1" fill="#333"/>
-          {/* Screen content - money growth chart */}
-          <line x1="50" y1="200" x2="110" y2="160" stroke="#FFD700" strokeWidth="1.5" strokeLinecap="round"/>
-          <line x1="60" y1="200" x2="110" y2="175" stroke="#DAA520" strokeWidth="1.2" strokeLinecap="round"/>
-          {/* Small bars */}
-          <rect x="39.8" y="142.3" width="4.6" height="11.5" rx="0.8" fill="#FFD700" opacity="0.6"/>
-          <rect x="47.4" y="136.9" width="4.6" height="16.9" rx="0.8" fill="#FFD700" opacity="0.7"/>
-          <rect x="55.1" y="130.8" width="4.6" height="23.1" rx="0.8" fill="#FFD700" opacity="0.8"/>
-          <rect x="62.7" y="124.6" width="4.6" height="29.2" rx="0.8" fill="#FFD700" opacity="0.9"/>
-          <rect x="70.4" y="116.9" width="4.6" height="36.9" rx="0.8" fill="#FFD700"/>
-          {/* Home button */}
-          <circle cx="61.2" cy="172.3" r="3.1" fill="none" stroke="#DAA520" strokeWidth="1.2"/>
-          {/* Status bar dots */}
-          <circle cx="42.1" cy="93.8" r="1.5" fill="#FFD700" opacity="0.5"/>
-          <circle cx="47.4" cy="93.8" r="1.5" fill="#FFD700" opacity="0.5"/>
-          <circle cx="52.8" cy="93.8" r="1.5" fill="#FFD700" opacity="0.5"/>
+          <rect x="35" y="80" width="55" height="95" rx="7" ry="7" fill="#1a1a2e" stroke="#DAA520" strokeWidth="1.5"/>
+          <rect x="40" y="90" width="45" height="72" rx="2" ry="2" fill="#0d0d1a"/>
+          <rect x="56" y="84" width="13" height="2" rx="1" fill="#333"/>
+          <line x1="44" y1="148" x2="81" y2="118" stroke="#FFD700" strokeWidth="1.5" strokeLinecap="round"/>
+          <line x1="50" y1="148" x2="81" y2="128" stroke="#DAA520" strokeWidth="1.2" strokeLinecap="round"/>
+          <rect x="43" y="140" width="4" height="10" rx="0.8" fill="#FFD700" opacity="0.6"/>
+          <rect x="50" y="134" width="4" height="16" rx="0.8" fill="#FFD700" opacity="0.7"/>
+          <rect x="57" y="128" width="4" height="22" rx="0.8" fill="#FFD700" opacity="0.8"/>
+          <rect x="64" y="122" width="4" height="28" rx="0.8" fill="#FFD700" opacity="0.9"/>
+          <rect x="71" y="115" width="4" height="35" rx="0.8" fill="#FFD700"/>
+          <circle cx="62" cy="170" r="3" fill="none" stroke="#DAA520" strokeWidth="1.2"/>
+          <circle cx="45" cy="96" r="1.5" fill="#FFD700" opacity="0.5"/>
+          <circle cx="50" cy="96" r="1.5" fill="#FFD700" opacity="0.5"/>
+          <circle cx="55" cy="96" r="1.5" fill="#FFD700" opacity="0.5"/>
         </g>
 
-        {/* === TREE TRUNK === */}
-        <path d="M127.7 169.2C126.2 150.0 118.5 134.6 110.9 119.2" stroke="url(#trunkG)" strokeWidth="7.7" strokeLinecap="round" fill="none"/>
-        <path d="M132.3 169.2C133.8 150.0 141.5 134.6 149.1 119.2" stroke="url(#trunkG2)" strokeWidth="7.7" strokeLinecap="round" fill="none"/>
-        <path d="M130.0 169.2C130.0 146.2 130.0 123.1 130.0 107.7" stroke="url(#trunkG)" strokeWidth="8.4" strokeLinecap="round" fill="none"/>
-        {/* Trunk bark texture */}
-        <path d="M128.5 161.5C126.2 150.0 122.4 138.5 118.5 126.9" stroke="#8B6914" strokeWidth="0.8" strokeLinecap="round" fill="none" opacity="0.4"/>
-        <path d="M131.5 161.5C133.8 150.0 137.6 138.5 141.5 126.9" stroke="#8B6914" strokeWidth="0.8" strokeLinecap="round" fill="none" opacity="0.4"/>
+        {/* === TREE TRUNK (straight) === */}
+        <line x1="127" y1="175" x2="127" y2="120" stroke="url(#trunkG)" strokeWidth="7" strokeLinecap="round"/>
+        <line x1="133" y1="175" x2="133" y2="120" stroke="url(#branchG2)" strokeWidth="7" strokeLinecap="round"/>
+        <line x1="130" y1="175" x2="130" y2="105" stroke="url(#trunkG)" strokeWidth="8" strokeLinecap="round"/>
 
-        {/* === MAIN BRANCHES === */}
-        <path d="M110.9 119.2C91.8 107.7 68.8 96.2 45.9 84.6" stroke="url(#branchG)" strokeWidth="4.2" strokeLinecap="round" fill="none"/>
-        <path d="M149.1 119.2C168.2 107.7 191.2 96.2 214.1 84.6" stroke="url(#branchG)" strokeWidth="4.2" strokeLinecap="round" fill="none"/>
-        <path d="M113.2 115.4C90.2 100.0 57.4 90.8 38.2 76.9" stroke="url(#branchG2)" strokeWidth="3.5" strokeLinecap="round" fill="none"/>
-        <path d="M146.8 115.4C169.8 100.0 202.6 90.8 221.8 76.9" stroke="url(#branchG2)" strokeWidth="3.5" strokeLinecap="round" fill="none"/>
-        <path d="M130.0 107.7C130.0 84.6 130.0 65.4 130.0 46.2" stroke="url(#branchG)" strokeWidth="3.8" strokeLinecap="round" fill="none"/>
-        <path d="M126.2 113.8C107.1 103.8 80.3 100.0 57.4 92.3" stroke="url(#branchG2)" strokeWidth="2.7" strokeLinecap="round" fill="none"/>
-        <path d="M133.8 113.8C152.9 103.8 179.7 100.0 202.6 92.3" stroke="url(#branchG2)" strokeWidth="2.7" strokeLinecap="round" fill="none"/>
+        {/* === MAIN BRANCHES (straight lines) === */}
+        <line x1="130" y1="120" x2="70" y2="90" stroke="url(#branchG)" strokeWidth="5" strokeLinecap="round"/>
+        <line x1="130" y1="120" x2="190" y2="90" stroke="url(#branchG)" strokeWidth="5" strokeLinecap="round"/>
+        <line x1="130" y1="115" x2="55" y2="78" stroke="url(#branchG2)" strokeWidth="4" strokeLinecap="round"/>
+        <line x1="130" y1="115" x2="205" y2="78" stroke="url(#branchG2)" strokeWidth="4" strokeLinecap="round"/>
+        <line x1="130" y1="105" x2="130" y2="50" stroke="url(#branchG)" strokeWidth="4.5" strokeLinecap="round"/>
+        <line x1="130" y1="110" x2="85" y2="88" stroke="url(#branchG2)" strokeWidth="3" strokeLinecap="round"/>
+        <line x1="130" y1="110" x2="175" y2="88" stroke="url(#branchG2)" strokeWidth="3" strokeLinecap="round"/>
 
-        {/* === SUB BRANCHES === */}
-        <path d="M76.5 100.0C59.6 88.5 47.4 75.4 38.2 60.0" stroke="url(#branchG)" strokeWidth="2.3" strokeLinecap="round" fill="none"/>
-        <path d="M183.5 100.0C200.4 88.5 212.6 75.4 221.8 60.0" stroke="url(#branchG)" strokeWidth="2.3" strokeLinecap="round" fill="none"/>
-        <path d="M45.9 84.6C34.4 73.1 29.1 60.0 24.5 44.6" stroke="url(#branchG2)" strokeWidth="1.9" strokeLinecap="round" fill="none"/>
-        <path d="M214.1 84.6C225.6 73.1 230.9 60.0 235.5 44.6" stroke="url(#branchG2)" strokeWidth="1.9" strokeLinecap="round" fill="none"/>
-        <path d="M130.0 61.5C116.2 47.7 107.1 34.6 97.9 21.5" stroke="url(#branchG)" strokeWidth="1.9" strokeLinecap="round" fill="none"/>
-        <path d="M130.0 61.5C143.8 47.7 152.9 34.6 162.1 21.5" stroke="url(#branchG)" strokeWidth="1.9" strokeLinecap="round" fill="none"/>
-        <path d="M57.4 92.3C44.4 80.8 36.7 67.7 30.6 52.3" stroke="url(#branchG)" strokeWidth="1.5" strokeLinecap="round" fill="none"/>
-        <path d="M202.6 92.3C215.6 80.8 223.3 67.7 229.4 52.3" stroke="url(#branchG)" strokeWidth="1.5" strokeLinecap="round" fill="none"/>
-        <path d="M130.0 46.2C118.5 32.3 99.4 23.1 84.1 13.8" stroke="url(#branchG2)" strokeWidth="1.5" strokeLinecap="round" fill="none"/>
-        <path d="M130.0 46.2C141.5 32.3 160.6 23.1 175.9 13.8" stroke="url(#branchG2)" strokeWidth="1.5" strokeLinecap="round" fill="none"/>
+        {/* === SUB BRANCHES (straight lines) === */}
+        <line x1="70" y1="90" x2="40" y2="55" stroke="url(#branchG)" strokeWidth="2.5" strokeLinecap="round"/>
+        <line x1="190" y1="90" x2="220" y2="55" stroke="url(#branchG)" strokeWidth="2.5" strokeLinecap="round"/>
+        <line x1="55" y1="78" x2="28" y2="45" stroke="url(#branchG2)" strokeWidth="2" strokeLinecap="round"/>
+        <line x1="205" y1="78" x2="232" y2="45" stroke="url(#branchG2)" strokeWidth="2" strokeLinecap="round"/>
+        <line x1="130" y1="65" x2="100" y2="25" stroke="url(#branchG)" strokeWidth="2" strokeLinecap="round"/>
+        <line x1="130" y1="65" x2="160" y2="25" stroke="url(#branchG)" strokeWidth="2" strokeLinecap="round"/>
+        <line x1="85" y1="88" x2="58" y2="58" stroke="url(#branchG)" strokeWidth="1.8" strokeLinecap="round"/>
+        <line x1="175" y1="88" x2="202" y2="58" stroke="url(#branchG)" strokeWidth="1.8" strokeLinecap="round"/>
+        <line x1="130" y1="50" x2="108" y2="18" stroke="url(#branchG2)" strokeWidth="1.8" strokeLinecap="round"/>
+        <line x1="130" y1="50" x2="152" y2="18" stroke="url(#branchG2)" strokeWidth="1.8" strokeLinecap="round"/>
 
-        {/* === GOLDEN LEAF SVG PATHS === */}
-        {/* Far outer left leaves */}
-        <g filter="url(#leafShadow)"><ellipse cx="21.4" cy="40.0" rx="8.4" ry="5.0" fill="url(#leafG1)" transform="rotate(-55 21.4 40.0)" stroke="#996515" strokeWidth="0.6" opacity="0.95"/></g>
-        <g filter="url(#leafShadow)"><ellipse cx="29.1" cy="55.4" rx="7.6" ry="4.6" fill="url(#leafG3)" transform="rotate(-40 29.1 55.4)" stroke="#996515" strokeWidth="0.6" opacity="0.9"/></g>
-        <g filter="url(#leafShadow)"><ellipse cx="26.8" cy="73.1" rx="6.9" ry="4.2" fill="url(#leafG2)" transform="rotate(-30 26.8 73.1)" stroke="#996515" strokeWidth="0.5" opacity="0.9"/></g>
-        <g filter="url(#leafShadow)"><ellipse cx="34.4" cy="50.0" rx="7.3" ry="4.2" fill="url(#leafG1)" transform="rotate(-50 34.4 50.0)" stroke="#996515" strokeWidth="0.6" opacity="0.9"/></g>
-        <g filter="url(#leafShadow)"><ellipse cx="42.1" cy="63.1" rx="6.1" ry="3.8" fill="url(#leafG3)" transform="rotate(-35 42.1 63.1)" stroke="#996515" strokeWidth="0.5" opacity="0.85"/></g>
-
-        {/* Far outer right leaves */}
-        <g filter="url(#leafShadow)"><ellipse cx="238.6" cy="40.0" rx="8.4" ry="5.0" fill="url(#leafG1)" transform="rotate(55 238.6 40.0)" stroke="#996515" strokeWidth="0.6" opacity="0.95"/></g>
-        <g filter="url(#leafShadow)"><ellipse cx="230.9" cy="55.4" rx="7.6" ry="4.6" fill="url(#leafG3)" transform="rotate(40 230.9 55.4)" stroke="#996515" strokeWidth="0.6" opacity="0.9"/></g>
-        <g filter="url(#leafShadow)"><ellipse cx="233.2" cy="73.1" rx="6.9" ry="4.2" fill="url(#leafG2)" transform="rotate(30 233.2 73.1)" stroke="#996515" strokeWidth="0.5" opacity="0.9"/></g>
-        <g filter="url(#leafShadow)"><ellipse cx="225.6" cy="50.0" rx="7.3" ry="4.2" fill="url(#leafG1)" transform="rotate(50 225.6 50.0)" stroke="#996515" strokeWidth="0.6" opacity="0.9"/></g>
-        <g filter="url(#leafShadow)"><ellipse cx="217.9" cy="63.1" rx="6.1" ry="3.8" fill="url(#leafG3)" transform="rotate(35 217.9 63.1)" stroke="#996515" strokeWidth="0.5" opacity="0.85"/></g>
-
-        {/* Outer left leaves */}
-        <g filter="url(#leafShadow)"><ellipse cx="42.1" cy="80.8" rx="7.6" ry="4.6" fill="url(#leafG1)" transform="rotate(-30 42.1 80.8)" stroke="#996515" strokeWidth="0.6" opacity="0.95"/></g>
-        <g filter="url(#leafShadow)"><ellipse cx="52.0" cy="67.7" rx="6.9" ry="4.2" fill="url(#leafG2)" transform="rotate(-45 52.0 67.7)" stroke="#996515" strokeWidth="0.6" opacity="0.9"/></g>
-        <g filter="url(#leafShadow)"><ellipse cx="59.6" cy="83.1" rx="6.5" ry="3.8" fill="url(#leafG3)" transform="rotate(-20 59.6 83.1)" stroke="#996515" strokeWidth="0.5" opacity="0.85"/></g>
-
-        {/* Outer right leaves */}
-        <g filter="url(#leafShadow)"><ellipse cx="217.9" cy="80.8" rx="7.6" ry="4.6" fill="url(#leafG1)" transform="rotate(30 217.9 80.8)" stroke="#996515" strokeWidth="0.6" opacity="0.95"/></g>
-        <g filter="url(#leafShadow)"><ellipse cx="208.0" cy="67.7" rx="6.9" ry="4.2" fill="url(#leafG2)" transform="rotate(45 208.0 67.7)" stroke="#996515" strokeWidth="0.6" opacity="0.9"/></g>
-        <g filter="url(#leafShadow)"><ellipse cx="200.4" cy="83.1" rx="6.5" ry="3.8" fill="url(#leafG3)" transform="rotate(20 200.4 83.1)" stroke="#996515" strokeWidth="0.5" opacity="0.85"/></g>
-
-        {/* Inner left leaves */}
-        <g filter="url(#leafShadow)"><ellipse cx="72.6" cy="73.1" rx="6.5" ry="3.8" fill="url(#leafG1)" transform="rotate(-35 72.6 73.1)" stroke="#996515" strokeWidth="0.5" opacity="0.9"/></g>
-        <g filter="url(#leafShadow)"><ellipse cx="65.0" cy="57.7" rx="6.1" ry="3.5" fill="url(#leafG2)" transform="rotate(-25 65.0 57.7)" stroke="#996515" strokeWidth="0.5" opacity="0.85"/></g>
-        <g filter="url(#leafShadow)"><ellipse cx="82.6" cy="63.1" rx="5.4" ry="3.5" fill="url(#leafG3)" transform="rotate(-15 82.6 63.1)" stroke="#996515" strokeWidth="0.5" opacity="0.85"/></g>
-        <g filter="url(#leafShadow)"><ellipse cx="90.2" cy="76.9" rx="5.7" ry="3.1" fill="url(#leafG1)" transform="rotate(-10 90.2 76.9)" stroke="#996515" strokeWidth="0.5" opacity="0.8"/></g>
-
-        {/* Inner right leaves */}
-        <g filter="url(#leafShadow)"><ellipse cx="187.4" cy="73.1" rx="6.5" ry="3.8" fill="url(#leafG1)" transform="rotate(35 187.4 73.1)" stroke="#996515" strokeWidth="0.5" opacity="0.9"/></g>
-        <g filter="url(#leafShadow)"><ellipse cx="195.0" cy="57.7" rx="6.1" ry="3.5" fill="url(#leafG2)" transform="rotate(25 195.0 57.7)" stroke="#996515" strokeWidth="0.5" opacity="0.85"/></g>
-        <g filter="url(#leafShadow)"><ellipse cx="177.4" cy="63.1" rx="5.4" ry="3.5" fill="url(#leafG3)" transform="rotate(15 177.4 63.1)" stroke="#996515" strokeWidth="0.5" opacity="0.85"/></g>
-        <g filter="url(#leafShadow)"><ellipse cx="169.8" cy="76.9" rx="5.7" ry="3.1" fill="url(#leafG1)" transform="rotate(10 169.8 76.9)" stroke="#996515" strokeWidth="0.5" opacity="0.8"/></g>
-
+        {/* === GOLDEN LEAVES === */}
         {/* Top crown leaves */}
-        <g filter="url(#glow)"><ellipse cx="130.0" cy="21.5" rx="9.2" ry="5.4" fill="url(#leafG1)" transform="rotate(5 130.0 21.5)" stroke="#996515" strokeWidth="0.8" opacity="0.95"/></g>
-        <g filter="url(#leafShadow)"><ellipse cx="97.9" cy="16.9" rx="7.6" ry="4.6" fill="url(#leafG1)" transform="rotate(-25 97.9 16.9)" stroke="#996515" strokeWidth="0.6" opacity="0.95"/></g>
-        <g filter="url(#leafShadow)"><ellipse cx="162.1" cy="16.9" rx="7.6" ry="4.6" fill="url(#leafG1)" transform="rotate(25 162.1 16.9)" stroke="#996515" strokeWidth="0.6" opacity="0.95"/></g>
-        <g filter="url(#leafShadow)"><ellipse cx="110.9" cy="30.8" rx="6.9" ry="4.2" fill="url(#leafG2)" transform="rotate(-15 110.9 30.8)" stroke="#996515" strokeWidth="0.5" opacity="0.9"/></g>
-        <g filter="url(#leafShadow)"><ellipse cx="149.1" cy="30.8" rx="6.9" ry="4.2" fill="url(#leafG2)" transform="rotate(15 149.1 30.8)" stroke="#996515" strokeWidth="0.5" opacity="0.9"/></g>
-        <g filter="url(#leafShadow)"><ellipse cx="118.5" cy="42.3" rx="6.1" ry="3.8" fill="url(#leafG3)" transform="rotate(-10 118.5 42.3)" stroke="#996515" strokeWidth="0.5" opacity="0.85"/></g>
-        <g filter="url(#leafShadow)"><ellipse cx="141.5" cy="42.3" rx="6.1" ry="3.8" fill="url(#leafG3)" transform="rotate(10 141.5 42.3)" stroke="#996515" strokeWidth="0.5" opacity="0.85"/></g>
-        <g filter="url(#leafShadow)"><ellipse cx="103.2" cy="52.3" rx="5.7" ry="3.5" fill="url(#leafG1)" transform="rotate(-12 103.2 52.3)" stroke="#996515" strokeWidth="0.5" opacity="0.9"/></g>
-        <g filter="url(#leafShadow)"><ellipse cx="156.8" cy="52.3" rx="5.7" ry="3.5" fill="url(#leafG1)" transform="rotate(12 156.8 52.3)" stroke="#996515" strokeWidth="0.5" opacity="0.9"/></g>
+        <g filter="url(#glow)"><ellipse cx="130" cy="15" rx="9" ry="5" fill="url(#leafG1)" stroke="#996515" strokeWidth="0.8" opacity="0.95"/></g>
+        <g filter="url(#leafShadow)"><ellipse cx="100" cy="20" rx="7.5" ry="4.5" fill="url(#leafG1)" transform="rotate(-25 100 20)" stroke="#996515" strokeWidth="0.6" opacity="0.95"/></g>
+        <g filter="url(#leafShadow)"><ellipse cx="160" cy="20" rx="7.5" ry="4.5" fill="url(#leafG1)" transform="rotate(25 160 20)" stroke="#996515" strokeWidth="0.6" opacity="0.95"/></g>
+        <g filter="url(#leafShadow)"><ellipse cx="115" cy="35" rx="7" ry="4" fill="url(#leafG2)" transform="rotate(-15 115 35)" stroke="#996515" strokeWidth="0.5" opacity="0.9"/></g>
+        <g filter="url(#leafShadow)"><ellipse cx="145" cy="35" rx="7" ry="4" fill="url(#leafG2)" transform="rotate(15 145 35)" stroke="#996515" strokeWidth="0.5" opacity="0.9"/></g>
+        <g filter="url(#leafShadow)"><ellipse cx="120" cy="48" rx="6" ry="3.5" fill="url(#leafG1)" transform="rotate(-10 120 48)" stroke="#996515" strokeWidth="0.5" opacity="0.85"/></g>
+        <g filter="url(#leafShadow)"><ellipse cx="140" cy="48" rx="6" ry="3.5" fill="url(#leafG1)" transform="rotate(10 140 48)" stroke="#996515" strokeWidth="0.5" opacity="0.85"/></g>
 
         {/* Mid crown leaves */}
-        <g filter="url(#leafShadow)"><ellipse cx="122.4" cy="57.7" rx="6.1" ry="3.8" fill="url(#leafG2)" transform="rotate(-5 122.4 57.7)" stroke="#996515" strokeWidth="0.5" opacity="0.9"/></g>
-        <g filter="url(#leafShadow)"><ellipse cx="137.6" cy="57.7" rx="6.1" ry="3.8" fill="url(#leafG2)" transform="rotate(5 137.6 57.7)" stroke="#996515" strokeWidth="0.5" opacity="0.9"/></g>
-        <g filter="url(#leafShadow)"><ellipse cx="107.1" cy="69.2" rx="5.4" ry="3.1" fill="url(#leafG1)" transform="rotate(-8 107.1 69.2)" stroke="#996515" strokeWidth="0.5" opacity="0.85"/></g>
-        <g filter="url(#leafShadow)"><ellipse cx="152.9" cy="69.2" rx="5.4" ry="3.1" fill="url(#leafG1)" transform="rotate(8 152.9 69.2)" stroke="#996515" strokeWidth="0.5" opacity="0.85"/></g>
+        <g filter="url(#leafShadow)"><ellipse cx="125" cy="60" rx="6.5" ry="3.8" fill="url(#leafG2)" transform="rotate(-5 125 60)" stroke="#996515" strokeWidth="0.5" opacity="0.9"/></g>
+        <g filter="url(#leafShadow)"><ellipse cx="135" cy="60" rx="6.5" ry="3.8" fill="url(#leafG2)" transform="rotate(5 135 60)" stroke="#996515" strokeWidth="0.5" opacity="0.9"/></g>
+
+        {/* Left branch leaves */}
+        <g filter="url(#leafShadow)"><ellipse cx="70" cy="85" rx="7" ry="4" fill="url(#leafG1)" transform="rotate(-30 70 85)" stroke="#996515" strokeWidth="0.5" opacity="0.9"/></g>
+        <g filter="url(#leafShadow)"><ellipse cx="85" cy="80" rx="6" ry="3.5" fill="url(#leafG2)" transform="rotate(-20 85 80)" stroke="#996515" strokeWidth="0.5" opacity="0.85"/></g>
+        <g filter="url(#leafShadow)"><ellipse cx="55" cy="70" rx="6" ry="3.5" fill="url(#leafG1)" transform="rotate(-40 55 70)" stroke="#996515" strokeWidth="0.5" opacity="0.9"/></g>
+        <g filter="url(#leafShadow)"><ellipse cx="40" cy="50" rx="7.5" ry="4.5" fill="url(#leafG2)" transform="rotate(-45 40 50)" stroke="#996515" strokeWidth="0.6" opacity="0.9"/></g>
+        <g filter="url(#leafShadow)"><ellipse cx="28" cy="40" rx="7" ry="4" fill="url(#leafG1)" transform="rotate(-50 28 40)" stroke="#996515" strokeWidth="0.6" opacity="0.9"/></g>
+        <g filter="url(#leafShadow)"><ellipse cx="58" cy="55" rx="5" ry="3" fill="url(#leafG1)" transform="rotate(-30 58 55)" stroke="#996515" strokeWidth="0.5" opacity="0.85"/></g>
+
+        {/* Right branch leaves */}
+        <g filter="url(#leafShadow)"><ellipse cx="190" cy="85" rx="7" ry="4" fill="url(#leafG1)" transform="rotate(30 190 85)" stroke="#996515" strokeWidth="0.5" opacity="0.9"/></g>
+        <g filter="url(#leafShadow)"><ellipse cx="175" cy="80" rx="6" ry="3.5" fill="url(#leafG2)" transform="rotate(20 175 80)" stroke="#996515" strokeWidth="0.5" opacity="0.85"/></g>
+        <g filter="url(#leafShadow)"><ellipse cx="205" cy="70" rx="6" ry="3.5" fill="url(#leafG1)" transform="rotate(40 205 70)" stroke="#996515" strokeWidth="0.5" opacity="0.9"/></g>
+        <g filter="url(#leafShadow)"><ellipse cx="220" cy="50" rx="7.5" ry="4.5" fill="url(#leafG2)" transform="rotate(45 220 50)" stroke="#996515" strokeWidth="0.6" opacity="0.9"/></g>
+        <g filter="url(#leafShadow)"><ellipse cx="232" cy="40" rx="7" ry="4" fill="url(#leafG1)" transform="rotate(50 232 40)" stroke="#996515" strokeWidth="0.6" opacity="0.9"/></g>
+        <g filter="url(#leafShadow)"><ellipse cx="202" cy="55" rx="5" ry="3" fill="url(#leafG1)" transform="rotate(30 202 55)" stroke="#996515" strokeWidth="0.5" opacity="0.85"/></g>
 
         {/* === SPARKLES / GOLDEN GLOW DOTS === */}
         <g filter="url(#sparkle)">
-          <circle cx="21.4" cy="36.9" r="1.5" fill="#FFD700" opacity="0.9">
+          <circle cx="28" cy="36" r="1.5" fill="#FFD700" opacity="0.9">
             <animate attributeName="opacity" values="0.4;1;0.4" dur="2s" repeatCount="indefinite" begin="0s"/>
           </circle>
-          <circle cx="130.0" cy="18.5" r="1.9" fill="#FFF8DC" opacity="0.9">
+          <circle cx="130" cy="12" r="2" fill="#FFF8DC" opacity="0.9">
             <animate attributeName="opacity" values="0.5;1;0.5" dur="2.5s" repeatCount="indefinite" begin="0.3s"/>
           </circle>
-          <circle cx="238.6" cy="36.9" r="1.5" fill="#FFD700" opacity="0.9">
+          <circle cx="232" cy="36" r="1.5" fill="#FFD700" opacity="0.9">
             <animate attributeName="opacity" values="0.4;1;0.4" dur="2.2s" repeatCount="indefinite" begin="0.6s"/>
           </circle>
-          <circle cx="42.1" cy="60.0" r="1.4" fill="#FFFACD" opacity="0.8">
-            <animate attributeName="opacity" values="0.3;0.9;0.3" dur="2.8s" repeatCount="indefinite" begin="0.9s"/>
-          </circle>
-          <circle cx="217.9" cy="60.0" r="1.4" fill="#FFFACD" opacity="0.8">
-            <animate attributeName="opacity" values="0.3;0.9;0.3" dur="2.6s" repeatCount="indefinite" begin="1.2s"/>
-          </circle>
-          <circle cx="97.9" cy="21.5" r="1.2" fill="#FFD700" opacity="0.7">
+          <circle cx="100" cy="16" r="1.2" fill="#FFD700" opacity="0.7">
             <animate attributeName="opacity" values="0.3;0.8;0.3" dur="3s" repeatCount="indefinite" begin="0.5s"/>
           </circle>
-          <circle cx="162.1" cy="21.5" r="1.2" fill="#FFD700" opacity="0.7">
+          <circle cx="160" cy="16" r="1.2" fill="#FFD700" opacity="0.7">
             <animate attributeName="opacity" values="0.3;0.8;0.3" dur="3.2s" repeatCount="indefinite" begin="1s"/>
           </circle>
-          <circle cx="130.0" cy="42.3" r="1.5" fill="#FFD700" opacity="0.8">
+          <circle cx="130" cy="40" r="1.5" fill="#FFD700" opacity="0.8">
             <animate attributeName="opacity" values="0.4;1;0.4" dur="2.4s" repeatCount="indefinite" begin="0.2s"/>
           </circle>
-          <circle cx="72.6" cy="67.7" r="1.2" fill="#FFF8DC" opacity="0.7">
+          <circle cx="55" cy="65" r="1.3" fill="#FFFACD" opacity="0.8">
+            <animate attributeName="opacity" values="0.3;0.9;0.3" dur="2.8s" repeatCount="indefinite" begin="0.9s"/>
+          </circle>
+          <circle cx="205" cy="65" r="1.3" fill="#FFFACD" opacity="0.8">
+            <animate attributeName="opacity" values="0.3;0.9;0.3" dur="2.6s" repeatCount="indefinite" begin="1.2s"/>
+          </circle>
+          <circle cx="70" cy="78" r="1.2" fill="#FFF8DC" opacity="0.7">
             <animate attributeName="opacity" values="0.2;0.8;0.2" dur="2.7s" repeatCount="indefinite" begin="1.5s"/>
           </circle>
-          <circle cx="187.4" cy="67.7" r="1.2" fill="#FFF8DC" opacity="0.7">
+          <circle cx="190" cy="78" r="1.2" fill="#FFF8DC" opacity="0.7">
             <animate attributeName="opacity" values="0.2;0.8;0.2" dur="2.9s" repeatCount="indefinite" begin="1.8s"/>
           </circle>
         </g>

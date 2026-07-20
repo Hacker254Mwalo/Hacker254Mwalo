@@ -897,39 +897,45 @@ export async function getAllTransactions() {
 
 export async function deleteTransaction(id) {
   if (!isSupabaseConfigured) return
-  // Get the transaction to find user phone and reference
+
+  // Get the transaction — data is stored in phone_number, not user_phone
   const { data: tx, error: fetchErr } = await supabase
     .from('transactions')
-    .select('id, user_phone, reference, type, amount, created_at')
+    .select('id, user_phone, phone_number, reference, type, amount, created_at')
     .eq('id', id)
     .single()
   if (fetchErr) throw fetchErr
 
-  // Delete matching deposit record by mpesa_receipt (if exists)
-  if (tx.reference && (tx.type === 'deposit' || tx.type === 'invest')) {
-    await supabase.from('deposits').delete().eq('mpesa_receipt', tx.reference).eq('user_phone', tx.user_phone)
+  // The phone is in phone_number column (user_phone is NULL due to schema drift)
+  const phone = tx.phone_number || tx.user_phone
+  if (!phone) {
+    // Cannot match without a phone — just delete the transaction row
+    const { error: txError } = await supabase.from('transactions').delete().eq('id', id)
+    if (txError) throw txError
+    return
   }
 
-  // Delete matching withdrawal record by user_phone + same amount (within 5 min window)
-  if (tx.type === 'withdrawal' || tx.type === 'withdraw') {
-    const createdAt = tx.created_at ? new Date(tx.created_at).toISOString() : '1970-01-01T00:00:00'
-    const fiveMinAfter = new Date(new Date(createdAt).getTime() + 5 * 60000).toISOString()
-    await supabase.from('withdrawals').delete()
-      .eq('user_phone', tx.user_phone)
-      .eq('amount', tx.amount)
-      .gte('created_at', createdAt)
-      .lt('created_at', fiveMinAfter)
-  }
+  const createdAt = tx.created_at ? new Date(tx.created_at).toISOString() : '1970-01-01T00:00:00'
+  const tenMinAfter = new Date(new Date(createdAt).getTime() + 10 * 60000).toISOString()
+  const absAmount = Math.abs(Number(tx.amount))
 
-  // Delete matching deposit record directly (fallback if reference didn't match)
-  if (tx.type === 'deposit' || tx.type === 'invest') {
-    const createdAt = tx.created_at ? new Date(tx.created_at).toISOString() : '1970-01-01T00:00:00'
-    const fiveMinAfter = new Date(new Date(createdAt).getTime() + 5 * 60000).toISOString()
+  // Delete matching deposit record (by phone + amount + time window)
+  await supabase.from('deposits').delete()
+    .eq('user_phone', phone)
+    .gte('created_at', createdAt)
+    .lt('created_at', tenMinAfter)
+
+  // Delete matching withdrawal record (by phone + amount + time window)
+  await supabase.from('withdrawals').delete()
+    .eq('user_phone', phone)
+    .gte('created_at', createdAt)
+    .lt('created_at', tenMinAfter)
+
+  // Also try matching by reference if available
+  if (tx.reference) {
     await supabase.from('deposits').delete()
-      .eq('user_phone', tx.user_phone)
-      .eq('amount', Math.abs(tx.amount))
-      .gte('created_at', createdAt)
-      .lt('created_at', fiveMinAfter)
+      .eq('mpesa_receipt', tx.reference)
+      .eq('user_phone', phone)
   }
 
   // Delete the transaction itself
