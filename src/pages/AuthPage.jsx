@@ -191,8 +191,8 @@ export default function AuthPage() {
         <div className="mt-3 h-px w-32 mx-auto" style={{ background: 'linear-gradient(90deg, transparent, #FFD700, #DAA520, transparent)' }}/>
       </div>
 
-      {/* Professional Money Tree */}
-      <svg width="200" height="160" viewBox="0 0 260 200" fill="none" xmlns="http://www.w3.org/2000/svg" className="mb-4 mx-auto">
+      {/* Awesome Organic Money Tree */}
+      <svg width="220" height="180" viewBox="0 0 260 200" fill="none" xmlns="http://www.w3.org/2000/svg" className="mb-4 mx-auto">
         <defs>
           <radialGradient id="bgGlow" cx="50%" cy="45%" r="45%">
             <stop offset="0%" stopColor="#FFD700" stopOpacity="0.15"/>
@@ -214,10 +214,6 @@ export default function AuthPage() {
             <stop offset="60%" stopColor="#DAA520"/>
             <stop offset="100%" stopColor="#996515"/>
           </linearGradient>
-          <radialGradient id="leafGlow" cx="50%" cy="50%" r="50%">
-            <stop offset="0%" stopColor="#FFD700" stopOpacity="0.4"/>
-            <stop offset="100%" stopColor="#FFD700" stopOpacity="0"/>
-          </radialGradient>
           <filter id="leafShadow" x="-20%" y="-20%" width="140%" height="140%">
             <feDropShadow dx="0" dy="1" stdDeviation="1.5" floodColor="#FFD700" floodOpacity="0.25"/>
           </filter>
@@ -232,52 +228,61 @@ export default function AuthPage() {
 
         {/* === PHONE === */}
         <g filter="url(#leafShadow)">
-          <rect x="40" y="85" width="50" height="85" rx="6" ry="6" fill="#1a1a2e" stroke="#DAA520" strokeWidth="1.2"/>
-          <rect x="44" y="94" width="42" height="65" rx="1.5" ry="1.5" fill="#0d0d1a"/>
-          <rect x="58" y="88" width="14" height="1.5" rx="0.7" fill="#333"/>
-          <line x1="48" y1="145" x2="82" y2="115" stroke="#FFD700" strokeWidth="1.2" strokeLinecap="round"/>
-          <rect x="48" y="135" width="3.5" height="10" rx="0.5" fill="#FFD700" opacity="0.8"/>
-          <rect x="54" y="128" width="3.5" height="17" rx="0.5" fill="#FFD700" opacity="0.9"/>
-          <rect x="60" y="120" width="3.5" height="25" rx="0.5" fill="#FFD700"/>
-          <circle cx="65" cy="165" r="2.5" fill="none" stroke="#DAA520" strokeWidth="1"/>
+          <rect x="35" y="85" width="50" height="85" rx="6" ry="6" fill="#1a1a2e" stroke="#DAA520" strokeWidth="1.2"/>
+          <rect x="39" y="94" width="42" height="65" rx="1.5" ry="1.5" fill="#0d0d1a"/>
+          <rect x="53" y="88" width="14" height="1.5" rx="0.7" fill="#333"/>
+          <line x1="43" y1="145" x2="77" y2="115" stroke="#FFD700" strokeWidth="1.2" strokeLinecap="round"/>
+          <rect x="43" y="135" width="3.5" height="10" rx="0.5" fill="#FFD700" opacity="0.8"/>
+          <rect x="49" y="128" width="3.5" height="17" rx="0.5" fill="#FFD700" opacity="0.9"/>
+          <rect x="55" y="120" width="3.5" height="25" rx="0.5" fill="#FFD700"/>
+          <circle cx="60" cy="165" r="2.5" fill="none" stroke="#DAA520" strokeWidth="1"/>
         </g>
 
-        {/* === NATURAL TREE === */}
-        {/* Trunk */}
-        <path d="M130 175 Q125 150 130 110" stroke="url(#trunkG)" strokeWidth="8" strokeLinecap="round" fill="none"/>
-        <path d="M130 110 Q110 90 80 85" stroke="url(#branchG)" strokeWidth="4" strokeLinecap="round" fill="none"/>
-        <path d="M130 110 Q150 90 180 85" stroke="url(#branchG)" strokeWidth="4" strokeLinecap="round" fill="none"/>
-        <path d="M130 110 Q130 80 130 40" stroke="url(#branchG)" strokeWidth="4" strokeLinecap="round" fill="none"/>
+        {/* === AWESOME NATURAL TREE === */}
+        {/* Trunk with more organic curve */}
+        <path d="M130 185 C125 160, 135 140, 130 110" stroke="url(#trunkG)" strokeWidth="9" strokeLinecap="round" fill="none"/>
         
-        {/* Sub branches */}
-        <path d="M105 95 Q85 80 60 50" stroke="url(#branchG)" strokeWidth="2.5" strokeLinecap="round" fill="none"/>
-        <path d="M155 95 Q175 80 200 50" stroke="url(#branchG)" strokeWidth="2.5" strokeLinecap="round" fill="none"/>
-        <path d="M130 70 Q110 50 90 20" stroke="url(#branchG)" strokeWidth="2" strokeLinecap="round" fill="none"/>
-        <path d="M130 70 Q150 50 170 20" stroke="url(#branchG)" strokeWidth="2" strokeLinecap="round" fill="none"/>
+        {/* Primary Branches - Natural Curves */}
+        <path d="M130 110 C110 100, 90 95, 70 85" stroke="url(#branchG)" strokeWidth="5" strokeLinecap="round" fill="none"/>
+        <path d="M130 110 C150 100, 170 95, 190 85" stroke="url(#branchG)" strokeWidth="5" strokeLinecap="round" fill="none"/>
+        <path d="M130 110 C135 90, 125 70, 130 35" stroke="url(#branchG)" strokeWidth="5" strokeLinecap="round" fill="none"/>
+        
+        {/* Secondary Branches - Fractal Growth */}
+        <path d="M100 98 C80 90, 60 75, 45 50" stroke="url(#branchG)" strokeWidth="3" strokeLinecap="round" fill="none"/>
+        <path d="M160 98 C180 90, 200 75, 215 50" stroke="url(#branchG)" strokeWidth="3" strokeLinecap="round" fill="none"/>
+        <path d="M130 75 C115 65, 105 50, 95 25" stroke="url(#branchG)" strokeWidth="2.5" strokeLinecap="round" fill="none"/>
+        <path d="M130 75 C145 65, 155 50, 165 25" stroke="url(#branchG)" strokeWidth="2.5" strokeLinecap="round" fill="none"/>
+        <path d="M70 85 C55 80, 40 70, 30 55" stroke="url(#branchG)" strokeWidth="2" strokeLinecap="round" fill="none"/>
+        <path d="M190 85 C205 80, 220 70, 230 55" stroke="url(#branchG)" strokeWidth="2" strokeLinecap="round" fill="none"/>
 
-        {/* Golden Leaves */}
+        {/* Golden Leaves - Denser and more organic placement */}
         <g filter="url(#leafShadow)">
-          <ellipse cx="130" cy="35" rx="8" ry="5" fill="url(#leafG1)" transform="rotate(-10 130 35)"/>
-          <ellipse cx="80" cy="80" rx="7" ry="4.5" fill="url(#leafG1)" transform="rotate(-30 80 80)"/>
-          <ellipse cx="180" cy="80" rx="7" ry="4.5" fill="url(#leafG1)" transform="rotate(30 180 80)"/>
-          <ellipse cx="60" cy="45" rx="7" ry="4" fill="url(#leafG1)" transform="rotate(-45 60 45)"/>
-          <ellipse cx="200" cy="45" rx="7" ry="4" fill="url(#leafG1)" transform="rotate(45 200 45)"/>
-          <ellipse cx="90" cy="15" rx="6" ry="3.5" fill="url(#leafG1)" transform="rotate(-20 90 15)"/>
-          <ellipse cx="170" cy="15" rx="6" ry="3.5" fill="url(#leafG1)" transform="rotate(20 170 15)"/>
-          <ellipse cx="110" cy="60" rx="6" ry="3.5" fill="url(#leafG1)" transform="rotate(-15 110 60)"/>
-          <ellipse cx="150" cy="60" rx="6" ry="3.5" fill="url(#leafG1)" transform="rotate(15 150 60)"/>
+          <ellipse cx="130" cy="30" rx="9" ry="5.5" fill="url(#leafG1)" transform="rotate(-5 130 30)"/>
+          <ellipse cx="70" cy="80" rx="8" ry="5" fill="url(#leafG1)" transform="rotate(-25 70 80)"/>
+          <ellipse cx="190" cy="80" rx="8" ry="5" fill="url(#leafG1)" transform="rotate(25 190 80)"/>
+          <ellipse cx="45" cy="45" rx="7.5" ry="4.5" fill="url(#leafG1)" transform="rotate(-40 45 45)"/>
+          <ellipse cx="215" cy="45" rx="7.5" ry="4.5" fill="url(#leafG1)" transform="rotate(40 215 45)"/>
+          <ellipse cx="95" cy="20" rx="6.5" ry="4" fill="url(#leafG1)" transform="rotate(-20 95 20)"/>
+          <ellipse cx="165" cy="20" rx="6.5" ry="4" fill="url(#leafG1)" transform="rotate(20 165 20)"/>
+          <ellipse cx="30" cy="50" rx="6" ry="3.5" fill="url(#leafG1)" transform="rotate(-50 30 50)"/>
+          <ellipse cx="230" cy="50" rx="6" ry="3.5" fill="url(#leafG1)" transform="rotate(50 230 50)"/>
+          <ellipse cx="115" cy="65" rx="6.5" ry="4" fill="url(#leafG1)" transform="rotate(-15 115 65)"/>
+          <ellipse cx="145" cy="65" rx="6.5" ry="4" fill="url(#leafG1)" transform="rotate(15 145 65)"/>
         </g>
 
-        {/* Sparkles */}
+        {/* Sparkles - More dynamic placement */}
         <g filter="url(#sparkle)">
-          <circle cx="130" cy="30" r="1.5" fill="#FFF8DC">
+          <circle cx="130" cy="25" r="1.5" fill="#FFF8DC">
             <animate attributeName="opacity" values="0.4;1;0.4" dur="2s" repeatCount="indefinite"/>
           </circle>
-          <circle cx="60" cy="40" r="1.2" fill="#FFD700">
+          <circle cx="45" cy="40" r="1.2" fill="#FFD700">
             <animate attributeName="opacity" values="0.3;1;0.3" dur="2.5s" repeatCount="indefinite" begin="0.5s"/>
           </circle>
-          <circle cx="200" cy="40" r="1.2" fill="#FFD700">
+          <circle cx="215" cy="40" r="1.2" fill="#FFD700">
             <animate attributeName="opacity" values="0.3;1;0.3" dur="2.2s" repeatCount="indefinite" begin="1s"/>
+          </circle>
+          <circle cx="130" cy="60" r="1" fill="#FFF8DC">
+            <animate attributeName="opacity" values="0.2;0.8;0.2" dur="3s" repeatCount="indefinite" begin="1.5s"/>
           </circle>
         </g>
       </svg>
