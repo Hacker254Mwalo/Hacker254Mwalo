@@ -261,6 +261,14 @@ export async function getReferrals(userPhone) {
   }))
 }
 
+// Admin: Get ALL referrals across the platform
+export async function getAllReferrals() {
+  if (!isSupabaseConfigured) return []
+  const { data, error } = await supabase.rpc('get_all_referrals')
+  if (error) throw error
+  return data || []
+}
+
 // NOTE: Referral commissions are now handled atomically inside atomic_invest.
 // This function is kept for legacy/local fallback only.
 export async function addReferralCommission(referrerPhone, { referredPhone, referredName, level, commission, planName }) {

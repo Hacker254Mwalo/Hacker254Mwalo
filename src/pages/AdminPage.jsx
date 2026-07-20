@@ -11,6 +11,7 @@ import {
   getAllSupportThreads, getSupportMessages, sendSupportMessage,
   getPasswordResetRequests, adminResetPassword,
   getWhatsAppSettings, updateAppSetting,
+  getAllReferrals, getReferrals,
 } from '../lib/db'
 
 // ── Shared helpers ────────────────────────────────────────────────────────────
@@ -557,6 +558,130 @@ function UsersTab({ showToast }) {
                     </button>
                   </>
                 )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* View user referrals modal */}
+      {viewingReferrals && (
+        <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" onClick={() => setViewingReferrals(null)}>
+          <div className="card max-w-md w-full max-h-[80vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="font-bold text-lg">Referral Team: {viewingReferrals.name}</h3>
+              <button onClick={() => setViewingReferrals(null)} className="text-gray-400 hover:text-white">✕</button>
+            </div>
+            {refLoading ? (
+              <p className="text-center py-8 text-gray-500">Loading...</p>
+            ) : userReferrals.length === 0 ? (
+              <p className="text-center py-8 text-gray-500">No referrals yet.</p>
+            ) : (
+              <div className="space-y-3">
+                <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
+                  Total team commissions: <span className="text-green-400 font-bold">KSh {userReferrals.reduce((s, r) => s + Number(r.commission || 0), 0).toLocaleString()}</span>
+                </p>
+                {userReferrals.map((r, i) => (
+                  <div key={i} className="p-3 rounded-xl border border-gray-700 bg-gray-800/50">
+                    <div className="flex justify-between mb-1">
+                      <span className="font-bold text-sm">{r.referredName}</span>
+                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${r.level === 1 ? 'bg-blue-900/50 text-blue-300' : 'bg-purple-900/50 text-purple-300'}`}>
+                        L{r.level}
+                      </span>
+                    </div>
+                    <div className="text-[10px] text-gray-400">
+                      <p>Commission: <span className="text-green-400">KSh {Number(r.commission).toLocaleString()}</span></p>
+                      <p>{r.planName && <span>via {r.planName} · </span>}{fmt(r.date)}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ── Referrals Tab ───────────────────────────────────────────────────────────────
+function ReferralsTab({ showToast }) {
+  const [referrals, setReferrals] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  const load = useCallback(async () => {
+    setLoading(true)
+    try { setReferrals(await getAllReferrals()) } catch { }
+    setLoading(false)
+  }, [])
+
+  useEffect(() => { load() }, [load])
+
+  const totalCommission = referrals.reduce((s, r) => s + Number(r.commission || 0), 0)
+  const level1 = referrals.filter(r => r.level === 1)
+  const level2 = referrals.filter(r => r.level === 2)
+
+  return (
+    <div>
+      <SectionHeader
+        title="Referral Commissions"
+        count={referrals.length}
+        subtitle={`Total commissions paid: KSh ${totalCommission.toLocaleString()}`}
+      />
+
+      <div className="grid grid-cols-3 gap-3 mb-5">
+        <div className="card text-center">
+          <p className="text-2xl font-black text-green-400">{referrals.length}</p>
+          <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>Total Referrals</p>
+        </div>
+        <div className="card text-center">
+          <p className="text-2xl font-black text-blue-400">{level1.length}</p>
+          <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>Level 1 (10%)</p>
+        </div>
+        <div className="card text-center">
+          <p className="text-2xl font-black text-purple-400">{level2.length}</p>
+          <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>Level 2 (4%)</p>
+        </div>
+      </div>
+
+      <div className="flex gap-2 mb-4">
+        <button onClick={load} className="px-3 py-1.5 rounded-lg text-xs font-semibold text-gray-400 hover:text-white transition-all" style={{ background: 'var(--bg-input)' }}>
+          ↻ Refresh
+        </button>
+      </div>
+
+      {loading ? (
+        <div className="text-center py-12 text-gray-500">Loading...</div>
+      ) : referrals.length === 0 ? (
+        <div className="card text-center py-12">
+          <p className="text-4xl mb-3">🤝</p>
+          <p style={{ color: 'var(--text-muted)' }}>No referral commissions yet</p>
+          <p className="text-xs mt-2" style={{ color: 'var(--text-muted)' }}>Commissions are paid when a referred user makes their first investment or deposit.</p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {referrals.map(r => (
+            <div key={r.id} className="card hover:border-gray-600 transition-colors">
+              <div className="flex items-start justify-between gap-4 flex-wrap">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${r.level === 1 ? 'bg-blue-900/50 text-blue-300' : 'bg-purple-900/50 text-purple-300'}`}>
+                      Level {r.level}
+                    </span>
+                    <span className="font-semibold text-sm">{r.referrer_name || r.referrer_phone}</span>
+                  </div>
+                  <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
+                    Referred: <span className="text-white">{r.referred_name || r.referred_phone}</span>
+                  </p>
+                  <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
+                    {r.plan_name && <span>via {r.plan_name}</span>}
+                  </p>
+                  <p className="text-[10px] mt-1" style={{ color: 'var(--text-muted)' }}>{fmt(r.created_at)}</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-xl font-black text-green-400">+KSh {Number(r.commission || 0).toLocaleString()}</p>
+                  <p className="text-[10px]" style={{ color: 'var(--text-muted)' }}>to {r.referrer_phone}</p>
+                </div>
               </div>
             </div>
           ))}
@@ -1160,6 +1285,7 @@ const TABS = [
   { id: 'withdrawals', label: 'Withdrawals', icon: '💸' },
   { id: 'loans',       label: 'Loans',       icon: '🏦' },
   { id: 'users',       label: 'Users',       icon: '👥' },
+  { id: 'referrals',   label: 'Referrals',   icon: '🤝' },
   { id: 'promo',       label: 'Promo Codes', icon: '🎟️' },
   { id: 'support',     label: 'Support',     icon: '💬' },
   { id: 'resets',      label: 'PIN Resets',  icon: '🔑' },
@@ -1251,6 +1377,7 @@ export default function AdminPage() {
             {tab === 'withdrawals' && <WithdrawalsTab showToast={showToast} />}
             {tab === 'loans'       && <LoansTab showToast={showToast} />}
             {tab === 'users'       && <UsersTab showToast={showToast} />}
+            {tab === 'referrals'   && <ReferralsTab showToast={showToast} />}
             {tab === 'promo'       && <PromoTab showToast={showToast} />}
             {tab === 'support'     && <SupportTab showToast={showToast} />}
             {tab === 'resets'      && <PasswordResetsTab showToast={showToast} />}
