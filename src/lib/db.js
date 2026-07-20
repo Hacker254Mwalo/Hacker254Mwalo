@@ -182,6 +182,7 @@ export async function addDeposit(userPhone, { amount, checkoutId, mpesaCode }) {
       checkout_id: checkoutId || null,
       mpesa_receipt: mpesaCode || null,
       status: 'pending',
+      method: checkoutId ? 'stk' : 'manual',
     })
     .select()
     .single()

@@ -140,6 +140,7 @@ export default async function handler(req, res) {
           amount: numAmount,
           checkout_id: stkData.CheckoutRequestID,
           status: 'pending',
+          method: 'stk',
           created_at: new Date().toISOString(),
         }])
         .select()

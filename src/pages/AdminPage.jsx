@@ -132,9 +132,14 @@ function DepositsTab({ showToast }) {
                   </div>
                   <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{dep.user_phone}</p>
                   <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>{fmt(dep.created_at)}</p>
-                  {dep.mpesa_receipt && (
-                    <p className="text-xs mt-1 font-mono" style={{ color: 'var(--text-secondary)' }}>M-Pesa Ref: {dep.mpesa_receipt}</p>
-                  )}
+                  <div className="flex gap-2 mt-1">
+                    <span className={`text-[10px] px-1.5 py-0.5 rounded font-bold uppercase ${dep.method === 'stk' ? 'bg-blue-900/40 text-blue-300' : 'bg-orange-900/40 text-orange-300'}`}>
+                      {dep.method || 'manual'}
+                    </span>
+                    {dep.mpesa_receipt && (
+                      <p className="text-xs font-mono" style={{ color: 'var(--text-secondary)' }}>Ref: {dep.mpesa_receipt}</p>
+                    )}
+                  </div>
                 </div>
                 <div className="text-right">
                   <p className="text-xl font-black text-green-400">KSh {Number(dep.amount).toLocaleString()}</p>
