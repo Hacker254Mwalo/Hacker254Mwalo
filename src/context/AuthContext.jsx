@@ -13,8 +13,17 @@ export function AuthProvider({ children }) {
     if (saved) {
       try {
         const session = JSON.parse(saved)
+        
+        // Automate earnings on app load
+        const runAutoProfit = async () => {
+          try {
+            const { supabase, isSupabaseConfigured } = await import('../lib/supabase')
+            if (isSupabaseConfigured) await supabase.rpc('process_daily_profits')
+          } catch (e) { console.error('Auto-profit error:', e) }
+        }
+
         // Always refresh from DB on mount to get latest balance, isAdmin, must_change_password
-        getUser(session.phone).then(fresh => {
+        runAutoProfit().then(() => getUser(session.phone)).then(fresh => {
           const u = fresh
             ? { ...fresh, id: fresh.phone }
             : { ...session, id: session.phone }
@@ -58,6 +67,16 @@ export function AuthProvider({ children }) {
     if (!saved) return
     try {
       const session = JSON.parse(saved)
+      
+      // Automate earnings: Call process_daily_profits RPC on refresh/login
+      // This ensures user gets their money without waiting for a server cron
+      try {
+        const { supabase, isSupabaseConfigured } = await import('../lib/supabase')
+        if (isSupabaseConfigured) {
+          await supabase.rpc('process_daily_profits')
+        }
+      } catch (e) { console.error('Auto-profit error:', e) }
+
       const fresh = await getUser(session.phone)
       if (fresh) {
         const u = { ...fresh, id: fresh.phone }
