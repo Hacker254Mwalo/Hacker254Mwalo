@@ -127,7 +127,10 @@ export async function updateUserBalance(phone, balance) {
     local.saveUser(phone, { balance })
     return
   }
-  const { error } = await supabase.from('users').update({ balance }).eq('phone', phone)
+  const { error } = await supabase.rpc('admin_set_balance', {
+    p_user_phone: phone,
+    p_balance: Number(balance),
+  })
   if (error) throw error
 }
 
@@ -381,7 +384,10 @@ export async function approveLoan(id, userPhone, amount) {
   }
   await supabase.from('loans').update({ status: 'approved' }).eq('id', id)
   const { data: u } = await supabase.from('users').select('balance').eq('phone', userPhone).single()
-  if (u) await supabase.from('users').update({ balance: Number(u.balance) + Number(amount) }).eq('phone', userPhone)
+  if (u) await supabase.rpc('admin_set_balance', {
+    p_user_phone: userPhone,
+    p_balance: Number(u.balance) + Number(amount),
+  })
 }
 
 export async function rejectLoan(id) {
@@ -425,13 +431,19 @@ export async function adminUpdateUserStatus(phone, status) {
 
 export async function adminSetBalance(phone, balance) {
   if (!isSupabaseConfigured) { local.saveUser(phone, { balance }); return }
-  const { error } = await supabase.from('users').update({ balance }).eq('phone', phone)
+  const { error } = await supabase.rpc('admin_set_balance', {
+    p_user_phone: phone,
+    p_balance: Number(balance),
+  })
   if (error) throw error
 }
 
 export async function adminSetBonusBalance(phone, bonusBalance) {
   if (!isSupabaseConfigured) { local.saveUser(phone, { bonus_balance: bonusBalance }); return }
-  const { error } = await supabase.from('users').update({ bonus_balance: bonusBalance }).eq('phone', phone)
+  const { error } = await supabase.rpc('admin_set_bonus_balance', {
+    p_user_phone: phone,
+    p_bonus: Number(bonusBalance),
+  })
   if (error) throw error
 }
 
@@ -552,7 +564,10 @@ export async function claimBonus(userPhone, claimType, amount) {
   const { data: u, error: userErr } = await supabase.from('users').select('balance').eq('phone', userPhone).single()
   if (userErr) throw userErr
   const newBalance = Number(u.balance) + Number(amount)
-  const { error: balErr } = await supabase.from('users').update({ balance: newBalance }).eq('phone', userPhone)
+  const { error: balErr } = await supabase.rpc('admin_set_balance', {
+    p_user_phone: userPhone,
+    p_balance: newBalance,
+  })
   if (balErr) throw balErr
   return { success: true, balance: newBalance }
 }
@@ -704,6 +719,7 @@ export async function clearMustChangePassword(userPhone) {
     local.saveUser(userPhone, { must_change_password: false })
     return
   }
+  // Uses the UPDATE policy we added on users table
   const { error } = await supabase
     .from('users')
     .update({ must_change_password: false })
