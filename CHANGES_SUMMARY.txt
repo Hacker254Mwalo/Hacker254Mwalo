@@ -1,0 +1,53 @@
+=============================================================
+STK PUSH & ADMIN TRANSACTION VISIBILITY FIX - SUMMARY
+=============================================================
+
+ISSUES FIXED:
+1. STK push not working - deposits not being created
+2. Admin can't see transactions - transaction table missing
+
+ROOT CAUSES IDENTIFIED:
+1. stk-push.js calls insert_deposit() RPC that doesn't exist
+2. transactions table never created in database schema
+3. RPC functions insert incomplete transaction data
+
+FILES CREATED:
+1. supabase/migrations/20260721130000_fix_stk_push_and_transactions.sql
+   - Creates transactions table with proper schema
+   - Adds indexes for performance
+   - Enables RLS and policies
+
+2. supabase/migrations/20260721130100_add_insert_deposit_rpc.sql
+   - Defines insert_deposit() RPC function
+   - Creates both deposit and transaction records
+   - Grants execute permissions
+
+3. supabase/migrations/20260721130200_update_rpcs_for_transactions.sql
+   - Updates atomic_invest() to populate full transaction metadata
+   - Updates process_daily_profits() with complete transaction data
+   - Updates atomic_approve_deposit() with receipt info
+   - Updates atomic_withdraw() with fee information
+
+FILES MODIFIED:
+1. supabase-schema.sql
+   - Added transactions table definition
+   - Added method column to deposits table
+   - Added proper indexes and RLS policies
+
+DEPLOYMENT STEPS:
+1. Run supabase-schema.sql in Supabase Dashboard
+2. Run each migration file in order (they're numbered)
+3. Test STK push flow
+4. Verify admin can see transactions
+
+TESTING:
+See TESTING_GUIDE.md for comprehensive testing steps
+
+VERIFICATION:
+- STK push creates deposit records with method='stk'
+- STK push creates transaction records with type='deposit'
+- Admin Transactions tab shows all transactions
+- All transaction metadata is populated correctly
+- Daily profits create transaction records
+- Investments create transaction records
+- Withdrawals create transaction records
