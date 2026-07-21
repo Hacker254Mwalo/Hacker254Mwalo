@@ -23,30 +23,9 @@ create index if not exists notifications_created_at_idx on notifications(created
 -- Enable Row Level Security
 alter table notifications enable row level security;
 
--- Users can read their own notifications OR global (all) notifications
-create policy "Users can read own and global notifications"
-  on notifications for select
-  using (
-    target = 'all'
-    or user_phone = current_setting('request.jwt.claims', true)::json->>'phone'
-  );
+-- Grant access to anon/authenticated to match the live site's existing pattern
+grant all on notifications to anon, authenticated, service_role;
 
--- Users can update (mark read) their own or global notifications
-create policy "Users can mark notifications read"
-  on notifications for update
-  using (
-    target = 'all'
-    or user_phone = current_setting('request.jwt.claims', true)::json->>'phone'
-  );
-
--- Users can delete their own notifications (not global ones)
-create policy "Users can delete own notifications"
-  on notifications for delete
-  using (
-    user_phone = current_setting('request.jwt.claims', true)::json->>'phone'
-  );
-
--- Service role (admin) has full access
-grant all on notifications to service_role;
-grant select, update, delete on notifications to anon, authenticated;
-grant insert on notifications to service_role;
+-- Open policy to match the rest of the live schema (anon_all)
+drop policy if exists "anon_all" on notifications;
+create policy "anon_all" on notifications for all to anon, authenticated using (true) with check (true);
