@@ -1,8 +1,8 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useTheme } from '../context/ThemeContext'
-import { getWhatsAppSettings, checkIsAdmin, getUserNotifications, markNotificationRead, markAllNotificationsRead } from '../lib/db'
+import { getWhatsAppSettings, checkIsAdmin, getUserNotifications } from '../lib/db'
 
 export default function Navbar() {
   const { user, logout, updateUser } = useAuth()
@@ -12,11 +12,7 @@ export default function Navbar() {
   const [isAdmin, setIsAdmin] = useState(false)
   const [waPhone, setWaPhone] = useState('')
   const [waGroupLink, setWaGroupLink] = useState('')
-
-  // Notifications state
   const [notifications, setNotifications] = useState([])
-  const [showNotifPanel, setShowNotifPanel] = useState(false)
-  const notifRef = useRef(null)
 
   const unreadCount = notifications.filter(n => !n.is_read).length
 
@@ -44,17 +40,6 @@ export default function Navbar() {
     return () => clearInterval(interval)
   }, [user?.phone])
 
-  // Close notif panel on outside click
-  useEffect(() => {
-    function handleClick(e) {
-      if (notifRef.current && !notifRef.current.contains(e.target)) {
-        setShowNotifPanel(false)
-      }
-    }
-    document.addEventListener('mousedown', handleClick)
-    return () => document.removeEventListener('mousedown', handleClick)
-  }, [])
-
   useEffect(() => {
     if (user && isAdmin === true && user.isAdmin !== true) {
       updateUser({ isAdmin: true })
@@ -66,29 +51,7 @@ export default function Navbar() {
     navigate('/login')
   }
 
-  async function handleMarkAllRead() {
-    if (!user?.phone) return
-    await markAllNotificationsRead(user.phone).catch(() => {})
-    setNotifications(prev => prev.map(n => ({ ...n, is_read: true })))
-  }
-
-  async function handleMarkRead(id) {
-    await markNotificationRead(id).catch(() => {})
-    setNotifications(prev => prev.map(n => n.id === id ? { ...n, is_read: true } : n))
-  }
-
-  function timeAgo(dateStr) {
-    if (!dateStr) return ''
-    const diff = Date.now() - new Date(dateStr).getTime()
-    const mins = Math.floor(diff / 60000)
-    if (mins < 1) return 'just now'
-    if (mins < 60) return `${mins}m ago`
-    const hrs = Math.floor(mins / 60)
-    if (hrs < 24) return `${hrs}h ago`
-    return `${Math.floor(hrs / 24)}d ago`
-  }
-
-  // Tab colour config — each tab gets its own colour identity
+  // Tab colour config
   const tabColors = {
     dashboard: { active: 'from-blue-500 to-cyan-500',   dot: '#3b82f6', icon: '#38bdf8' },
     invest:    { active: 'from-emerald-500 to-green-400', dot: '#10b981', icon: '#34d399' },
@@ -124,6 +87,12 @@ export default function Navbar() {
         <path d="M13.73 21a2 2 0 0 1-3.46 0" />
       </svg>
     ),
+    profile: (
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
+        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+        <circle cx="12" cy="7" r="4" />
+      </svg>
+    ),
     theme: {
       light: (
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
@@ -157,7 +126,7 @@ export default function Navbar() {
     )
   }
 
-  // Navigation links — profile replaced with notifications
+  // Navigation links — notifications only in bottom
   const links = [
     { to: '/dashboard',      label: 'Dashboard',      key: 'dashboard',      icon: icons.dashboard },
     { to: '/plans',          label: 'Invest',         key: 'invest',         icon: icons.invest },
@@ -167,74 +136,6 @@ export default function Navbar() {
 
   const waDigits = waPhone.replace(/\D/g, '')
 
-  // Notification dropdown panel
-  const NotifPanel = () => (
-    <div
-      className="absolute right-0 top-full mt-2 w-80 rounded-2xl shadow-2xl z-[200] overflow-hidden"
-      style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)' }}
-    >
-      {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b" style={{ borderColor: 'var(--border)', background: 'linear-gradient(135deg, rgba(245,158,11,0.15), rgba(251,191,36,0.05))' }}>
-        <div className="flex items-center gap-2">
-          <span className="text-amber-400">{icons.bell}</span>
-          <span className="font-bold text-sm">Notifications</span>
-          {unreadCount > 0 && (
-            <span className="text-[10px] bg-amber-500 text-white px-1.5 py-0.5 rounded-full font-bold">{unreadCount}</span>
-          )}
-        </div>
-        {unreadCount > 0 && (
-          <button onClick={handleMarkAllRead} className="text-[10px] text-amber-400 hover:text-amber-300 font-semibold transition-colors">
-            Mark all read
-          </button>
-        )}
-      </div>
-
-      {/* List */}
-      <div className="max-h-80 overflow-y-auto">
-        {notifications.length === 0 ? (
-          <div className="py-10 text-center">
-            <div className="text-3xl mb-2">🔔</div>
-            <p className="text-sm" style={{ color: 'var(--text-muted)' }}>No notifications yet</p>
-          </div>
-        ) : (
-          notifications.slice(0, 20).map(n => (
-            <div
-              key={n.id}
-              onClick={() => handleMarkRead(n.id)}
-              className="flex items-start gap-3 px-4 py-3 cursor-pointer transition-colors hover:bg-white/5 border-b last:border-0"
-              style={{
-                borderColor: 'var(--border)',
-                background: n.is_read ? 'transparent' : 'rgba(245,158,11,0.06)'
-              }}
-            >
-              <div className="mt-0.5 flex-shrink-0">
-                <span className="text-lg">{n.icon || '📢'}</span>
-              </div>
-              <div className="flex-1 min-w-0">
-                {n.title && <p className="text-xs font-bold mb-0.5 truncate">{n.title}</p>}
-                <p className="text-xs leading-relaxed" style={{ color: n.is_read ? 'var(--text-muted)' : 'var(--text-primary)' }}>{n.message}</p>
-                <p className="text-[10px] mt-1" style={{ color: 'var(--text-muted)' }}>{timeAgo(n.created_at)}</p>
-              </div>
-              {!n.is_read && (
-                <div className="w-2 h-2 rounded-full bg-amber-400 flex-shrink-0 mt-1.5" />
-              )}
-            </div>
-          ))
-        )}
-      </div>
-
-      {/* Footer */}
-      <div className="px-4 py-2.5 border-t text-center" style={{ borderColor: 'var(--border)' }}>
-        <button
-          onClick={() => { navigate('/notifications'); setShowNotifPanel(false) }}
-          className="text-xs text-amber-400 hover:text-amber-300 font-semibold transition-colors"
-        >
-          View all notifications →
-        </button>
-      </div>
-    </div>
-  )
-
   return (
     <>
       {/* ── Desktop top bar ─────────────────────────────────────────────── */}
@@ -242,13 +143,27 @@ export default function Navbar() {
         className="hidden md:flex fixed top-0 left-0 right-0 z-50 border-b px-6 py-3 items-center justify-between"
         style={{ background: 'var(--nav-bg)', borderColor: 'var(--border)', backdropFilter: 'blur(12px)' }}
       >
-        <div className="flex items-center gap-2">
+        {/* Left: Logo + Profile Button */}
+        <div className="flex items-center gap-3">
           <span className="text-2xl font-black bg-gradient-to-r from-red-500 to-pink-500 bg-clip-text text-transparent">
             Dumiropay
           </span>
           <span className="text-xs bg-red-600 text-white px-2 py-0.5 rounded-full">KE</span>
+
+          {/* Profile button */}
+          {user && (
+            <button
+              onClick={() => navigate('/profile')}
+              className="ml-3 w-9 h-9 rounded-lg flex items-center justify-center font-bold text-sm transition-all hover:scale-110 hover:shadow-lg"
+              style={{ background: 'linear-gradient(135deg, #ef4444, #ec4899)', color: '#fff' }}
+              title="Profile"
+            >
+              {user?.name?.[0]?.toUpperCase() || 'U'}
+            </button>
+          )}
         </div>
 
+        {/* Center: Navigation links */}
         <div className="flex items-center gap-1">
           {links.map(l => (
             <NavLink
@@ -275,12 +190,14 @@ export default function Navbar() {
               <span>Admin</span>
             </NavLink>
           )}
+        </div>
 
-          {/* Theme toggle */}
+        {/* Right: Theme toggle, Support, Logout */}
+        <div className="flex items-center gap-1">
           <button
             onClick={toggleTheme}
             title={theme === 'dark' ? 'Switch to Light mode' : 'Switch to Dark mode'}
-            className="ml-2 w-9 h-9 flex items-center justify-center rounded-lg transition-colors hover:bg-gray-800"
+            className="w-9 h-9 flex items-center justify-center rounded-lg transition-colors hover:bg-gray-800"
             style={{ color: 'var(--text-secondary)' }}
           >
             {theme === 'dark' ? icons.theme.light : icons.theme.dark}
@@ -291,46 +208,16 @@ export default function Navbar() {
               href={`https://wa.me/${waDigits}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="ml-1 px-3 py-2 rounded-lg text-sm font-medium bg-green-600 hover:bg-green-500 text-white transition-colors flex items-center gap-1.5"
+              className="px-3 py-2 rounded-lg text-sm font-medium bg-green-600 hover:bg-green-500 text-white transition-colors flex items-center gap-1.5"
             >
               <span className="w-4 h-4">{icons.whatsapp}</span>
               <span className="hidden lg:inline">Support</span>
             </a>
           )}
 
-          {/* Notification bell — desktop top bar */}
-          <div className="relative ml-1" ref={notifRef}>
-            <button
-              onClick={() => setShowNotifPanel(v => !v)}
-              className="relative w-9 h-9 flex items-center justify-center rounded-lg transition-colors hover:bg-amber-500/20"
-              style={{ color: unreadCount > 0 ? '#f59e0b' : 'var(--text-secondary)' }}
-              title="Notifications"
-            >
-              {icons.bell}
-              {unreadCount > 0 && (
-                <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 flex items-center justify-center text-[9px] font-black bg-red-500 text-white rounded-full px-0.5 shadow-lg animate-pulse">
-                  {unreadCount > 9 ? '9+' : unreadCount}
-                </span>
-              )}
-            </button>
-            {showNotifPanel && <NotifPanel />}
-          </div>
-
-          {/* User name/avatar */}
-          {user && (
-            <div className="ml-2 flex items-center gap-2 px-3 py-1.5 rounded-lg" style={{ background: 'var(--bg-input)' }}>
-              <div className="w-6 h-6 rounded-full bg-gradient-to-br from-red-500 to-pink-600 flex items-center justify-center text-[10px] font-black text-white">
-                {user?.name?.[0]?.toUpperCase() || 'U'}
-              </div>
-              <span className="text-xs font-semibold max-w-[80px] truncate" style={{ color: 'var(--text-primary)' }}>
-                {user?.name?.split(' ')[0] || 'User'}
-              </span>
-            </div>
-          )}
-
           <button
             onClick={handleLogout}
-            className="ml-1 px-4 py-2 text-sm text-gray-400 hover:text-red-400 rounded-lg hover:bg-gray-800 transition-colors"
+            className="px-4 py-2 text-sm text-gray-400 hover:text-red-400 rounded-lg hover:bg-gray-800 transition-colors"
           >
             Logout
           </button>
@@ -446,52 +333,6 @@ export default function Navbar() {
           )}
         </div>
       </nav>
-
-      {/* Mobile notification bell — floating near user name in top-right */}
-      <div className="md:hidden fixed top-3 right-3 z-[60] flex items-center gap-2">
-        {/* User avatar + name */}
-        {user && (
-          <div className="flex items-center gap-1.5 px-2 py-1 rounded-xl" style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.08)' }}>
-            <div className="w-5 h-5 rounded-full bg-gradient-to-br from-red-500 to-pink-600 flex items-center justify-center text-[9px] font-black text-white">
-              {user?.name?.[0]?.toUpperCase() || 'U'}
-            </div>
-            <span className="text-[10px] font-semibold text-white max-w-[60px] truncate">
-              {user?.name?.split(' ')[0] || 'User'}
-            </span>
-          </div>
-        )}
-
-        {/* Notification bell */}
-        <div className="relative" ref={notifRef}>
-          <button
-            onClick={() => setShowNotifPanel(v => !v)}
-            className="relative w-8 h-8 flex items-center justify-center rounded-xl transition-all active:scale-95"
-            style={{
-              background: unreadCount > 0
-                ? 'linear-gradient(135deg, rgba(245,158,11,0.25), rgba(251,191,36,0.15))'
-                : 'rgba(0,0,0,0.6)',
-              backdropFilter: 'blur(8px)',
-              border: `1px solid ${unreadCount > 0 ? 'rgba(245,158,11,0.4)' : 'rgba(255,255,255,0.08)'}`,
-              color: unreadCount > 0 ? '#f59e0b' : '#9ca3af',
-            }}
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
-              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
-              <path d="M13.73 21a2 2 0 0 1-3.46 0" />
-            </svg>
-            {unreadCount > 0 && (
-              <span className="absolute -top-1 -right-1 min-w-[16px] h-4 flex items-center justify-center text-[9px] font-black bg-red-500 text-white rounded-full px-0.5 shadow-lg">
-                {unreadCount > 9 ? '9+' : unreadCount}
-              </span>
-            )}
-          </button>
-          {showNotifPanel && (
-            <div className="absolute right-0 top-full mt-2 w-72" style={{ zIndex: 200 }}>
-              <NotifPanel />
-            </div>
-          )}
-        </div>
-      </div>
     </>
   )
 }

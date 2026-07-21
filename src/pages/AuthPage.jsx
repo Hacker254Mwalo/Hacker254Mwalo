@@ -200,12 +200,12 @@ export default function AuthPage() {
         <div className="mt-3 h-px w-32 mx-auto" style={{ background: 'linear-gradient(90deg, transparent, #FFD700, #DAA520, transparent)' }}/>
       </div>
 
-      {/* Professional Money Tree with Green Leaves */}
+      {/* Premium Money Tree with Golden Leaves */}
       <svg width="220" height="185" viewBox="0 0 260 205" fill="none" xmlns="http://www.w3.org/2000/svg" className="mb-4 mx-auto drop-shadow-lg">
         <defs>
           <radialGradient id="bgGlow" cx="50%" cy="45%" r="45%">
-            <stop offset="0%" stopColor="#22c55e" stopOpacity="0.12"/>
-            <stop offset="60%" stopColor="#FFD700" stopOpacity="0.06"/>
+            <stop offset="0%" stopColor="#FFD700" stopOpacity="0.15"/>
+            <stop offset="60%" stopColor="#FFA500" stopOpacity="0.08"/>
             <stop offset="100%" stopColor="#FFD700" stopOpacity="0"/>
           </radialGradient>
           <linearGradient id="trunkG" x1="0" y1="0" x2="0" y2="1">
@@ -217,23 +217,23 @@ export default function AuthPage() {
             <stop offset="0%" stopColor="#7B5230"/>
             <stop offset="100%" stopColor="#5C3D1E"/>
           </linearGradient>
-          {/* Deep green leaves */}
-          <linearGradient id="leafDark" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#4ade80"/>
-            <stop offset="40%" stopColor="#16a34a"/>
-            <stop offset="100%" stopColor="#14532d"/>
+          {/* Premium golden leaves */}
+          <linearGradient id="leafGold1" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#FFD700"/>
+            <stop offset="40%" stopColor="#FFA500"/>
+            <stop offset="100%" stopColor="#DAA520"/>
           </linearGradient>
-          {/* Mid green leaves */}
-          <linearGradient id="leafMid" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0%" stopColor="#86efac"/>
-            <stop offset="50%" stopColor="#22c55e"/>
-            <stop offset="100%" stopColor="#15803d"/>
+          {/* Warm golden leaves */}
+          <linearGradient id="leafGold2" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stopColor="#FFED4E"/>
+            <stop offset="50%" stopColor="#FFD700"/>
+            <stop offset="100%" stopColor="#FFA500"/>
           </linearGradient>
-          {/* Light green leaves */}
-          <linearGradient id="leafLight" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#bbf7d0"/>
-            <stop offset="50%" stopColor="#4ade80"/>
-            <stop offset="100%" stopColor="#16a34a"/>
+          {/* Light golden leaves */}
+          <linearGradient id="leafGold3" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#FFFACD"/>
+            <stop offset="50%" stopColor="#FFED4E"/>
+            <stop offset="100%" stopColor="#FFD700"/>
           </linearGradient>
           {/* Gold coin gradient */}
           <linearGradient id="coinG" x1="0" y1="0" x2="0" y2="1">
@@ -242,7 +242,7 @@ export default function AuthPage() {
             <stop offset="100%" stopColor="#B8860B"/>
           </linearGradient>
           <filter id="leafShadow" x="-20%" y="-20%" width="140%" height="140%">
-            <feDropShadow dx="0" dy="1.5" stdDeviation="1.5" floodColor="#14532d" floodOpacity="0.3"/>
+            <feDropShadow dx="0" dy="1.5" stdDeviation="1.5" floodColor="#8B6914" floodOpacity="0.25"/>
           </filter>
           <filter id="glow" x="-30%" y="-30%" width="160%" height="160%">
             <feGaussianBlur stdDeviation="2" result="blur"/>
@@ -266,8 +266,8 @@ export default function AuthPage() {
           <rect x="37" y="143" width="3.5" height="10" rx="0.5" fill="#FFD700" opacity="0.8"/>
           <rect x="43" y="136" width="3.5" height="17" rx="0.5" fill="#FFD700" opacity="0.9"/>
           <rect x="49" y="128" width="3.5" height="25" rx="0.5" fill="#FFD700"/>
-          <rect x="55" y="133" width="3.5" height="20" rx="0.5" fill="#22c55e"/>
-          <rect x="61" y="125" width="3.5" height="28" rx="0.5" fill="#22c55e"/>
+          <rect x="55" y="133" width="3.5" height="20" rx="0.5" fill="#FFA500"/>
+          <rect x="61" y="125" width="3.5" height="28" rx="0.5" fill="#FFA500"/>
           <circle cx="54" cy="170" r="2.5" fill="none" stroke="#DAA520" strokeWidth="1"/>
         </g>
 
@@ -277,109 +277,105 @@ export default function AuthPage() {
         <path d="M128 175 C127 170, 129 165, 128 160" stroke="#3D2010" strokeWidth="1.5" strokeLinecap="round" fill="none" opacity="0.5"/>
         <path d="M132 180 C131 174, 133 168, 132 162" stroke="#3D2010" strokeWidth="1.5" strokeLinecap="round" fill="none" opacity="0.5"/>
 
-        {/* === PRIMARY BRANCHES === */}
-        <path d="M130 118 C112 108, 92 100, 72 88" stroke="url(#branchG)" strokeWidth="5.5" strokeLinecap="round" fill="none"/>
-        <path d="M130 118 C148 108, 168 100, 188 88" stroke="url(#branchG)" strokeWidth="5.5" strokeLinecap="round" fill="none"/>
-        <path d="M130 118 C133 96, 127 74, 130 38" stroke="url(#branchG)" strokeWidth="5.5" strokeLinecap="round" fill="none"/>
+        {/* === PRIMARY BRANCHES (spread wider) === */}
+        <path d="M130 118 C105 105, 75 92, 50 75" stroke="url(#branchG)" strokeWidth="5.5" strokeLinecap="round" fill="none"/>
+        <path d="M130 118 C155 105, 185 92, 210 75" stroke="url(#branchG)" strokeWidth="5.5" strokeLinecap="round" fill="none"/>
+        <path d="M130 118 C130 92, 128 65, 130 35" stroke="url(#branchG)" strokeWidth="5.5" strokeLinecap="round" fill="none"/>
 
-        {/* === SECONDARY BRANCHES === */}
-        <path d="M100 106 C82 96, 62 78, 46 54" stroke="url(#branchG)" strokeWidth="3.2" strokeLinecap="round" fill="none"/>
-        <path d="M160 106 C178 96, 198 78, 214 54" stroke="url(#branchG)" strokeWidth="3.2" strokeLinecap="round" fill="none"/>
-        <path d="M130 80 C116 68, 106 52, 96 28" stroke="url(#branchG)" strokeWidth="2.5" strokeLinecap="round" fill="none"/>
-        <path d="M130 80 C144 68, 154 52, 164 28" stroke="url(#branchG)" strokeWidth="2.5" strokeLinecap="round" fill="none"/>
-        <path d="M72 88 C56 82, 40 72, 30 57" stroke="url(#branchG)" strokeWidth="2" strokeLinecap="round" fill="none"/>
-        <path d="M188 88 C204 82, 220 72, 230 57" stroke="url(#branchG)" strokeWidth="2" strokeLinecap="round" fill="none"/>
-        {/* Extra small branches */}
-        <path d="M96 28 C88 20, 80 14, 72 10" stroke="url(#branchG)" strokeWidth="1.5" strokeLinecap="round" fill="none"/>
-        <path d="M164 28 C172 20, 180 14, 188 10" stroke="url(#branchG)" strokeWidth="1.5" strokeLinecap="round" fill="none"/>
+        {/* === SECONDARY BRANCHES (organic spread) === */}
+        <path d="M95 100 C70 85, 45 65, 28 45" stroke="url(#branchG)" strokeWidth="3.2" strokeLinecap="round" fill="none"/>
+        <path d="M165 100 C190 85, 215 65, 232 45" stroke="url(#branchG)" strokeWidth="3.2" strokeLinecap="round" fill="none"/>
+        <path d="M130 75 C110 60, 95 42, 82 20" stroke="url(#branchG)" strokeWidth="2.8" strokeLinecap="round" fill="none"/>
+        <path d="M130 75 C150 60, 165 42, 178 20" stroke="url(#branchG)" strokeWidth="2.8" strokeLinecap="round" fill="none"/>
+        <path d="M50 75 C35 68, 18 58, 10 42" stroke="url(#branchG)" strokeWidth="2" strokeLinecap="round" fill="none"/>
+        <path d="M210 75 C225 68, 242 58, 250 42" stroke="url(#branchG)" strokeWidth="2" strokeLinecap="round" fill="none"/>
+        {/* Tertiary branches */}
+        <path d="M82 20 C72 12, 62 6, 52 2" stroke="url(#branchG)" strokeWidth="1.5" strokeLinecap="round" fill="none"/>
+        <path d="M178 20 C188 12, 198 6, 208 2" stroke="url(#branchG)" strokeWidth="1.5" strokeLinecap="round" fill="none"/>
+        <path d="M28 45 C18 38, 8 32, 2 25" stroke="url(#branchG)" strokeWidth="1.5" strokeLinecap="round" fill="none"/>
+        <path d="M232 45 C242 38, 252 32, 258 25" stroke="url(#branchG)" strokeWidth="1.5" strokeLinecap="round" fill="none"/>
 
-        {/* === GREEN LEAVES — clustered, layered === */}
+        {/* === GOLDEN LEAVES — spread across all branches === */}
         <g filter="url(#leafShadow)">
-          {/* Top crown */}
-          <ellipse cx="130" cy="32" rx="11" ry="6.5" fill="url(#leafDark)" transform="rotate(-5 130 32)"/>
-          <ellipse cx="120" cy="26" rx="9" ry="5.5" fill="url(#leafMid)" transform="rotate(-20 120 26)"/>
-          <ellipse cx="140" cy="26" rx="9" ry="5.5" fill="url(#leafMid)" transform="rotate(20 140 26)"/>
-          <ellipse cx="130" cy="20" rx="7" ry="4" fill="url(#leafLight)" transform="rotate(0 130 20)"/>
+          {/* Top crown - premium golden */}
+          <ellipse cx="130" cy="30" rx="12" ry="7" fill="url(#leafGold1)" transform="rotate(-5 130 30)"/>
+          <ellipse cx="118" cy="22" rx="10" ry="6" fill="url(#leafGold2)" transform="rotate(-25 118 22)"/>
+          <ellipse cx="142" cy="22" rx="10" ry="6" fill="url(#leafGold2)" transform="rotate(25 142 22)"/>
+          <ellipse cx="130" cy="15" rx="8" ry="4.5" fill="url(#leafGold3)" transform="rotate(0 130 15)"/>
 
-          {/* Left primary branch leaves */}
-          <ellipse cx="72" cy="82" rx="10" ry="6" fill="url(#leafDark)" transform="rotate(-30 72 82)"/>
-          <ellipse cx="60" cy="76" rx="9" ry="5.5" fill="url(#leafMid)" transform="rotate(-45 60 76)"/>
-          <ellipse cx="82" cy="76" rx="8" ry="5" fill="url(#leafLight)" transform="rotate(-15 82 76)"/>
+          {/* Left spread branches */}
+          <ellipse cx="50" cy="70" rx="11" ry="6.5" fill="url(#leafGold1)" transform="rotate(-35 50 70)"/>
+          <ellipse cx="35" cy="60" rx="10" ry="6" fill="url(#leafGold2)" transform="rotate(-50 35 60)"/>
+          <ellipse cx="65" cy="65" rx="9" ry="5.5" fill="url(#leafGold3)" transform="rotate(-20 65 65)"/>
+          <ellipse cx="28" cy="48" rx="8" ry="5" fill="url(#leafGold2)" transform="rotate(-55 28 48)"/>
+          <ellipse cx="18" cy="38" rx="7" ry="4" fill="url(#leafGold3)" transform="rotate(-65 18 38)"/>
 
-          {/* Right primary branch leaves */}
-          <ellipse cx="188" cy="82" rx="10" ry="6" fill="url(#leafDark)" transform="rotate(30 188 82)"/>
-          <ellipse cx="200" cy="76" rx="9" ry="5.5" fill="url(#leafMid)" transform="rotate(45 200 76)"/>
-          <ellipse cx="178" cy="76" rx="8" ry="5" fill="url(#leafLight)" transform="rotate(15 178 76)"/>
+          {/* Right spread branches */}
+          <ellipse cx="210" cy="70" rx="11" ry="6.5" fill="url(#leafGold1)" transform="rotate(35 210 70)"/>
+          <ellipse cx="225" cy="60" rx="10" ry="6" fill="url(#leafGold2)" transform="rotate(50 225 60)"/>
+          <ellipse cx="195" cy="65" rx="9" ry="5.5" fill="url(#leafGold3)" transform="rotate(20 195 65)"/>
+          <ellipse cx="232" cy="48" rx="8" ry="5" fill="url(#leafGold2)" transform="rotate(55 232 48)"/>
+          <ellipse cx="242" cy="38" rx="7" ry="4" fill="url(#leafGold3)" transform="rotate(65 242 38)"/>
 
-          {/* Far left branch leaves */}
-          <ellipse cx="46" cy="48" rx="9" ry="5.5" fill="url(#leafDark)" transform="rotate(-45 46 48)"/>
-          <ellipse cx="34" cy="52" rx="7.5" ry="4.5" fill="url(#leafMid)" transform="rotate(-55 34 52)"/>
-          <ellipse cx="30" cy="42" rx="7" ry="4" fill="url(#leafLight)" transform="rotate(-60 30 42)"/>
+          {/* Upper left sub-branches */}
+          <ellipse cx="82" cy="18" rx="9" ry="5.5" fill="url(#leafGold1)" transform="rotate(-30 82 18)"/>
+          <ellipse cx="68" cy="10" rx="8" ry="4.5" fill="url(#leafGold2)" transform="rotate(-40 68 10)"/>
+          <ellipse cx="52" cy="4" rx="7" ry="4" fill="url(#leafGold3)" transform="rotate(-55 52 4)"/>
 
-          {/* Far right branch leaves */}
-          <ellipse cx="214" cy="48" rx="9" ry="5.5" fill="url(#leafDark)" transform="rotate(45 214 48)"/>
-          <ellipse cx="226" cy="52" rx="7.5" ry="4.5" fill="url(#leafMid)" transform="rotate(55 226 52)"/>
-          <ellipse cx="230" cy="42" rx="7" ry="4" fill="url(#leafLight)" transform="rotate(60 230 42)"/>
-
-          {/* Upper left sub-branch */}
-          <ellipse cx="96" cy="22" rx="8" ry="5" fill="url(#leafDark)" transform="rotate(-25 96 22)"/>
-          <ellipse cx="84" cy="16" rx="7" ry="4" fill="url(#leafMid)" transform="rotate(-35 84 16)"/>
-          <ellipse cx="72" cy="10" rx="6" ry="3.5" fill="url(#leafLight)" transform="rotate(-50 72 10)"/>
-
-          {/* Upper right sub-branch */}
-          <ellipse cx="164" cy="22" rx="8" ry="5" fill="url(#leafDark)" transform="rotate(25 164 22)"/>
-          <ellipse cx="176" cy="16" rx="7" ry="4" fill="url(#leafMid)" transform="rotate(35 176 16)"/>
-          <ellipse cx="188" cy="10" rx="6" ry="3.5" fill="url(#leafLight)" transform="rotate(50 188 10)"/>
+          {/* Upper right sub-branches */}
+          <ellipse cx="178" cy="18" rx="9" ry="5.5" fill="url(#leafGold1)" transform="rotate(30 178 18)"/>
+          <ellipse cx="192" cy="10" rx="8" ry="4.5" fill="url(#leafGold2)" transform="rotate(40 192 10)"/>
+          <ellipse cx="208" cy="4" rx="7" ry="4" fill="url(#leafGold3)" transform="rotate(55 208 4)"/>
 
           {/* Mid-level inner leaves */}
-          <ellipse cx="115" cy="68" rx="7.5" ry="4.5" fill="url(#leafMid)" transform="rotate(-18 115 68)"/>
-          <ellipse cx="145" cy="68" rx="7.5" ry="4.5" fill="url(#leafMid)" transform="rotate(18 145 68)"/>
-          <ellipse cx="108" cy="58" rx="6.5" ry="4" fill="url(#leafLight)" transform="rotate(-25 108 58)"/>
-          <ellipse cx="152" cy="58" rx="6.5" ry="4" fill="url(#leafLight)" transform="rotate(25 152 58)"/>
+          <ellipse cx="110" cy="65" rx="8" ry="5" fill="url(#leafGold2)" transform="rotate(-20 110 65)"/>
+          <ellipse cx="150" cy="65" rx="8" ry="5" fill="url(#leafGold2)" transform="rotate(20 150 65)"/>
+          <ellipse cx="100" cy="52" rx="7" ry="4.5" fill="url(#leafGold3)" transform="rotate(-28 100 52)"/>
+          <ellipse cx="160" cy="52" rx="7" ry="4.5" fill="url(#leafGold3)" transform="rotate(28 160 52)"/>
         </g>
 
         {/* === GOLD COINS hanging from branches === */}
         <g filter="url(#coinGlow)">
           {/* Coin 1 - left branch */}
-          <circle cx="68" cy="95" r="6" fill="url(#coinG)" stroke="#B8860B" strokeWidth="0.8"/>
-          <text x="68" y="98.5" textAnchor="middle" fontSize="6" fontWeight="bold" fill="#5C3D0E">$</text>
+          <circle cx="50" cy="82" r="6" fill="url(#coinG)" stroke="#B8860B" strokeWidth="0.8"/>
+          <text x="50" y="85.5" textAnchor="middle" fontSize="6" fontWeight="bold" fill="#5C3D0E">$</text>
           {/* Coin 2 - right branch */}
-          <circle cx="192" cy="95" r="6" fill="url(#coinG)" stroke="#B8860B" strokeWidth="0.8"/>
-          <text x="192" y="98.5" textAnchor="middle" fontSize="6" fontWeight="bold" fill="#5C3D0E">$</text>
+          <circle cx="210" cy="82" r="6" fill="url(#coinG)" stroke="#B8860B" strokeWidth="0.8"/>
+          <text x="210" y="85.5" textAnchor="middle" fontSize="6" fontWeight="bold" fill="#5C3D0E">$</text>
           {/* Coin 3 - top */}
-          <circle cx="130" cy="45" r="5.5" fill="url(#coinG)" stroke="#B8860B" strokeWidth="0.8"/>
-          <text x="130" y="48.5" textAnchor="middle" fontSize="5.5" fontWeight="bold" fill="#5C3D0E">$</text>
+          <circle cx="130" cy="42" r="5.5" fill="url(#coinG)" stroke="#B8860B" strokeWidth="0.8"/>
+          <text x="130" y="45.5" textAnchor="middle" fontSize="5.5" fontWeight="bold" fill="#5C3D0E">$</text>
           {/* Coin 4 - far left */}
-          <circle cx="44" cy="62" r="5" fill="url(#coinG)" stroke="#B8860B" strokeWidth="0.8"/>
-          <text x="44" y="65" textAnchor="middle" fontSize="5" fontWeight="bold" fill="#5C3D0E">$</text>
+          <circle cx="28" cy="55" r="5" fill="url(#coinG)" stroke="#B8860B" strokeWidth="0.8"/>
+          <text x="28" y="58" textAnchor="middle" fontSize="5" fontWeight="bold" fill="#5C3D0E">$</text>
           {/* Coin 5 - far right */}
-          <circle cx="216" cy="62" r="5" fill="url(#coinG)" stroke="#B8860B" strokeWidth="0.8"/>
-          <text x="216" y="65" textAnchor="middle" fontSize="5" fontWeight="bold" fill="#5C3D0E">$</text>
+          <circle cx="232" cy="55" r="5" fill="url(#coinG)" stroke="#B8860B" strokeWidth="0.8"/>
+          <text x="232" y="58" textAnchor="middle" fontSize="5" fontWeight="bold" fill="#5C3D0E">$</text>
         </g>
 
         {/* === SPARKLES & GLINTS === */}
         <g filter="url(#glow)">
-          <circle cx="130" cy="18" r="1.8" fill="#bbf7d0">
+          <circle cx="130" cy="12" r="1.8" fill="#FFFACD">
             <animate attributeName="opacity" values="0.4;1;0.4" dur="2s" repeatCount="indefinite"/>
             <animate attributeName="r" values="1.2;2;1.2" dur="2s" repeatCount="indefinite"/>
           </circle>
-          <circle cx="46" cy="42" r="1.4" fill="#4ade80">
+          <circle cx="28" cy="42" r="1.4" fill="#FFD700">
             <animate attributeName="opacity" values="0.3;1;0.3" dur="2.5s" repeatCount="indefinite" begin="0.5s"/>
           </circle>
-          <circle cx="214" cy="42" r="1.4" fill="#4ade80">
+          <circle cx="232" cy="42" r="1.4" fill="#FFD700">
             <animate attributeName="opacity" values="0.3;1;0.3" dur="2.2s" repeatCount="indefinite" begin="1s"/>
           </circle>
-          <circle cx="96" cy="16" r="1.2" fill="#FFD700">
+          <circle cx="82" cy="10" r="1.2" fill="#FFED4E">
             <animate attributeName="opacity" values="0.2;0.9;0.2" dur="3s" repeatCount="indefinite" begin="0.8s"/>
           </circle>
-          <circle cx="164" cy="16" r="1.2" fill="#FFD700">
+          <circle cx="178" cy="10" r="1.2" fill="#FFED4E">
             <animate attributeName="opacity" values="0.2;0.9;0.2" dur="2.8s" repeatCount="indefinite" begin="1.4s"/>
           </circle>
           {/* Gold coin sparkle */}
-          <circle cx="68" cy="88" r="1" fill="#FFF8DC">
+          <circle cx="50" cy="75" r="1" fill="#FFF8DC">
             <animate attributeName="opacity" values="0;1;0" dur="1.8s" repeatCount="indefinite" begin="0.3s"/>
           </circle>
-          <circle cx="192" cy="88" r="1" fill="#FFF8DC">
+          <circle cx="210" cy="75" r="1" fill="#FFF8DC">
             <animate attributeName="opacity" values="0;1;0" dur="2s" repeatCount="indefinite" begin="0.9s"/>
           </circle>
         </g>
