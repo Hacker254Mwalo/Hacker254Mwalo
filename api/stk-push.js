@@ -1,20 +1,13 @@
 /**
  * Vercel Serverless Function: M-Pesa STK Push via PayKit
+ * Optimized: sb-forwarded-for header set per-request to bypass auth rate limits.
  *
  * Required environment variables in Vercel:
- *   PAYKIT_CONSUMER_KEY      — from PayKit dashboard
- *   PAYKIT_CONSUMER_SECRET   — from PayKit dashboard
- *   PAYKIT_PASSKEY           — from PayKit dashboard
- *   PAYKIT_SHORTCODE         — Sandbox: 174379  |  Production: your Paybill
- *   PAYKIT_BASE_URL          — Sandbox: https://api.sandbox.paykit.africa
- *                              Production: https://api.paykit.co.ke
- *   SUPABASE_URL             — Your Supabase project URL
- *   SUPABASE_SERVICE_ROLE_KEY — Service role key (bypasses RLS)
+ *   PAYKIT_CONSUMER_KEY, PAYKIT_CONSUMER_SECRET, PAYKIT_PASSKEY, PAYKIT_SHORTCODE
+ *   SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
  */
 
-import { createClient } from '@supabase/supabase-js'
-// Singleton Supabase client (persists across Vercel warm invocations)
-let supabaseClient = null
+import { getServerClient } from '../src/lib/supabase.js'
 
 // PayKit OAuth token cache (50 min TTL, refresh at 45 min)
 let paykitToken = null
@@ -30,13 +23,14 @@ async function getPayKitToken(authUrl, consumerKey, consumerSecret) {
   const authData = await authRes.json()
   if (!authData.access_token) throw new Error('PayKit token fetch failed')
   paykitToken = authData.access_token
-  paykitTokenExpiresAt = now + 45 * 60 * 1000 // refresh 5 min before actual expiry
+  paykitTokenExpiresAt = now + 45 * 60 * 1000
   return paykitToken
 }
-// Simple in-memory rate limiter
+
+// In-memory rate limiter
 const rateLimitMap = new Map()
-const RATE_LIMIT_WINDOW_MS = 60_000 // 1 minute
-const RATE_LIMIT_MAX = 5 // max 5 STK pushes per phone per minute
+const RATE_LIMIT_WINDOW_MS = 60_000
+const RATE_LIMIT_MAX = 5
 
 function isRateLimited(phone) {
   const now = Date.now()
@@ -57,12 +51,10 @@ export default async function handler(req, res) {
 
   const { phone, amount, userPhone } = req.body || {}
 
-  // ── Input validation ──────────────────────────────────────────────────────
   if (!phone || !amount || !userPhone) {
     return res.status(400).json({ error: 'phone, amount, and userPhone are required' })
   }
 
-  // Normalize phone before rate-limit check
   let normalPhone = String(phone).replace(/\s/g, '')
   if (normalPhone.startsWith('+')) normalPhone = normalPhone.slice(1)
   if (normalPhone.startsWith('0')) normalPhone = '254' + normalPhone.slice(1)
@@ -80,15 +72,13 @@ export default async function handler(req, res) {
     return res.status(429).json({ error: 'Too many requests. Please wait a minute and try again.' })
   }
 
-  // ── Credentials check ─────────────────────────────────────────────────────
-  const consumerKey    = process.env.PAYKIT_CONSUMER_KEY
+  const consumerKey = process.env.PAYKIT_CONSUMER_KEY
   const consumerSecret = process.env.PAYKIT_CONSUMER_SECRET
-  const passkey        = process.env.PAYKIT_PASSKEY
-  const shortcode      = process.env.PAYKIT_SHORTCODE || '174379'
-
+  const passkey = process.env.PAYKIT_PASSKEY
+  const shortcode = process.env.PAYKIT_SHORTCODE || '174379'
   const baseUrl = process.env.PAYKIT_BASE_URL || 'https://api.sandbox.paykit.africa'
-  const authUrl = process.env.PAYKIT_AUTH_URL  || `${baseUrl}/oauth/v1/generate?grant_type=client_credentials`
-  const stkUrl  = process.env.PAYKIT_STK_URL   || `${baseUrl}/v1/collection/stkpush`
+  const authUrl = process.env.PAYKIT_AUTH_URL || `${baseUrl}/oauth/v1/generate?grant_type=client_credentials`
+  const stkUrl = process.env.PAYKIT_STK_URL || `${baseUrl}/v1/collection/stkpush`
 
   if (!consumerKey || !consumerSecret || !passkey) {
     return res.status(500).json({
@@ -96,25 +86,18 @@ export default async function handler(req, res) {
     })
   }
 
-  // ── Supabase singleton client (reused across cold-start invocations) ─────
-  const supabase = supabaseClient || (supabaseClient = createClient(
-    process.env.SUPABASE_URL,
-    process.env.SUPABASE_SERVICE_ROLE_KEY
-  ))
+  // Create per-request client with sb-forwarded-for to bypass auth rate limits
+  const supabase = getServerClient(req.headers, process.env.SUPABASE_SERVICE_ROLE_KEY)
 
   try {
-    // Step 1: Get access token from PayKit (cached for 50 min)
     const accessToken = await getPayKitToken(authUrl, consumerKey, consumerSecret)
-
     if (!accessToken) {
       return res.status(500).json({ error: 'Failed to get access token from PayKit' })
     }
 
-    // Step 2: Generate STK password
     const timestamp = new Date().toISOString().replace(/[^0-9]/g, '').slice(0, 14)
     const password = Buffer.from(shortcode + passkey + timestamp).toString('base64')
 
-    // Step 3: Initiate STK Push
     const stkRes = await fetch(stkUrl, {
       method: 'POST',
       headers: {
@@ -139,7 +122,6 @@ export default async function handler(req, res) {
     const stkData = await stkRes.json()
 
     if (stkData.ResponseCode === '0' || stkData.CheckoutRequestID) {
-      // ── SAVE DEPOSIT FOR MANUAL APPROVAL (via RPC, single round-trip) ─────
       const { data: deposit, error: depositError } = await supabase
         .rpc('insert_deposit', {
           p_user_phone: userPhone,

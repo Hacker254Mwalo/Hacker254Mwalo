@@ -13,17 +13,11 @@ export function AuthProvider({ children }) {
     if (saved) {
       try {
         const session = JSON.parse(saved)
-        
-        // Automate earnings on app load
-        const runAutoProfit = async () => {
-          try {
-            const { supabase, isSupabaseConfigured } = await import('../lib/supabase')
-            if (isSupabaseConfigured) await supabase.rpc('process_daily_profits')
-          } catch (e) { console.error('Auto-profit error:', e) }
-        }
-
-        // Always refresh from DB on mount to get latest balance, isAdmin, must_change_password
-        runAutoProfit().then(() => getUser(session.phone)).then(fresh => {
+        // Removed: client-side process_daily_profits() — this RPC is now
+        // handled exclusively by Vercel cron (0 0 * * *) and refreshUser() calls.
+        // Calling it from every browser on app load exhausts free-tier limits
+        // at 600 concurrent users.
+        getUser(session.phone).then(fresh => {
           const u = fresh
             ? { ...fresh, id: fresh.phone }
             : { ...session, id: session.phone }
@@ -62,21 +56,12 @@ export function AuthProvider({ children }) {
   }, [])
 
   // Refresh user from DB (call after balance-changing operations)
+  // Removed: process_daily_profits() call — cron handles this server-side.
   const refreshUser = useCallback(async () => {
     const saved = localStorage.getItem(SESSION_KEY)
     if (!saved) return
     try {
       const session = JSON.parse(saved)
-      
-      // Automate earnings: Call process_daily_profits RPC on refresh/login
-      // This ensures user gets their money without waiting for a server cron
-      try {
-        const { supabase, isSupabaseConfigured } = await import('../lib/supabase')
-        if (isSupabaseConfigured) {
-          await supabase.rpc('process_daily_profits')
-        }
-      } catch (e) { console.error('Auto-profit error:', e) }
-
       const fresh = await getUser(session.phone)
       if (fresh) {
         const u = { ...fresh, id: fresh.phone }
