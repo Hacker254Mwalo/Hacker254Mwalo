@@ -146,8 +146,8 @@ export default async function handler(req, res) {
       collection_channel: 'Mpesa',
       amount: numAmount,
       phone_number: normalPhone,
-      account_reference: 'DUMIROPAY',      // max 12 chars
-      remarks: 'Dumiropay Deposit',        // max 13 chars
+      account_reference: 'DUMIROPAY'.slice(0, 12),  // max 12 chars
+      remarks: 'Deposit'.slice(0, 13),               // max 13 chars
       callback_url: callbackUrl,
       request_id: request_id,
     }
