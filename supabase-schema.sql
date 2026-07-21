@@ -216,8 +216,34 @@ create policy "anon_all" on public.bonus_claims      for all to anon, authentica
 create policy "anon_all" on public.support_messages  for all to anon, authenticated using (true) with check (true);
 create policy "anon_all" on public.password_reset_requests for all to anon, authenticated using (true) with check (true);
 
+-- ── Transactions table (audit trail for all balance changes) ─────────────────
+create table if not exists public.transactions (
+  id             uuid primary key default gen_random_uuid(),
+  phone_number   text not null,
+  user_phone     text,
+  type           text not null default 'deposit',      -- deposit | withdrawal | profit | investment
+  amount         numeric not null,
+  status         text not null default 'completed',    -- completed | pending | failed
+  reference      text,                                 -- checkout_id, withdrawal_id, etc.
+  description    text,                                 -- human-readable description
+  created_at     timestamptz not null default now()
+);
+
+create index if not exists idx_transactions_phone_number on public.transactions(phone_number);
+create index if not exists idx_transactions_user_phone on public.transactions(user_phone);
+create index if not exists idx_transactions_status on public.transactions(status);
+create index if not exists idx_transactions_created_at on public.transactions(created_at);
+
+alter table public.transactions enable row level security;
+
+grant all on table public.transactions to anon, authenticated;
+
+drop policy if exists "anon_all" on public.transactions;
+create policy "anon_all" on public.transactions for all to anon, authenticated using (true) with check (true);
+
 -- ── Incremental migration helpers (safe to re-run) ───────────────────────────
 alter table public.deposits add column if not exists mpesa_receipt text;
+alter table public.deposits add column if not exists method text default 'manual';
 alter table public.users    add column if not exists bonus_balance numeric not null default 0;
 alter table public.users    add column if not exists is_admin boolean not null default false;
 alter table public.users    add column if not exists must_change_password boolean not null default false;
