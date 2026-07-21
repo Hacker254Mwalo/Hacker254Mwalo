@@ -1,18 +1,17 @@
 /**
- * Vercel Serverless Function: M-Pesa STK Push via PayKit (Official Spec)
+ * Vercel Serverless Function: M-Pesa STK Push via PayKit
  *
- * Vercel Environment Variables:
- *   PAYKIT_CONSUMER_KEY      — PayKit Client ID
- *   PAYKIT_CONSUMER_SECRET   — PayKit Secret Key
+ * Vercel Env Vars:
+ *   PAYKIT_CONSUMER_KEY      — Client-ID
+ *   PAYKIT_CONSUMER_SECRET   — Secret-Key
  *   PAYKIT_BASE_URL          — https://api.paykit.co.ke
- *   PAYKIT_CALLBACK_URL      — https://<your-domain>/api/stk-callback
+ *   PAYKIT_CALLBACK_URL      — https://dumiropay.space/api/stk-callback
  *   SUPABASE_URL
  *   SUPABASE_SERVICE_ROLE_KEY
  */
 
 import { getServerClient } from '../src/lib/supabase.js'
 
-// PayKit OAuth token cache
 let paykitToken = null
 let paykitTokenExpiresAt = 0
 
@@ -20,35 +19,35 @@ async function getPayKitToken() {
   const now = Date.now()
   if (paykitToken && now < paykitTokenExpiresAt) return paykitToken
 
-  const consumerKey = process.env.PAYKIT_CONSUMER_KEY
-  const consumerSecret = process.env.PAYKIT_CONSUMER_SECRET
+  const clientKey = process.env.PAYKIT_CONSUMER_KEY
+  const clientSecret = process.env.PAYKIT_CONSUMER_SECRET
   const baseUrl = process.env.PAYKIT_BASE_URL || 'https://api.paykit.co.ke'
   const authUrl = `${baseUrl}/oauth/v1/generate?grant_type=client_credentials`
 
-  const authToken = Buffer.from(consumerKey + ':' + consumerSecret).toString('base64')
+  const authToken = Buffer.from(`${clientKey}:${clientSecret}`).toString('base64')
   const authRes = await fetch(authUrl, {
     headers: { Authorization: 'Basic ' + authToken },
   })
   const authData = await authRes.json()
-  if (!authData.access_token) throw new Error('PayKit token fetch failed')
+  if (!authData.access_token) {
+    console.error('PayKit auth failed:', authData)
+    throw new Error('PayKit token fetch failed')
+  }
   paykitToken = authData.access_token
   paykitTokenExpiresAt = now + 45 * 60 * 1000
   return paykitToken
 }
 
-// In-memory rate limiter
 const rateLimitMap = new Map()
-const RATE_LIMIT_WINDOW_MS = 60_000
-const RATE_LIMIT_MAX = 5
 
 function isRateLimited(phone) {
   const now = Date.now()
   const entry = rateLimitMap.get(phone) || { count: 0, start: now }
-  if (now - entry.start > RATE_LIMIT_WINDOW_MS) {
+  if (now - entry.start > 60_000) {
     rateLimitMap.set(phone, { count: 1, start: now })
     return false
   }
-  if (entry.count >= RATE_LIMIT_MAX) return true
+  if (entry.count >= 5) return true
   rateLimitMap.set(phone, { count: entry.count + 1, start: entry.start })
   return false
 }
@@ -57,62 +56,43 @@ function normalizePhone(phone) {
   let p = String(phone).replace(/\s/g, '')
   if (p.startsWith('+')) p = p.slice(1)
   if (p.startsWith('0')) p = '254' + p.slice(1)
-  // Ensure exactly 12 digits starting with 254
-  if (!/^254\d{9}$/.test(p)) return null
-  return p
+  return /^254\d{9}$/.test(p) ? p : null
 }
 
 export default async function handler(req, res) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' })
-  }
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' })
 
   const { phone, amount, userPhone } = req.body || {}
-
-  if (!phone || !amount || !userPhone) {
-    return res.status(400).json({ error: 'phone, amount, and userPhone are required' })
-  }
+  if (!phone || !amount || !userPhone) return res.status(400).json({ error: 'phone, amount, and userPhone required' })
 
   const normalPhone = normalizePhone(phone)
-  if (!normalPhone) {
-    return res.status(400).json({ error: 'Invalid phone. Use 12-digit format starting with 254 (e.g. 254712345678)' })
-  }
+  if (!normalPhone) return res.status(400).json({ error: 'Invalid phone. Use 12 digits starting with 254.' })
 
   const numAmount = Math.ceil(Number(amount))
-  if (!Number.isFinite(numAmount) || numAmount <= 0) {
-    return res.status(400).json({ error: 'Amount must be a positive integer' })
-  }
+  if (!Number.isFinite(numAmount) || numAmount <= 0) return res.status(400).json({ error: 'Amount must be a positive integer' })
 
-  if (isRateLimited(normalPhone)) {
-    return res.status(429).json({ error: 'Too many requests. Please wait a minute and try again.' })
-  }
+  if (isRateLimited(normalPhone)) return res.status(429).json({ error: 'Too many requests. Wait a minute.' })
 
-  const consumerKey = process.env.PAYKIT_CONSUMER_KEY
-  const consumerSecret = process.env.PAYKIT_CONSUMER_SECRET
+  const clientKey = process.env.PAYKIT_CONSUMER_KEY
+  const clientSecret = process.env.PAYKIT_CONSUMER_SECRET
+  if (!clientKey || !clientSecret) return res.status(500).json({ error: 'PAYKIT_CONSUMER_KEY and PAYKIT_CONSUMER_SECRET required.' })
 
-  if (!consumerKey || !consumerSecret) {
-    return res.status(500).json({ error: 'PAYKIT_CONSUMER_KEY and PAYKIT_CONSUMER_SECRET must be set in Vercel environment variables.' })
-  }
-
-  // Create per-request client with sb-forwarded-for
   const supabase = getServerClient(req.headers, process.env.SUPABASE_SERVICE_ROLE_KEY)
 
   try {
     const accessToken = await getPayKitToken()
-    if (!accessToken) {
-      return res.status(500).json({ error: 'Failed to authenticate with PayKit' })
-    }
+    if (!accessToken) return res.status(500).json({ error: 'PayKit auth failed' })
 
     const baseUrl = process.env.PAYKIT_BASE_URL || 'https://api.paykit.co.ke'
-    const stkUrl = `${baseUrl}/v1/collection/stkpush`
+    const stkUrl = `${baseUrl}/collection/stkpush`
     const callbackUrl = process.env.PAYKIT_CALLBACK_URL || ('https://' + (process.env.VERCEL_URL || 'localhost:3000') + '/api/stk-callback')
 
     const stkRes = await fetch(stkUrl, {
       method: 'POST',
       headers: {
-        Authorization: 'Bearer ' + accessToken,
         'Content-Type': 'application/json',
-        'X-Client-Id': consumerKey,
+        'Client-Id': clientKey,
+        'Secret-Key': clientSecret,
       },
       body: JSON.stringify({
         PhoneNumber: normalPhone,
@@ -123,7 +103,20 @@ export default async function handler(req, res) {
       }),
     })
 
+    const responseHeaders = Object.fromEntries(stkRes.headers.entries())
+    console.log('PayKit STK Response Headers:', JSON.stringify(responseHeaders))
+    console.log('PayKit STK Status:', stkRes.status, stkRes.statusText)
+
     const stkData = await stkRes.json()
+    console.log('PayKit STK Response Body:', JSON.stringify(stkData))
+
+    if (!stkRes.ok) {
+      console.error('PayKit STK Error:', stkRes.status, stkData)
+      return res.status(400).json({
+        success: false,
+        message: stkData.message || stkData.ResponseDescription || `PayKit error: HTTP ${stkRes.status}`,
+      })
+    }
 
     if (stkData.ResponseCode === '0' || stkData.CheckoutRequestID) {
       const { data: deposit, error: depositError } = await supabase
@@ -135,24 +128,24 @@ export default async function handler(req, res) {
         })
 
       if (depositError) {
-        console.error('Failed to save deposit:', depositError)
-        return res.status(500).json({ error: 'Failed to save deposit request' })
+        console.error('Deposit save failed:', depositError)
+        return res.status(500).json({ error: 'Failed to save deposit' })
       }
 
       return res.status(200).json({
         success: true,
         checkoutRequestId: stkData.CheckoutRequestID,
         depositId: deposit?.deposit?.id,
-        message: 'STK Push sent to your phone. Enter your M-Pesa PIN to complete. Deposit awaiting admin approval.',
+        message: 'STK Push sent. Enter M-Pesa PIN. Deposit awaiting admin approval.',
       })
     }
 
     return res.status(400).json({
       success: false,
-      message: stkData.errorMessage || stkData.ResponseDescription || 'STK Push failed. Please try again.',
+      message: stkData.message || stkData.ResponseDescription || 'STK Push failed.',
     })
   } catch (err) {
-    console.error('STK Push error:', err)
+    console.error('STK Push error:', err.message, err.stack)
     return res.status(500).json({ error: 'STK Push failed. Please try again.' })
   }
 }
