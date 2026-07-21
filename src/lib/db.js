@@ -474,8 +474,14 @@ export async function adminDeleteUser(phone) {
   
   if (!isSupabaseConfigured) return;
   
-  const { error } = await supabase.rpc('admin_delete_user', { p_user_phone: phone })
-  if (error) throw error
+  // Use the BEFORE DELETE trigger on public.users which handles cascade cleanup
+  // of all related rows (referrals, deposits, withdrawals, loans, investments, etc.)
+  // The old admin_delete_user RPC referenced non-existent tables (support_threads,
+  // user_keywords) and used wrong column names (referee_phone), causing failures.
+  const { error } = await supabase.from('users').delete().eq('phone', phone)
+  if (error) {
+    throw new Error(error.message)
+  }
 }
 
 export async function adminUpdateUserStatus(phone, status) {
@@ -879,11 +885,17 @@ export async function getAllTransactions() {
   if (!isSupabaseConfigured) return []
   const { data, error } = await supabase
     .from('transactions')
-    .select('id, user_phone, type, amount, status, reference, created_at')
+    .select('id, phone_number, user_phone, type, amount, status, reference, description, created_at')
     .order('created_at', { ascending: false })
     .limit(200)
   if (error) throw error
-  return data || []
+  // Normalize: phone_number is the actual column; user_phone/type/description are null
+  // for legacy rows inserted by the old RPCs
+  return (data || []).map(tx => ({
+    ...tx,
+    user_phone: tx.user_phone || tx.phone_number || null,
+    type: tx.type || 'deposit', // default to deposit for legacy rows
+  }))
 }
 
 export async function deleteTransaction(id) {

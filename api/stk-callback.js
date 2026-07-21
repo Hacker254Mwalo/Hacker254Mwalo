@@ -20,8 +20,10 @@
  * This handler:
  *   1. Returns 200 OK immediately (required by PayKit)
  *   2. Deduplicates using transaction_id
- *   3. Updates deposit status based on the `status` field
- *   4. Handles: SUCCESS, FAILED, PROCESSING, PENDING
+ *   3. Verifies the callback matches a PENDING deposit (prevents spoofed/duplicate callbacks)
+ *   4. On SUCCESS: calls atomic_approve_deposit to credit balance atomically
+ *   5. On FAILED: marks deposit as failed — no balance credit
+ *   6. On PROCESSING/PENDING: no action needed
  */
 
 import { getServerClient } from '../src/lib/supabase.js'
@@ -93,36 +95,66 @@ export default async function handler(req, res) {
 
     // ── Handle by status ─────────────────────────────────────────────────────
     switch (status) {
-      case 'SUCCESS':
+      case 'SUCCESS': {
         console.log(`STK Success: tx=${transactionId}, receipt=${mpesaReceipt}, amount=${amount}, phone=${phoneNumber}`)
 
-        // Update deposit with receipt and confirm status
-        const { error: updateError } = await supabase
+        // VERIFY: Find a PENDING deposit matching this callback
+        const { data: pendingDeposit, error: findError } = await supabase
           .from('deposits')
-          .update({
-            mpesa_receipt: mpesaReceipt || transactionId,
-            status: 'mpesa_confirmed',
-          })
+          .select('id, user_phone, amount, status')
           .eq('checkout_id', requestId || transactionId)
+          .eq('status', 'pending')
+          .single()
+
+        if (findError || !pendingDeposit) {
+          console.error('Callback verification failed: no matching PENDING deposit found', findError?.message)
+          // Don't credit balance — no valid pending deposit to approve
+          break
+        }
+
+        console.log(`Verified deposit: id=${pendingDeposit.id}, phone=${pendingDeposit.user_phone}, amount=${pendingDeposit.amount}`)
+
+        // Atomically: approve deposit + credit balance + insert transaction
+        const { error: approveError } = await supabase.rpc('atomic_approve_deposit', {
+          p_deposit_id: pendingDeposit.id,
+          p_user_phone: pendingDeposit.user_phone,
+          p_amount: Number(pendingDeposit.amount),
+        })
+
+        if (approveError) {
+          console.error('atomic_approve_deposit failed:', approveError.message)
+        } else {
+          console.log(`Deposit approved & balance credited: deposit_id=${pendingDeposit.id}`)
+        }
+
+        // Also save the M-Pesa receipt
+        await supabase
+          .from('deposits')
+          .update({ mpesa_receipt: mpesaReceipt || transactionId })
+          .eq('id', pendingDeposit.id)
           .is('mpesa_receipt', null)
 
-        if (updateError) {
-          console.error('Callback update failed:', updateError)
-        }
         break
+      }
 
-      case 'FAILED':
+      case 'FAILED': {
         console.log(`STK Failed: tx=${transactionId}, req=${requestId}`)
 
-        await supabase
+        // Mark the pending deposit as failed — no balance credit
+        const { error: updateError } = await supabase
           .from('deposits')
           .update({
             status: 'failed',
             mpesa_receipt: `Failed: ${transactionId || requestId}`,
           })
           .eq('checkout_id', requestId || transactionId)
-          .in('status', ['pending'])
+          .eq('status', 'pending')
+
+        if (updateError) {
+          console.error('Failed deposit update error:', updateError.message)
+        }
         break
+      }
 
       case 'PROCESSING':
         console.log(`STK Processing: tx=${transactionId}, req=${requestId}`)

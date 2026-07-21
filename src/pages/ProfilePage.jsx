@@ -25,7 +25,8 @@ function DepositModal({ user, onClose, onPending }) {
       })
       const data = await res.json()
       if (data.success || data.checkoutRequestId) {
-        await addDeposit(user.phone, { amount: amt, checkoutId: data.checkoutRequestId })
+        // Server already persisted a PENDING deposit via insert_deposit RPC.
+        // Do NOT call addDeposit() again — that would create a duplicate row.
         setSent(true)
         onPending()
       } else {

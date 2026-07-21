@@ -1184,7 +1184,7 @@ function TransactionsTab({ showToast }) {
             <div key={tx.id} className="card flex items-center justify-between gap-3 hover:border-gray-600 transition-colors">
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1">
-                  <span className="font-semibold text-sm">{tx.user_phone}</span>
+                  <span className="font-semibold text-sm">{tx.user_phone || tx.phone_number || 'Unknown'}</span>
                   <StatusBadge status={tx.status} />
                 </div>
                 <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
