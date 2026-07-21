@@ -1,55 +1,144 @@
 /**
- * PayKit STK Callback — always returns 200 immediately.
- * Updates deposits table to trigger existing admin approval workflow.
+ * PayKit STK Collection Callback
+ *
+ * PayKit sends a POST to this endpoint with the final transaction result.
+ *
+ * Expected PayKit callback body format:
+ *   {
+ *     "service_code": "PC2B",            // collections
+ *     "transaction_id": "<unique>",       // PayKit transaction ID
+ *     "request_id": "<your request_id>",  // idempotency key you sent
+ *     "status": "SUCCESS | FAILED | PROCESSING | PENDING",
+ *     "amount": 500,
+ *     "phone_number": "254XXXXXXXXX",
+ *     "mpesa_receipt": "SGR7ABCDEF",
+ *     "account_reference": "DUMIROPAY",
+ *     "remarks": "Dumiropay Deposit",
+ *     "collection_channel": "Mpesa"
+ *   }
+ *
+ * This handler:
+ *   1. Returns 200 OK immediately (required by PayKit)
+ *   2. Deduplicates using transaction_id
+ *   3. Updates deposit status based on the `status` field
+ *   4. Handles: SUCCESS, FAILED, PROCESSING, PENDING
  */
 
 import { getServerClient } from '../src/lib/supabase.js'
 
+// In-memory dedupe set (per Vercel instance; also rely on DB-level check)
+const processedTransactions = new Set()
+
 export default async function handler(req, res) {
-  // Always 200 immediately
+  // 1. Always respond 200 immediately to PayKit
   res.status(200).json({ received: true })
 
   try {
     console.log('stk-callback raw body:', JSON.stringify(req.body))
 
     const body = req.body || {}
-    const callback = body?.Body?.stkCallback
 
-    if (!callback) {
-      console.log('stk-callback: non-standard format, full body:', JSON.stringify(body))
+    // ── PayKit format detection ──────────────────────────────────────────────
+    // PayKit sends: { service_code, transaction_id, request_id, status, ... }
+    // Safaricom-style sends: { Body: { stkCallback: { ... } } }
+    const isPayKitFormat = body.service_code || body.transaction_id
+
+    let transactionId, requestId, status, mpesaReceipt, amount, phoneNumber
+
+    if (isPayKitFormat) {
+      // PayKit format
+      transactionId = body.transaction_id
+      requestId = body.request_id
+      status = body.status
+      mpesaReceipt = body.mpesa_receipt || null
+      amount = body.amount
+      phoneNumber = body.phone_number
+
+      console.log(`PayKit callback: tx=${transactionId}, req=${requestId}, status=${status}`)
+    } else {
+      // Legacy Safaricom format — still handle gracefully for backward compat
+      const callback = body?.Body?.stkCallback
+      if (!callback) {
+        console.log('stk-callback: unrecognized format, full body:', JSON.stringify(body))
+        return
+      }
+      const { CheckoutRequestID, ResultCode, ResultDesc, CallbackMetadata } = callback
+      requestId = CheckoutRequestID
+      status = ResultCode === 0 ? 'SUCCESS' : 'FAILED'
+      const items = CallbackMetadata?.Item || []
+      const getItem = (name) => items.find((i) => i.Name === name)?.Value
+      mpesaReceipt = String(getItem('MpesaReceiptNumber') || '')
+      amount = getItem('Amount')
+      phoneNumber = String(getItem('PhoneNumber') || '')
+      transactionId = CheckoutRequestID
+
+      console.log(`Legacy callback: checkout=${CheckoutRequestID}, ResultCode=${ResultCode}, status=${status}`)
+    }
+
+    // ── Deduplicate by transaction_id ────────────────────────────────────────
+    const dedupeKey = transactionId || requestId
+    if (!dedupeKey) {
+      console.warn('stk-callback: no transaction_id or request_id found')
       return
     }
 
-    const { CheckoutRequestID, ResultCode, ResultDesc, CallbackMetadata } = callback
-    console.log(`Callback: CheckoutRequestID=${CheckoutRequestID}, ResultCode=${ResultCode}, ResultDesc=${ResultDesc}`)
+    if (processedTransactions.has(dedupeKey)) {
+      console.log(`stk-callback: duplicate detected for ${dedupeKey}, skipping`)
+      return
+    }
+    processedTransactions.add(dedupeKey)
 
+    // ── Get Supabase client ──────────────────────────────────────────────────
     const supabase = getServerClient(req.headers, process.env.SUPABASE_SERVICE_ROLE_KEY)
 
-    if (ResultCode !== 0) {
-      console.log(`STK Failed: ${ResultDesc}`)
-      await supabase
-        .from('deposits')
-        .update({ status: 'failed', mpesa_receipt: ResultDesc || null })
-        .eq('checkout_id', CheckoutRequestID)
-      return
+    // ── Handle by status ─────────────────────────────────────────────────────
+    switch (status) {
+      case 'SUCCESS':
+        console.log(`STK Success: tx=${transactionId}, receipt=${mpesaReceipt}, amount=${amount}, phone=${phoneNumber}`)
+
+        // Update deposit with receipt and confirm status
+        const { error: updateError } = await supabase
+          .from('deposits')
+          .update({
+            mpesa_receipt: mpesaReceipt || transactionId,
+            status: 'mpesa_confirmed',
+          })
+          .eq('checkout_id', requestId || transactionId)
+          .is('mpesa_receipt', null)
+
+        if (updateError) {
+          console.error('Callback update failed:', updateError)
+        }
+        break
+
+      case 'FAILED':
+        console.log(`STK Failed: tx=${transactionId}, req=${requestId}`)
+
+        await supabase
+          .from('deposits')
+          .update({
+            status: 'failed',
+            mpesa_receipt: `Failed: ${transactionId || requestId}`,
+          })
+          .eq('checkout_id', requestId || transactionId)
+          .in('status', ['pending'])
+        break
+
+      case 'PROCESSING':
+        console.log(`STK Processing: tx=${transactionId}, req=${requestId}`)
+        // Transaction is still being processed — no status change needed
+        break
+
+      case 'PENDING':
+        console.log(`STK Pending: tx=${transactionId}, req=${requestId}`)
+        // User hasn't responded yet — keep as pending
+        break
+
+      default:
+        console.warn(`stk-callback: unknown status "${status}" for tx=${transactionId}`)
+        break
     }
 
-    const items = CallbackMetadata?.Item || []
-    const getItem = (name) => items.find((i) => i.Name === name)?.Value
-    const mpesaReceipt = String(getItem('MpesaReceiptNumber') || '')
-    const amount = getItem('Amount')
-    const phoneNumber = String(getItem('PhoneNumber') || '')
-
-    console.log(`STK Success: Amount=${amount}, Receipt=${mpesaReceipt}, Phone=${phoneNumber}`)
-
-    await supabase
-      .from('deposits')
-      .update({
-        mpesa_receipt: mpesaReceipt,
-        status: 'mpesa_confirmed',
-      })
-      .eq('checkout_id', CheckoutRequestID)
-      .is('mpesa_receipt', null)
   } catch (err) {
     console.error('stk-callback error:', err.message, err.stack)
   }
