@@ -29,6 +29,13 @@ async function getPayKitToken() {
   // Refresh 60s before expiry to avoid race conditions
   if (paykitToken && now < paykitTokenExpiresAt - 60_000) return paykitToken
 
+  // ── TEMP DEBUG: verify env vars are loading (DO NOT REMOVE LINE — check Vercel logs, then remove) ──
+  console.log('[DEBUG-env] PAYKIT_CLIENT_ID:', !!process.env.PAYKIT_CLIENT_ID)
+  console.log('[DEBUG-env] PAYKIT_CLIENT_SECRET:', !!process.env.PAYKIT_CLIENT_SECRET)
+  console.log('[DEBUG-env] PAYKIT_BASE_URL:', !!process.env.PAYKIT_BASE_URL)
+  console.log('[DEBUG-env] PAYKIT_CALLBACK_URL:', !!process.env.PAYKIT_CALLBACK_URL)
+  // ── END TEMP DEBUG ──
+
   const clientId = process.env.PAYKIT_CLIENT_ID
   const clientSecret = process.env.PAYKIT_CLIENT_SECRET
   const baseUrl = process.env.PAYKIT_BASE_URL || 'https://api.sandbox.paykit.africa'
