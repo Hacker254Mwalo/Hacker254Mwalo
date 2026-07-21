@@ -923,13 +923,13 @@ export async function deleteTransaction(id) {
   const absAmount = Math.abs(Number(tx.amount))
 
   // Delete matching deposit record (by phone + amount + time window)
-  await supabase.from('deposits').delete()
+  const { error: depErr } = await supabase.from('deposits').delete()
     .eq('user_phone', phone)
     .gte('created_at', createdAt)
     .lt('created_at', tenMinAfter)
 
   // Delete matching withdrawal record (by phone + amount + time window)
-  await supabase.from('withdrawals').delete()
+  const { error: withErr } = await supabase.from('withdrawals').delete()
     .eq('user_phone', phone)
     .gte('created_at', createdAt)
     .lt('created_at', tenMinAfter)
@@ -940,6 +940,18 @@ export async function deleteTransaction(id) {
       .eq('mpesa_receipt', tx.reference)
       .eq('user_phone', phone)
   }
+
+  // Also delete matching investment records (by phone + amount + time window)
+  await supabase.from('investments').delete()
+    .eq('user_phone', phone)
+    .gte('created_at', createdAt)
+    .lt('created_at', tenMinAfter)
+
+  // Also delete matching loan records (by phone + amount + time window)
+  await supabase.from('loans').delete()
+    .eq('user_phone', phone)
+    .gte('created_at', createdAt)
+    .lt('created_at', tenMinAfter)
 
   // Delete the transaction itself
   const { error: txError } = await supabase.from('transactions').delete().eq('id', id)

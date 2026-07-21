@@ -220,15 +220,16 @@ export default function HistoryPage() {
                 const daysPassed = inv.status === 'active'
                   ? Math.max(0, Math.floor((now - startDate) / 86400000))
                   : totalDays
-                const progress = Math.min(100, Math.round((daysPassed / totalDays) * 100))
                 const dailyReturn = Number(inv.dailyReturn || 0)
-                const baseProfit = Number(inv.profit || 0)
                 // Show ACTUAL credited profit from server for active investments
                 // Completed investments show their full total return
                 const accumulatedProfit = inv.status === 'active'
                   ? Number(inv.profit || 0)
                   : Number(inv.totalReturn || 0)
                 const targetTotal = Number(inv.totalReturn || 0)
+                // Progress % = (accumulated profit / total return target) * 100
+                // This shows actual earnings progress, not just calendar days
+                const progress = targetTotal > 0 ? Math.min(100, Math.round((accumulatedProfit / targetTotal) * 100)) : 0
 
                 return (
                 <div key={inv.id} className="card hover:border-gray-600 transition-colors">

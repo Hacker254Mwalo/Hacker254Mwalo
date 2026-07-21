@@ -15,7 +15,7 @@ function DepositModal({ user, onClose, onPending }) {
 
   async function initiateStkPush() {
     const amt = parseInt(amount)
-    if (!amt || amt < 400) return
+    if (!amt || amt < 100) return
     setLoading(true)
     try {
       const res = await fetch('/api/stk-push', {
@@ -69,12 +69,12 @@ function DepositModal({ user, onClose, onPending }) {
                 </p>
 
                 <div className="mb-4">
-                  <label className="text-xs mb-1 block" style={{ color: 'var(--text-secondary)' }}>Amount (KSh, min KSh 400)</label>
+                  <label className="text-xs mb-1 block" style={{ color: 'var(--text-secondary)' }}>Amount (KSh, min KSh 100)</label>
                   <input
                     className="input-field"
-                    placeholder="Min KSh 400"
+                    placeholder="Min KSh 100"
                     type="number"
-                    min="400"
+                    min="100"
                     value={amount}
                     onChange={e => setAmount(e.target.value)}
                   />
@@ -89,7 +89,7 @@ function DepositModal({ user, onClose, onPending }) {
                   <button onClick={onClose} className="btn-secondary flex-1">Cancel</button>
                   <button
                     onClick={initiateStkPush}
-                    disabled={loading || !amount || parseInt(amount) < 400}
+                    disabled={loading || !amount || parseInt(amount) < 100}
                     className="btn-primary flex-1"
                   >
                     {loading ? 'Sending...' : 'Pay Now'}
@@ -181,22 +181,21 @@ function DepositModal({ user, onClose, onPending }) {
   )
 }
 
-function WithdrawModal({ balance, onClose, onWithdraw }) {
+function WithdrawModal({ balance, userPhone, onClose, onWithdraw }) {
   const [amount, setAmount] = useState('')
-  const [phone, setPhone] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const MIN_WITHDRAW = 500
 
   const fee = Math.floor(parseInt(amount || 0) * WITHDRAWAL_FEE)
   const receives = Math.max(0, parseInt(amount || 0) - fee)
-  const canWithdraw = parseInt(amount) >= MIN_WITHDRAW && parseInt(amount) <= balance && phone.replace(/\s/g, '').length >= 10
+  const canWithdraw = parseInt(amount) >= MIN_WITHDRAW && parseInt(amount) <= balance
 
   async function confirm() {
     setLoading(true)
     setError('')
     try {
-      await onWithdraw(parseInt(amount), phone.replace(/\s/g, ''))
+      await onWithdraw(parseInt(amount), userPhone)
       onClose()
     } catch (err) {
       setError(err.message || 'Withdrawal failed. Please try again.')
@@ -223,14 +222,11 @@ function WithdrawModal({ balance, onClose, onWithdraw }) {
             />
           </div>
           <div>
-            <label className="text-xs mb-1 block" style={{ color: 'var(--text-secondary)' }}>M-Pesa Phone Number</label>
-            <input
-              className="input-field"
-              placeholder="0712 345 678"
-              type="tel"
-              value={phone}
-              onChange={e => setPhone(e.target.value)}
-            />
+            <label className="text-xs mb-1 block" style={{ color: 'var(--text-secondary)' }}>Withdrawal Number</label>
+            <div className="input-field font-semibold text-center" style={{ background: 'var(--bg-elevated)', cursor: 'not-allowed' }}>
+              {userPhone}
+            </div>
+            <p className="text-[10px] mt-1" style={{ color: 'var(--text-muted)' }}>Withdrawals can only be sent to your registered number</p>
           </div>
         </div>
 
@@ -271,22 +267,21 @@ function WithdrawModal({ balance, onClose, onWithdraw }) {
   )
 }
 
-function BonusWithdrawModal({ bonusBalance, onClose, onWithdraw }) {
+function BonusWithdrawModal({ bonusBalance, userPhone, onClose, onWithdraw }) {
   const [amount, setAmount] = useState('')
-  const [phone, setPhone] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const MIN_BONUS = 500
 
   const fee = Math.floor(parseInt(amount || 0) * 0.05)
   const receives = Math.max(0, parseInt(amount || 0) - fee)
-  const canWithdraw = parseInt(amount) >= MIN_BONUS && parseInt(amount) <= bonusBalance && phone.replace(/\s/g, '').length >= 10
+  const canWithdraw = parseInt(amount) >= MIN_BONUS && parseInt(amount) <= bonusBalance
 
   async function confirm() {
     setLoading(true)
     setError('')
     try {
-      await onWithdraw(parseInt(amount), phone.replace(/\s/g, ''))
+      await onWithdraw(parseInt(amount), userPhone)
       onClose()
     } catch (err) {
       setError(err.message || 'Bonus withdrawal failed.')
@@ -314,14 +309,11 @@ function BonusWithdrawModal({ bonusBalance, onClose, onWithdraw }) {
             />
           </div>
           <div>
-            <label className="text-xs mb-1 block" style={{ color: 'var(--text-secondary)' }}>M-Pesa Phone Number</label>
-            <input
-              className="input-field"
-              placeholder="0712 345 678"
-              type="tel"
-              value={phone}
-              onChange={e => setPhone(e.target.value)}
-            />
+            <label className="text-xs mb-1 block" style={{ color: 'var(--text-secondary)' }}>Withdrawal Number</label>
+            <div className="input-field font-semibold text-center" style={{ background: 'var(--bg-elevated)', cursor: 'not-allowed' }}>
+              {userPhone}
+            </div>
+            <p className="text-[10px] mt-1" style={{ color: 'var(--text-muted)' }}>Withdrawals can only be sent to your registered number</p>
           </div>
         </div>
 
@@ -589,6 +581,7 @@ export default function ProfilePage() {
       {showWithdraw && (
         <WithdrawModal
           balance={user?.balance || 0}
+          userPhone={user?.phone}
           onClose={() => setShowWithdraw(false)}
           onWithdraw={handleWithdraw}
         />
@@ -596,6 +589,7 @@ export default function ProfilePage() {
       {showBonusWithdraw && (
         <BonusWithdrawModal
           bonusBalance={user?.bonusBalance || 0}
+          userPhone={user?.phone}
           onClose={() => setShowBonusWithdraw(false)}
           onWithdraw={handleBonusWithdraw}
         />

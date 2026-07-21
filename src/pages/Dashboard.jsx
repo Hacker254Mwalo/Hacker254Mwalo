@@ -45,7 +45,7 @@ function InvestFirstModal({ onClose, onGoInvest, onGoDeposit, hasBalance }) {
           This feature is only available to members with an active investment.
           {hasBalance
             ? ' You have balance — go invest now to unlock this!'
-            : ' Please deposit at least KSh 400, then invest to unlock this feature.'}
+            : ' Please deposit at least KSh 100, then invest to unlock this feature.'}
         </p>
         <div className="space-y-3">
           {hasBalance ? (
@@ -58,7 +58,7 @@ function InvestFirstModal({ onClose, onGoInvest, onGoDeposit, hasBalance }) {
                 📱 Deposit via M-Pesa
               </button>
               <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
-                Minimum deposit: KSh 400 · Then invest to unlock all features
+                Minimum deposit: KSh 100 · Then invest to unlock all features
               </p>
             </>
           )}
@@ -708,14 +708,14 @@ export default function Dashboard() {
               const totalDays = Math.max(1, Math.ceil((endDate - startDate) / 86400000))
               // Calculate days passed since investment started
               const daysPassed = Math.max(0, Math.floor((now - startDate) / 86400000))
-              // Progress based on calendar days (investment is active for N days)
-              const progress = Math.min(100, Math.round((daysPassed / totalDays) * 100))
+              // Progress based on percentage earned vs total return target
               const dailyReturn = Number(inv.dailyReturn || 0)
-              // Show ACTUAL credited profit from server, NOT estimated from elapsed time
-              // This ensures the 24-hour rule is respected — profit only shows when the cron job credits it
               const accumulatedProfit = Number(inv.profit || 0)
               const targetTotal = Number(inv.totalReturn || 0)
               const remaining = Math.max(0, targetTotal - accumulatedProfit)
+              // Progress % = (accumulated profit / total return target) * 100
+              // This shows actual earnings progress, not just calendar days
+              const progress = targetTotal > 0 ? Math.min(100, Math.round((accumulatedProfit / targetTotal) * 100)) : 0
               return (
                 <div key={inv.id} className="rounded-xl px-4 py-3" style={{ background: 'var(--bg-elevated)' }}>
                   <div className="flex items-center justify-between mb-2">

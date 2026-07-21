@@ -83,7 +83,7 @@ function ConfirmModal({ plan, balance, onConfirm, onClose, confirming, onDeposit
               onClick={onDeposit}
               className="w-full bg-red-700 hover:bg-red-600 text-white text-xs font-semibold py-2 px-4 rounded-lg transition-colors"
             >
-              📱 Deposit Now (Min KSh 400)
+              📱 Deposit Now (Min KSh 100)
             </button>
           </div>
         )}
