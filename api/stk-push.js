@@ -1,21 +1,30 @@
 /**
- * Vercel Serverless Function: M-Pesa STK Push via PayKit
- * Optimized: sb-forwarded-for header set per-request to bypass auth rate limits.
+ * Vercel Serverless Function: M-Pesa STK Push via PayKit (Official Spec)
  *
- * Required environment variables in Vercel:
- *   PAYKIT_CONSUMER_KEY, PAYKIT_CONSUMER_SECRET, PAYKIT_PASSKEY, PAYKIT_SHORTCODE
- *   SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
+ * Vercel Environment Variables:
+ *   PAYKIT_CONSUMER_KEY      — PayKit Client ID
+ *   PAYKIT_CONSUMER_SECRET   — PayKit Secret Key
+ *   PAYKIT_BASE_URL          — https://api.paykit.co.ke
+ *   PAYKIT_CALLBACK_URL      — https://<your-domain>/api/stk-callback
+ *   SUPABASE_URL
+ *   SUPABASE_SERVICE_ROLE_KEY
  */
 
 import { getServerClient } from '../src/lib/supabase.js'
 
-// PayKit OAuth token cache (50 min TTL, refresh at 45 min)
+// PayKit OAuth token cache
 let paykitToken = null
 let paykitTokenExpiresAt = 0
 
-async function getPayKitToken(authUrl, consumerKey, consumerSecret) {
+async function getPayKitToken() {
   const now = Date.now()
   if (paykitToken && now < paykitTokenExpiresAt) return paykitToken
+
+  const consumerKey = process.env.PAYKIT_CONSUMER_KEY
+  const consumerSecret = process.env.PAYKIT_CONSUMER_SECRET
+  const baseUrl = process.env.PAYKIT_BASE_URL || 'https://api.paykit.co.ke'
+  const authUrl = `${baseUrl}/oauth/v1/generate?grant_type=client_credentials`
+
   const authToken = Buffer.from(consumerKey + ':' + consumerSecret).toString('base64')
   const authRes = await fetch(authUrl, {
     headers: { Authorization: 'Basic ' + authToken },
@@ -44,6 +53,15 @@ function isRateLimited(phone) {
   return false
 }
 
+function normalizePhone(phone) {
+  let p = String(phone).replace(/\s/g, '')
+  if (p.startsWith('+')) p = p.slice(1)
+  if (p.startsWith('0')) p = '254' + p.slice(1)
+  // Ensure exactly 12 digits starting with 254
+  if (!/^254\d{9}$/.test(p)) return null
+  return p
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' })
@@ -55,17 +73,14 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'phone, amount, and userPhone are required' })
   }
 
-  let normalPhone = String(phone).replace(/\s/g, '')
-  if (normalPhone.startsWith('+')) normalPhone = normalPhone.slice(1)
-  if (normalPhone.startsWith('0')) normalPhone = '254' + normalPhone.slice(1)
-
-  if (!/^2547\d{8}$|^2541\d{8}$/.test(normalPhone)) {
-    return res.status(400).json({ error: 'Invalid Kenyan phone number' })
+  const normalPhone = normalizePhone(phone)
+  if (!normalPhone) {
+    return res.status(400).json({ error: 'Invalid phone. Use 12-digit format starting with 254 (e.g. 254712345678)' })
   }
 
   const numAmount = Math.ceil(Number(amount))
-  if (!Number.isFinite(numAmount) || numAmount < 400 || numAmount > 150000) {
-    return res.status(400).json({ error: 'Amount must be between KSh 400 and KSh 150,000' })
+  if (!Number.isFinite(numAmount) || numAmount <= 0) {
+    return res.status(400).json({ error: 'Amount must be a positive integer' })
   }
 
   if (isRateLimited(normalPhone)) {
@@ -74,46 +89,35 @@ export default async function handler(req, res) {
 
   const consumerKey = process.env.PAYKIT_CONSUMER_KEY
   const consumerSecret = process.env.PAYKIT_CONSUMER_SECRET
-  const passkey = process.env.PAYKIT_PASSKEY
-  const shortcode = process.env.PAYKIT_SHORTCODE || '174379'
-  const baseUrl = process.env.PAYKIT_BASE_URL || 'https://api.sandbox.paykit.africa'
-  const authUrl = process.env.PAYKIT_AUTH_URL || `${baseUrl}/oauth/v1/generate?grant_type=client_credentials`
-  const stkUrl = process.env.PAYKIT_STK_URL || `${baseUrl}/v1/collection/stkpush`
 
-  if (!consumerKey || !consumerSecret || !passkey) {
-    return res.status(500).json({
-      error: 'PayKit credentials not configured. Set PAYKIT_CONSUMER_KEY, PAYKIT_CONSUMER_SECRET, PAYKIT_PASSKEY in Vercel environment variables.',
-    })
+  if (!consumerKey || !consumerSecret) {
+    return res.status(500).json({ error: 'PAYKIT_CONSUMER_KEY and PAYKIT_CONSUMER_SECRET must be set in Vercel environment variables.' })
   }
 
-  // Create per-request client with sb-forwarded-for to bypass auth rate limits
+  // Create per-request client with sb-forwarded-for
   const supabase = getServerClient(req.headers, process.env.SUPABASE_SERVICE_ROLE_KEY)
 
   try {
-    const accessToken = await getPayKitToken(authUrl, consumerKey, consumerSecret)
+    const accessToken = await getPayKitToken()
     if (!accessToken) {
-      return res.status(500).json({ error: 'Failed to get access token from PayKit' })
+      return res.status(500).json({ error: 'Failed to authenticate with PayKit' })
     }
 
-    const timestamp = new Date().toISOString().replace(/[^0-9]/g, '').slice(0, 14)
-    const password = Buffer.from(shortcode + passkey + timestamp).toString('base64')
+    const baseUrl = process.env.PAYKIT_BASE_URL || 'https://api.paykit.co.ke'
+    const stkUrl = `${baseUrl}/v1/collection/stkpush`
+    const callbackUrl = process.env.PAYKIT_CALLBACK_URL || ('https://' + (process.env.VERCEL_URL || 'localhost:3000') + '/api/stk-callback')
 
     const stkRes = await fetch(stkUrl, {
       method: 'POST',
       headers: {
         Authorization: 'Bearer ' + accessToken,
         'Content-Type': 'application/json',
+        'X-Client-Id': consumerKey,
       },
       body: JSON.stringify({
-        BusinessShortCode: shortcode,
-        Password: password,
-        Timestamp: timestamp,
-        TransactionType: 'CustomerPayBillOnline',
-        Amount: numAmount,
-        PartyA: normalPhone,
-        PartyB: shortcode,
         PhoneNumber: normalPhone,
-        CallBackURL: process.env.PAYKIT_CALLBACK_URL || ('https://' + (process.env.VERCEL_URL || 'localhost:3000') + '/api/stk-callback'),
+        Amount: numAmount,
+        CallBackURL: callbackUrl,
         AccountReference: 'DUMIROPAY',
         TransactionDesc: 'Dumiropay Deposit',
       }),
@@ -131,7 +135,7 @@ export default async function handler(req, res) {
         })
 
       if (depositError) {
-        console.error('Failed to save deposit to Supabase:', depositError)
+        console.error('Failed to save deposit:', depositError)
         return res.status(500).json({ error: 'Failed to save deposit request' })
       }
 
