@@ -8,6 +8,7 @@ import PlansPage from './pages/PlansPage'
 import ProfilePage from './pages/ProfilePage'
 import HistoryPage from './pages/HistoryPage'
 import AdminPage from './pages/AdminPage'
+import NotificationsPage from './pages/NotificationsPage'
 
 function ReferralRedirect() {
   const { code = '' } = useParams()
@@ -28,6 +29,7 @@ export default function App() {
               <Route path="/plans" element={<PlansPage />} />
               <Route path="/profile" element={<ProfilePage />} />
               <Route path="/history" element={<HistoryPage />} />
+              <Route path="/notifications" element={<NotificationsPage />} />
             </Route>
             <Route path="*" element={<Navigate to="/login" replace />} />
           </Routes>

@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useTheme } from '../context/ThemeContext'
-import { getWhatsAppSettings, checkIsAdmin } from '../lib/db'
+import { getWhatsAppSettings, checkIsAdmin, getUserNotifications, markNotificationRead, markAllNotificationsRead } from '../lib/db'
 
 export default function Navbar() {
   const { user, logout, updateUser } = useAuth()
@@ -13,23 +13,48 @@ export default function Navbar() {
   const [waPhone, setWaPhone] = useState('')
   const [waGroupLink, setWaGroupLink] = useState('')
 
+  // Notifications state
+  const [notifications, setNotifications] = useState([])
+  const [showNotifPanel, setShowNotifPanel] = useState(false)
+  const notifRef = useRef(null)
+
+  const unreadCount = notifications.filter(n => !n.is_read).length
+
   useEffect(() => {
     if (!user?.phone) return
-    // Verify admin status server-side — only override if RPC succeeds
     checkIsAdmin(user.phone).then(serverAdmin => {
       setIsAdmin(serverAdmin === true)
     }).catch(() => {
-      // On error, fall back to the value from login session (user.isAdmin)
       setIsAdmin(user.isAdmin === true)
     })
-    // Load WhatsApp settings from DB
     getWhatsAppSettings().then(s => {
       setWaPhone(s.whatsapp_phone || '')
       setWaGroupLink(s.whatsapp_group_link || '')
     }).catch(() => {})
   }, [user?.phone])
 
-  // Keep isAdmin in user object in sync — only update if server confirmed
+  // Load notifications
+  useEffect(() => {
+    if (!user?.phone) return
+    const load = () => {
+      getUserNotifications(user.phone).then(setNotifications).catch(() => {})
+    }
+    load()
+    const interval = setInterval(load, 30000)
+    return () => clearInterval(interval)
+  }, [user?.phone])
+
+  // Close notif panel on outside click
+  useEffect(() => {
+    function handleClick(e) {
+      if (notifRef.current && !notifRef.current.contains(e.target)) {
+        setShowNotifPanel(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClick)
+    return () => document.removeEventListener('mousedown', handleClick)
+  }, [])
+
   useEffect(() => {
     if (user && isAdmin === true && user.isAdmin !== true) {
       updateUser({ isAdmin: true })
@@ -39,6 +64,36 @@ export default function Navbar() {
   function handleLogout() {
     logout()
     navigate('/login')
+  }
+
+  async function handleMarkAllRead() {
+    if (!user?.phone) return
+    await markAllNotificationsRead(user.phone).catch(() => {})
+    setNotifications(prev => prev.map(n => ({ ...n, is_read: true })))
+  }
+
+  async function handleMarkRead(id) {
+    await markNotificationRead(id).catch(() => {})
+    setNotifications(prev => prev.map(n => n.id === id ? { ...n, is_read: true } : n))
+  }
+
+  function timeAgo(dateStr) {
+    if (!dateStr) return ''
+    const diff = Date.now() - new Date(dateStr).getTime()
+    const mins = Math.floor(diff / 60000)
+    if (mins < 1) return 'just now'
+    if (mins < 60) return `${mins}m ago`
+    const hrs = Math.floor(mins / 60)
+    if (hrs < 24) return `${hrs}h ago`
+    return `${Math.floor(hrs / 24)}d ago`
+  }
+
+  // Tab colour config — each tab gets its own colour identity
+  const tabColors = {
+    dashboard: { active: 'from-blue-500 to-cyan-500',   dot: '#3b82f6', icon: '#38bdf8' },
+    invest:    { active: 'from-emerald-500 to-green-400', dot: '#10b981', icon: '#34d399' },
+    history:   { active: 'from-violet-500 to-purple-500', dot: '#8b5cf6', icon: '#a78bfa' },
+    notifications: { active: 'from-amber-500 to-orange-400', dot: '#f59e0b', icon: '#fbbf24' },
   }
 
   // Professional SVG icon paths
@@ -63,10 +118,10 @@ export default function Navbar() {
         <polyline points="12 6 12 12 16 14" />
       </svg>
     ),
-    profile: (
+    bell: (
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
-        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-        <circle cx="12" cy="7" r="4" />
+        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+        <path d="M13.73 21a2 2 0 0 1-3.46 0" />
       </svg>
     ),
     theme: {
@@ -102,18 +157,87 @@ export default function Navbar() {
     )
   }
 
+  // Navigation links — profile replaced with notifications
   const links = [
-    { to: '/dashboard', label: 'Dashboard', key: 'dashboard', icon: icons.dashboard },
-    { to: '/plans',     label: 'Invest',    key: 'invest',    icon: icons.invest },
-    { to: '/history',   label: 'History',   key: 'history',   icon: icons.history },
-    { to: '/profile',   label: 'Profile',   key: 'profile',   icon: icons.profile },
+    { to: '/dashboard',      label: 'Dashboard',      key: 'dashboard',      icon: icons.dashboard },
+    { to: '/plans',          label: 'Invest',         key: 'invest',         icon: icons.invest },
+    { to: '/history',        label: 'History',        key: 'history',        icon: icons.history },
+    { to: '/notifications',  label: 'Alerts',         key: 'notifications',  icon: icons.bell },
   ]
 
   const waDigits = waPhone.replace(/\D/g, '')
 
+  // Notification dropdown panel
+  const NotifPanel = () => (
+    <div
+      className="absolute right-0 top-full mt-2 w-80 rounded-2xl shadow-2xl z-[200] overflow-hidden"
+      style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)' }}
+    >
+      {/* Header */}
+      <div className="flex items-center justify-between px-4 py-3 border-b" style={{ borderColor: 'var(--border)', background: 'linear-gradient(135deg, rgba(245,158,11,0.15), rgba(251,191,36,0.05))' }}>
+        <div className="flex items-center gap-2">
+          <span className="text-amber-400">{icons.bell}</span>
+          <span className="font-bold text-sm">Notifications</span>
+          {unreadCount > 0 && (
+            <span className="text-[10px] bg-amber-500 text-white px-1.5 py-0.5 rounded-full font-bold">{unreadCount}</span>
+          )}
+        </div>
+        {unreadCount > 0 && (
+          <button onClick={handleMarkAllRead} className="text-[10px] text-amber-400 hover:text-amber-300 font-semibold transition-colors">
+            Mark all read
+          </button>
+        )}
+      </div>
+
+      {/* List */}
+      <div className="max-h-80 overflow-y-auto">
+        {notifications.length === 0 ? (
+          <div className="py-10 text-center">
+            <div className="text-3xl mb-2">🔔</div>
+            <p className="text-sm" style={{ color: 'var(--text-muted)' }}>No notifications yet</p>
+          </div>
+        ) : (
+          notifications.slice(0, 20).map(n => (
+            <div
+              key={n.id}
+              onClick={() => handleMarkRead(n.id)}
+              className="flex items-start gap-3 px-4 py-3 cursor-pointer transition-colors hover:bg-white/5 border-b last:border-0"
+              style={{
+                borderColor: 'var(--border)',
+                background: n.is_read ? 'transparent' : 'rgba(245,158,11,0.06)'
+              }}
+            >
+              <div className="mt-0.5 flex-shrink-0">
+                <span className="text-lg">{n.icon || '📢'}</span>
+              </div>
+              <div className="flex-1 min-w-0">
+                {n.title && <p className="text-xs font-bold mb-0.5 truncate">{n.title}</p>}
+                <p className="text-xs leading-relaxed" style={{ color: n.is_read ? 'var(--text-muted)' : 'var(--text-primary)' }}>{n.message}</p>
+                <p className="text-[10px] mt-1" style={{ color: 'var(--text-muted)' }}>{timeAgo(n.created_at)}</p>
+              </div>
+              {!n.is_read && (
+                <div className="w-2 h-2 rounded-full bg-amber-400 flex-shrink-0 mt-1.5" />
+              )}
+            </div>
+          ))
+        )}
+      </div>
+
+      {/* Footer */}
+      <div className="px-4 py-2.5 border-t text-center" style={{ borderColor: 'var(--border)' }}>
+        <button
+          onClick={() => { navigate('/notifications'); setShowNotifPanel(false) }}
+          className="text-xs text-amber-400 hover:text-amber-300 font-semibold transition-colors"
+        >
+          View all notifications →
+        </button>
+      </div>
+    </div>
+  )
+
   return (
     <>
-      {/* Desktop top bar */}
+      {/* ── Desktop top bar ─────────────────────────────────────────────── */}
       <nav
         className="hidden md:flex fixed top-0 left-0 right-0 z-50 border-b px-6 py-3 items-center justify-between"
         style={{ background: 'var(--nav-bg)', borderColor: 'var(--border)', backdropFilter: 'blur(12px)' }}
@@ -133,7 +257,7 @@ export default function Navbar() {
               className={({ isActive }) =>
                 `px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                   isActive
-                    ? 'bg-red-600 text-white'
+                    ? `bg-gradient-to-r ${tabColors[l.key]?.active || 'from-red-600 to-pink-600'} text-white shadow-lg`
                     : 'text-gray-400 hover:text-white hover:bg-gray-800'
                 }`
               }
@@ -174,6 +298,36 @@ export default function Navbar() {
             </a>
           )}
 
+          {/* Notification bell — desktop top bar */}
+          <div className="relative ml-1" ref={notifRef}>
+            <button
+              onClick={() => setShowNotifPanel(v => !v)}
+              className="relative w-9 h-9 flex items-center justify-center rounded-lg transition-colors hover:bg-amber-500/20"
+              style={{ color: unreadCount > 0 ? '#f59e0b' : 'var(--text-secondary)' }}
+              title="Notifications"
+            >
+              {icons.bell}
+              {unreadCount > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 flex items-center justify-center text-[9px] font-black bg-red-500 text-white rounded-full px-0.5 shadow-lg animate-pulse">
+                  {unreadCount > 9 ? '9+' : unreadCount}
+                </span>
+              )}
+            </button>
+            {showNotifPanel && <NotifPanel />}
+          </div>
+
+          {/* User name/avatar */}
+          {user && (
+            <div className="ml-2 flex items-center gap-2 px-3 py-1.5 rounded-lg" style={{ background: 'var(--bg-input)' }}>
+              <div className="w-6 h-6 rounded-full bg-gradient-to-br from-red-500 to-pink-600 flex items-center justify-center text-[10px] font-black text-white">
+                {user?.name?.[0]?.toUpperCase() || 'U'}
+              </div>
+              <span className="text-xs font-semibold max-w-[80px] truncate" style={{ color: 'var(--text-primary)' }}>
+                {user?.name?.split(' ')[0] || 'User'}
+              </span>
+            </div>
+          )}
+
           <button
             onClick={handleLogout}
             className="ml-1 px-4 py-2 text-sm text-gray-400 hover:text-red-400 rounded-lg hover:bg-gray-800 transition-colors"
@@ -183,74 +337,161 @@ export default function Navbar() {
         </div>
       </nav>
 
-      {/* Mobile bottom nav — Professional */}
+      {/* ── Mobile bottom nav — Colourful & Attractive ─────────────────── */}
       <nav
-        className="md:hidden fixed bottom-0 left-0 right-0 z-50 border-t flex items-end"
-        style={{ background: 'var(--bg-surface)', borderColor: 'var(--border)', paddingBottom: 'env(safe-area-inset-bottom)' }}
+        className="md:hidden fixed bottom-0 left-0 right-0 z-50"
+        style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
       >
-        {links.map(l => (
-          <NavLink
-            key={l.to}
-            to={l.to}
-            className={({ isActive }) =>
-              `flex-1 flex flex-col items-center pt-3 pb-2 text-[10px] font-semibold tracking-wide transition-all duration-200 ${
-                isActive
-                  ? 'text-red-400'
-                  : 'text-gray-500 hover:text-gray-300'
-              }`
-            }
-          >
-            <div className="relative mb-1">
-              {l.icon}
-            </div>
-            <span>{l.label}</span>
-          </NavLink>
-        ))}
-
-        {/* Active indicator dot */}
-        <div className="absolute bottom-0 left-0 right-0 h-[3px] bg-gradient-to-r from-red-500 via-pink-500 to-red-600 opacity-0 transition-opacity duration-200 pointer-events-none" id="nav-active-indicator" />
-
-        {/* Theme toggle on mobile */}
-        <button
-          onClick={toggleTheme}
-          className="flex-1 flex flex-col items-center pt-3 pb-2 text-[10px] font-semibold tracking-wide text-gray-500 hover:text-gray-300 transition-colors duration-200"
+        {/* Glassy background with gradient border top */}
+        <div
+          className="relative flex items-end"
+          style={{
+            background: 'linear-gradient(180deg, rgba(10,10,20,0.92) 0%, rgba(5,5,15,0.98) 100%)',
+            borderTop: '1px solid rgba(255,255,255,0.08)',
+            backdropFilter: 'blur(20px)',
+            WebkitBackdropFilter: 'blur(20px)',
+          }}
         >
-          <div className="mb-1">
-            {theme === 'dark' ? icons.theme.light : icons.theme.dark}
-          </div>
-          <span>{theme === 'dark' ? 'Light' : 'Dark'}</span>
-        </button>
+          {/* Coloured top accent line */}
+          <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-blue-500 via-emerald-400 via-violet-500 via-amber-400 to-blue-500 opacity-70" />
 
-        {user && waDigits && (
-          <a
-            href={`https://wa.me/${waDigits}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex-1 flex flex-col items-center pt-3 pb-2 text-[10px] font-semibold tracking-wide text-gray-500 hover:text-gray-300 transition-colors duration-200"
-          >
-            <div className="mb-1 text-green-500">
-              {icons.whatsapp}
-            </div>
-            <span>Support</span>
-          </a>
-        )}
+          {links.map(l => {
+            const col = tabColors[l.key] || { active: 'from-red-500 to-pink-500', dot: '#ef4444', icon: '#f87171' }
+            return (
+              <NavLink
+                key={l.to}
+                to={l.to}
+                className="flex-1 flex flex-col items-center pt-3 pb-2 relative"
+              >
+                {({ isActive }) => (
+                  <>
+                    {/* Active pill background */}
+                    {isActive && (
+                      <span
+                        className={`absolute top-1.5 left-1/2 -translate-x-1/2 w-10 h-10 rounded-2xl bg-gradient-to-br ${col.active} opacity-20 blur-sm`}
+                      />
+                    )}
+                    {/* Active top indicator dot */}
+                    {isActive && (
+                      <span
+                        className="absolute top-0 left-1/2 -translate-x-1/2 w-6 h-[3px] rounded-b-full"
+                        style={{ background: col.dot }}
+                      />
+                    )}
+                    {/* Icon container */}
+                    <div
+                      className={`relative mb-1 transition-all duration-200 ${isActive ? 'scale-110' : 'scale-100'}`}
+                      style={{ color: isActive ? col.icon : '#6b7280' }}
+                    >
+                      {l.icon}
+                      {/* Notification badge on bell icon */}
+                      {l.key === 'notifications' && unreadCount > 0 && (
+                        <span className="absolute -top-1 -right-1 min-w-[14px] h-3.5 flex items-center justify-center text-[8px] font-black bg-red-500 text-white rounded-full px-0.5">
+                          {unreadCount > 9 ? '9+' : unreadCount}
+                        </span>
+                      )}
+                    </div>
+                    <span
+                      className={`text-[9px] font-bold tracking-wide transition-all duration-200 ${isActive ? 'opacity-100' : 'opacity-50'}`}
+                      style={{ color: isActive ? col.icon : '#6b7280' }}
+                    >
+                      {l.label}
+                    </span>
+                  </>
+                )}
+              </NavLink>
+            )
+          })}
 
-        {isAdmin && (
-          <NavLink
-            to="/admin"
-            className={({ isActive }) =>
-              `flex-1 flex flex-col items-center pt-3 pb-2 text-[10px] font-semibold tracking-wide transition-colors duration-200 ${
-                isActive ? 'text-yellow-500' : 'text-gray-500 hover:text-gray-300'
-              }`
-            }
+          {/* Theme toggle */}
+          <button
+            onClick={toggleTheme}
+            className="flex-1 flex flex-col items-center pt-3 pb-2 text-[9px] font-bold tracking-wide text-gray-500 hover:text-gray-300 transition-colors duration-200"
           >
-            <div className="mb-1">
-              {icons.admin}
+            <div className="mb-1 text-gray-500">
+              {theme === 'dark' ? icons.theme.light : icons.theme.dark}
             </div>
-            <span>Admin</span>
-          </NavLink>
-        )}
+            <span className="opacity-50">{theme === 'dark' ? 'Light' : 'Dark'}</span>
+          </button>
+
+          {user && waDigits && (
+            <a
+              href={`https://wa.me/${waDigits}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex-1 flex flex-col items-center pt-3 pb-2 text-[9px] font-bold tracking-wide transition-colors duration-200"
+              style={{ color: '#22c55e' }}
+            >
+              <div className="mb-1">
+                {icons.whatsapp}
+              </div>
+              <span className="opacity-70">Support</span>
+            </a>
+          )}
+
+          {isAdmin && (
+            <NavLink
+              to="/admin"
+              className={({ isActive }) =>
+                `flex-1 flex flex-col items-center pt-3 pb-2 text-[9px] font-bold tracking-wide transition-colors duration-200 ${
+                  isActive ? 'text-yellow-400' : 'text-gray-500 hover:text-gray-300'
+                }`
+              }
+            >
+              <div className="mb-1">
+                {icons.admin}
+              </div>
+              <span className="opacity-70">Admin</span>
+            </NavLink>
+          )}
+        </div>
       </nav>
+
+      {/* Mobile notification bell — floating near user name in top-right */}
+      <div className="md:hidden fixed top-3 right-3 z-[60] flex items-center gap-2">
+        {/* User avatar + name */}
+        {user && (
+          <div className="flex items-center gap-1.5 px-2 py-1 rounded-xl" style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.08)' }}>
+            <div className="w-5 h-5 rounded-full bg-gradient-to-br from-red-500 to-pink-600 flex items-center justify-center text-[9px] font-black text-white">
+              {user?.name?.[0]?.toUpperCase() || 'U'}
+            </div>
+            <span className="text-[10px] font-semibold text-white max-w-[60px] truncate">
+              {user?.name?.split(' ')[0] || 'User'}
+            </span>
+          </div>
+        )}
+
+        {/* Notification bell */}
+        <div className="relative" ref={notifRef}>
+          <button
+            onClick={() => setShowNotifPanel(v => !v)}
+            className="relative w-8 h-8 flex items-center justify-center rounded-xl transition-all active:scale-95"
+            style={{
+              background: unreadCount > 0
+                ? 'linear-gradient(135deg, rgba(245,158,11,0.25), rgba(251,191,36,0.15))'
+                : 'rgba(0,0,0,0.6)',
+              backdropFilter: 'blur(8px)',
+              border: `1px solid ${unreadCount > 0 ? 'rgba(245,158,11,0.4)' : 'rgba(255,255,255,0.08)'}`,
+              color: unreadCount > 0 ? '#f59e0b' : '#9ca3af',
+            }}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
+              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+              <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+            </svg>
+            {unreadCount > 0 && (
+              <span className="absolute -top-1 -right-1 min-w-[16px] h-4 flex items-center justify-center text-[9px] font-black bg-red-500 text-white rounded-full px-0.5 shadow-lg">
+                {unreadCount > 9 ? '9+' : unreadCount}
+              </span>
+            )}
+          </button>
+          {showNotifPanel && (
+            <div className="absolute right-0 top-full mt-2 w-72" style={{ zIndex: 200 }}>
+              <NotifPanel />
+            </div>
+          )}
+        </div>
+      </div>
     </>
   )
 }

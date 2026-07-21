@@ -981,3 +981,144 @@ export async function getAdminStats() {
     pendingLoans: loans.filter(l => l.status === 'pending').length,
   }
 }
+
+// ── Notifications ─────────────────────────────────────────────────────────────
+
+/** Fetch notifications for a specific user (includes global ones sent to all) */
+export async function getUserNotifications(userPhone) {
+  if (!isSupabaseConfigured) {
+    // localStorage fallback
+    const all = JSON.parse(localStorage.getItem('dp_notifications') || '[]')
+    return all
+      .filter(n => n.target === 'all' || n.user_phone === userPhone)
+      .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+  }
+  const { data, error } = await supabase
+    .from('notifications')
+    .select('id, user_phone, target, title, message, type, icon, is_read, created_at')
+    .or(`user_phone.eq.${userPhone},target.eq.all`)
+    .order('created_at', { ascending: false })
+    .limit(50)
+  if (error) throw error
+  return data || []
+}
+
+/** Mark a single notification as read */
+export async function markNotificationRead(id) {
+  if (!isSupabaseConfigured) {
+    const all = JSON.parse(localStorage.getItem('dp_notifications') || '[]')
+    const updated = all.map(n => n.id === id ? { ...n, is_read: true } : n)
+    localStorage.setItem('dp_notifications', JSON.stringify(updated))
+    return
+  }
+  const { error } = await supabase
+    .from('notifications')
+    .update({ is_read: true })
+    .eq('id', id)
+  if (error) throw error
+}
+
+/** Mark all notifications for a user as read */
+export async function markAllNotificationsRead(userPhone) {
+  if (!isSupabaseConfigured) {
+    const all = JSON.parse(localStorage.getItem('dp_notifications') || '[]')
+    const updated = all.map(n =>
+      (n.user_phone === userPhone || n.target === 'all') ? { ...n, is_read: true } : n
+    )
+    localStorage.setItem('dp_notifications', JSON.stringify(updated))
+    return
+  }
+  const { error } = await supabase
+    .from('notifications')
+    .update({ is_read: true })
+    .or(`user_phone.eq.${userPhone},target.eq.all`)
+  if (error) throw error
+}
+
+/** User deletes one of their notifications */
+export async function deleteUserNotification(id) {
+  if (!isSupabaseConfigured) {
+    const all = JSON.parse(localStorage.getItem('dp_notifications') || '[]')
+    localStorage.setItem('dp_notifications', JSON.stringify(all.filter(n => n.id !== id)))
+    return
+  }
+  const { error } = await supabase.from('notifications').delete().eq('id', id)
+  if (error) throw error
+}
+
+// ── Admin: Notifications ──────────────────────────────────────────────────────
+
+/** Admin: send notification to all users */
+export async function adminSendNotificationAll({ title, message, type = 'info', icon = '' }) {
+  if (!isSupabaseConfigured) {
+    const all = JSON.parse(localStorage.getItem('dp_notifications') || '[]')
+    all.unshift({
+      id: Date.now().toString(),
+      user_phone: null,
+      target: 'all',
+      title,
+      message,
+      type,
+      icon,
+      is_read: false,
+      created_at: new Date().toISOString(),
+    })
+    localStorage.setItem('dp_notifications', JSON.stringify(all))
+    return { success: true }
+  }
+  const { error } = await supabase
+    .from('notifications')
+    .insert({ user_phone: null, target: 'all', title, message, type, icon, is_read: false })
+  if (error) throw error
+  return { success: true }
+}
+
+/** Admin: send notification to a specific user */
+export async function adminSendNotificationUser(userPhone, { title, message, type = 'info', icon = '' }) {
+  if (!isSupabaseConfigured) {
+    const all = JSON.parse(localStorage.getItem('dp_notifications') || '[]')
+    all.unshift({
+      id: Date.now().toString(),
+      user_phone: userPhone,
+      target: 'user',
+      title,
+      message,
+      type,
+      icon,
+      is_read: false,
+      created_at: new Date().toISOString(),
+    })
+    localStorage.setItem('dp_notifications', JSON.stringify(all))
+    return { success: true }
+  }
+  const { error } = await supabase
+    .from('notifications')
+    .insert({ user_phone: userPhone, target: 'user', title, message, type, icon, is_read: false })
+  if (error) throw error
+  return { success: true }
+}
+
+/** Admin: get all notifications (for management) */
+export async function adminGetAllNotifications() {
+  if (!isSupabaseConfigured) {
+    return JSON.parse(localStorage.getItem('dp_notifications') || '[]')
+  }
+  const { data, error } = await supabase
+    .from('notifications')
+    .select('id, user_phone, target, title, message, type, icon, is_read, created_at')
+    .order('created_at', { ascending: false })
+    .limit(200)
+  if (error) throw error
+  return data || []
+}
+
+/** Admin: delete any notification */
+export async function adminDeleteNotification(id) {
+  if (!isSupabaseConfigured) {
+    const all = JSON.parse(localStorage.getItem('dp_notifications') || '[]')
+    localStorage.setItem('dp_notifications', JSON.stringify(all.filter(n => n.id !== id)))
+    return
+  }
+  const { error } = await supabase.from('notifications').delete().eq('id', id)
+  if (error) throw error
+}

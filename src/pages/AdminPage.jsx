@@ -5,7 +5,7 @@ import {
   getAllDeposits, approveDeposit, rejectDeposit,
   getAllWithdrawals, approveWithdrawal, rejectWithdrawal,
   getAllLoans, approveLoan, rejectLoan,
-  getAllUsers, adminSetBalance, adminSetBonusBalance,
+  adminSetBalance, adminSetBonusBalance,
   adminDeleteUser, adminUpdateUserStatus, getInvestments,
   getKeywords, createKeyword, updateKeyword, deleteKeyword, toggleKeyword,
   getAllSupportThreads, getSupportMessages, sendSupportMessage,
@@ -13,6 +13,8 @@ import {
   getWhatsAppSettings, updateAppSetting,
   getAllReferrals, getReferrals,
   getAllTransactions, deleteTransaction,
+  adminGetAllNotifications, adminSendNotificationAll, adminSendNotificationUser, adminDeleteNotification,
+  getAllUsers,
 } from '../lib/db'
 
 // ── Shared helpers ────────────────────────────────────────────────────────────
@@ -1380,6 +1382,296 @@ function SettingsTab({ user, showToast }) {
   )
 }
 
+// ── Notifications Tab ───────────────────────────────────────────────────────
+function NotificationsTab({ showToast }) {
+  const [notifications, setNotifications] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [users, setUsers] = useState([])
+  const [sending, setSending] = useState(false)
+  const [confirm, setConfirm] = useState(null)
+
+  // Compose form
+  const [target, setTarget] = useState('all') // 'all' | 'user'
+  const [targetPhone, setTargetPhone] = useState('')
+  const [title, setTitle] = useState('')
+  const [message, setMessage] = useState('')
+  const [type, setType] = useState('info')
+  const [icon, setIcon] = useState('')
+
+  const load = useCallback(async () => {
+    setLoading(true)
+    try {
+      const [notifs, allUsers] = await Promise.all([
+        adminGetAllNotifications(),
+        getAllUsers(),
+      ])
+      setNotifications(notifs)
+      setUsers(allUsers)
+    } catch {
+      showToast('Failed to load notifications', 'error')
+    } finally {
+      setLoading(false)
+    }
+  }, [showToast])
+
+  useEffect(() => { load() }, [load])
+
+  async function handleSend(e) {
+    e.preventDefault()
+    if (!message.trim()) return
+    setSending(true)
+    try {
+      if (target === 'all') {
+        await adminSendNotificationAll({ title: title.trim(), message: message.trim(), type, icon: icon.trim() })
+        showToast(`✅ Notification sent to ALL users`)
+      } else {
+        if (!targetPhone.trim()) { showToast('Please select a user', 'error'); setSending(false); return }
+        await adminSendNotificationUser(targetPhone.trim(), { title: title.trim(), message: message.trim(), type, icon: icon.trim() })
+        showToast(`✅ Notification sent to ${targetPhone}`)
+      }
+      setTitle('')
+      setMessage('')
+      setIcon('')
+      load()
+    } catch (err) {
+      showToast(err.message || 'Failed to send notification', 'error')
+    } finally {
+      setSending(false)
+    }
+  }
+
+  async function handleDelete(id) {
+    try {
+      await adminDeleteNotification(id)
+      showToast('Notification deleted')
+      setNotifications(prev => prev.filter(n => n.id !== id))
+    } catch {
+      showToast('Failed to delete notification', 'error')
+    }
+  }
+
+  const typeOptions = [
+    { value: 'info',    label: '📢 Info',    color: '#3b82f6' },
+    { value: 'success', label: '✅ Success', color: '#10b981' },
+    { value: 'warning', label: '⚠️ Warning', color: '#f59e0b' },
+    { value: 'promo',   label: '🎁 Promo',   color: '#8b5cf6' },
+    { value: 'alert',   label: '🔔 Alert',   color: '#ef4444' },
+  ]
+
+  function timeAgo(dateStr) {
+    if (!dateStr) return ''
+    const diff = Date.now() - new Date(dateStr).getTime()
+    const mins = Math.floor(diff / 60000)
+    if (mins < 1) return 'just now'
+    if (mins < 60) return `${mins}m ago`
+    const hrs = Math.floor(mins / 60)
+    if (hrs < 24) return `${hrs}h ago`
+    return `${Math.floor(hrs / 24)}d ago`
+  }
+
+  return (
+    <div>
+      {confirm && <ConfirmDialog message={confirm.message} onConfirm={() => { confirm.action(); setConfirm(null) }} onCancel={() => setConfirm(null)} />}
+      <SectionHeader title="Notifications" subtitle="Send announcements and alerts to users" />
+
+      <div className="grid md:grid-cols-2 gap-6">
+        {/* ── Compose Form ── */}
+        <div>
+          <h4 className="text-sm font-bold mb-3 flex items-center gap-2">
+            <span className="text-lg">📤</span> Compose Notification
+          </h4>
+          <form onSubmit={handleSend} className="card space-y-4">
+            {/* Target */}
+            <div>
+              <label className="text-xs font-semibold mb-2 block" style={{ color: 'var(--text-muted)' }}>Send To</label>
+              <div className="flex gap-2">
+                {[{ v: 'all', label: '🌍 All Users' }, { v: 'user', label: '👤 Specific User' }].map(opt => (
+                  <button
+                    key={opt.v}
+                    type="button"
+                    onClick={() => setTarget(opt.v)}
+                    className={`flex-1 py-2 rounded-xl text-xs font-semibold transition-all ${
+                      target === opt.v ? 'text-white shadow-lg' : 'text-gray-400'
+                    }`}
+                    style={{
+                      background: target === opt.v
+                        ? 'linear-gradient(135deg, #f59e0b, #d97706)'
+                        : 'var(--bg-input)',
+                    }}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* User selector */}
+            {target === 'user' && (
+              <div>
+                <label className="text-xs font-semibold mb-1 block" style={{ color: 'var(--text-muted)' }}>Select User</label>
+                <select
+                  className="w-full text-sm px-3 py-2 rounded-xl border outline-none"
+                  style={{ background: 'var(--bg-input)', borderColor: 'var(--border)', color: 'var(--text-primary)' }}
+                  value={targetPhone}
+                  onChange={e => setTargetPhone(e.target.value)}
+                  required={target === 'user'}
+                >
+                  <option value="">— Select user —</option>
+                  {users.map(u => (
+                    <option key={u.phone} value={u.phone}>
+                      {u.name} ({u.phone})
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {/* Type */}
+            <div>
+              <label className="text-xs font-semibold mb-2 block" style={{ color: 'var(--text-muted)' }}>Type</label>
+              <div className="flex flex-wrap gap-1.5">
+                {typeOptions.map(t => (
+                  <button
+                    key={t.value}
+                    type="button"
+                    onClick={() => setType(t.value)}
+                    className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all ${
+                      type === t.value ? 'text-white' : 'text-gray-400'
+                    }`}
+                    style={{
+                      background: type === t.value ? t.color : 'var(--bg-input)',
+                      border: `1px solid ${type === t.value ? t.color : 'transparent'}`,
+                    }}
+                  >
+                    {t.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Icon (emoji) */}
+            <div>
+              <label className="text-xs font-semibold mb-1 block" style={{ color: 'var(--text-muted)' }}>Icon (emoji, optional)</label>
+              <input
+                className="w-full text-sm px-3 py-2 rounded-xl border outline-none"
+                style={{ background: 'var(--bg-input)', borderColor: 'var(--border)', color: 'var(--text-primary)' }}
+                placeholder="e.g. 🎉"
+                value={icon}
+                onChange={e => setIcon(e.target.value)}
+                maxLength={4}
+              />
+            </div>
+
+            {/* Title */}
+            <div>
+              <label className="text-xs font-semibold mb-1 block" style={{ color: 'var(--text-muted)' }}>Title (optional)</label>
+              <input
+                className="w-full text-sm px-3 py-2 rounded-xl border outline-none"
+                style={{ background: 'var(--bg-input)', borderColor: 'var(--border)', color: 'var(--text-primary)' }}
+                placeholder="Notification title..."
+                value={title}
+                onChange={e => setTitle(e.target.value)}
+                maxLength={80}
+              />
+            </div>
+
+            {/* Message */}
+            <div>
+              <label className="text-xs font-semibold mb-1 block" style={{ color: 'var(--text-muted)' }}>Message *</label>
+              <textarea
+                className="w-full text-sm px-3 py-2 rounded-xl border outline-none resize-none"
+                style={{ background: 'var(--bg-input)', borderColor: 'var(--border)', color: 'var(--text-primary)' }}
+                placeholder="Write your notification message..."
+                rows={3}
+                value={message}
+                onChange={e => setMessage(e.target.value)}
+                required
+                maxLength={500}
+              />
+              <p className="text-[10px] text-right mt-0.5" style={{ color: 'var(--text-muted)' }}>{message.length}/500</p>
+            </div>
+
+            <button
+              type="submit"
+              disabled={sending || !message.trim()}
+              className="w-full py-2.5 rounded-xl font-bold text-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              style={{
+                background: sending ? 'var(--bg-input)' : 'linear-gradient(135deg, #f59e0b, #d97706)',
+                color: sending ? 'var(--text-muted)' : '#000',
+              }}
+            >
+              {sending ? (
+                <span className="flex items-center justify-center gap-2">
+                  <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+                  Sending...
+                </span>
+              ) : target === 'all' ? '📡 Send to All Users' : '📨 Send to User'}
+            </button>
+          </form>
+        </div>
+
+        {/* ── Notification History ── */}
+        <div>
+          <div className="flex items-center justify-between mb-3">
+            <h4 className="text-sm font-bold flex items-center gap-2">
+              <span className="text-lg">📋</span> Sent Notifications
+              <span className="text-xs bg-gray-700 text-gray-300 px-2 py-0.5 rounded-full">{notifications.length}</span>
+            </h4>
+            <button onClick={load} className="text-xs text-gray-400 hover:text-white transition-colors">↻ Refresh</button>
+          </div>
+
+          {loading ? (
+            <div className="text-center py-12 text-gray-500">Loading...</div>
+          ) : notifications.length === 0 ? (
+            <div className="card text-center py-12">
+              <p className="text-4xl mb-3">🔔</p>
+              <p style={{ color: 'var(--text-muted)' }}>No notifications sent yet</p>
+            </div>
+          ) : (
+            <div className="space-y-2 max-h-[520px] overflow-y-auto pr-1">
+              {notifications.map(n => (
+                <div key={n.id} className="card hover:border-gray-600 transition-colors">
+                  <div className="flex items-start gap-3">
+                    <span className="text-xl flex-shrink-0">{n.icon || '📢'}</span>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap mb-0.5">
+                        {n.title && <span className="font-semibold text-sm">{n.title}</span>}
+                        <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-semibold capitalize ${
+                          n.type === 'success' ? 'bg-green-900/40 text-green-300' :
+                          n.type === 'warning' ? 'bg-yellow-900/40 text-yellow-300' :
+                          n.type === 'promo'   ? 'bg-purple-900/40 text-purple-300' :
+                          n.type === 'alert'   ? 'bg-red-900/40 text-red-300' :
+                          'bg-blue-900/40 text-blue-300'
+                        }`}>{n.type}</span>
+                        <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-semibold ${
+                          n.target === 'all' ? 'bg-amber-900/40 text-amber-300' : 'bg-gray-700 text-gray-300'
+                        }`}>
+                          {n.target === 'all' ? '🌍 All' : `👤 ${n.user_phone || 'User'}`}
+                        </span>
+                      </div>
+                      <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{n.message}</p>
+                      <p className="text-[10px] mt-1" style={{ color: 'var(--text-muted)' }}>{timeAgo(n.created_at)}</p>
+                    </div>
+                    <button
+                      onClick={() => setConfirm({ message: 'Delete this notification?', action: () => handleDelete(n.id) })}
+                      className="flex-shrink-0 w-7 h-7 flex items-center justify-center rounded-lg text-gray-500 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                      title="Delete"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-3.5 h-3.5">
+                        <polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14H6L5 6" /><path d="M10 11v6" /><path d="M14 11v6" /><path d="M9 6V4h6v2" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ── Main Admin Page ───────────────────────────────────────────────────────────
 const TABS = [
   { id: 'overview',    label: 'Overview',    icon: '📊' },
@@ -1392,6 +1684,7 @@ const TABS = [
   { id: 'support',     label: 'Support',     icon: '💬' },
   { id: 'resets',      label: 'PIN Resets',  icon: '🔑' },
   { id: 'transactions', label: 'Transactions', icon: '📋' },
+  { id: 'notifications', label: 'Notifications', icon: '🔔' },
   { id: 'settings',    label: 'Settings',    icon: '⚙️' },
 ]
 
@@ -1495,8 +1788,9 @@ export default function AdminPage() {
             {tab === 'promo'       && <PromoTab showToast={showToast} />}
             {tab === 'support'     && <SupportTab showToast={showToast} />}
             {tab === 'resets'      && <PasswordResetsTab showToast={showToast} />}
-            {tab === 'transactions' && <TransactionsTab showToast={showToast} />}
-            {tab === 'settings'    && <SettingsTab user={user} showToast={showToast} />}
+            {tab === 'transactions'  && <TransactionsTab showToast={showToast} />}
+            {tab === 'notifications' && <NotificationsTab showToast={showToast} />}
+            {tab === 'settings'      && <SettingsTab user={user} showToast={showToast} />}
           </div>
         </main>
       </div>
