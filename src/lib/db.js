@@ -258,37 +258,18 @@ export async function rejectDeposit(depositId) {
 // ── Referrals ─────────────────────────────────────────────────────────────────
 export async function getReferrals(userPhone) {
   if (!isSupabaseConfigured) return local.getReferrals(userPhone)
-  const { data, error } = await supabase
-    .from('referrals')
-    .select('referred_name, referred_phone, level, commission, plan_name, created_at')
-    .eq('referrer_phone', userPhone)
-    .order('created_at', { ascending: false })
+  // Use RPC: joins users.referred_by (signup roster) with referrals table (commissions)
+  const { data, error } = await supabase.rpc('get_user_referrals', { p_phone: userPhone })
   if (error) throw error
-  const refs = data || []
-
-  // Batch check investment status for all referred users
-  const phones = [...new Set(refs.map(r => r.referred_phone).filter(Boolean))]
-  let activePhones = new Set()
-  if (phones.length > 0) {
-    try {
-      const { data: invs, error: invErr } = await supabase
-        .from('investments')
-        .select('user_phone, status')
-        .in('user_phone', phones)
-      if (!invErr && invs) {
-        invs.filter(i => i.status === 'active').forEach(i => activePhones.add(i.user_phone))
-      }
-    } catch { /* silently skip */ }
-  }
-
-  return refs.map(r => ({
-    referredName: r.referred_name,
+  return (data || []).map(r => ({
+    referredName: r.referred_name || '',
     referredPhone: r.referred_phone || '',
-    level: r.level,
-    commission: Number(r.commission),
-    planName: r.plan_name,
+    level: r.level || 1,
+    commission: Number(r.commission || 0),
+    planName: r.plan_name || '',
     date: r.created_at,
-    isActive: activePhones.has(r.referred_phone),
+    isActive: r.is_active || false,
+    isInvested: r.is_invested || false,
   }))
 }
 

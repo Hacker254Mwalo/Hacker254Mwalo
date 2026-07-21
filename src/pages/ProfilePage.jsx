@@ -706,6 +706,7 @@ export default function ProfilePage() {
               const maskedPhone = r.referredPhone
                 ? r.referredPhone.slice(0, 5) + '***'
                 : 'Unknown'
+              const hasInvested = r.isInvested
               return (
                 <div key={i} className="flex items-center justify-between rounded-xl px-4 py-3" style={{ background: 'var(--bg-elevated)' }}>
                   <div>
@@ -713,19 +714,25 @@ export default function ProfilePage() {
                     <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{maskedPhone} • Level {r.level}</p>
                     <div className="flex items-center gap-1.5 mt-1">
                       <span className={`inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full font-bold ${
-                        r.isActive
+                        hasInvested
                           ? 'bg-green-900/50 text-green-300'
-                          : 'bg-gray-700/50 text-gray-400'
+                          : 'bg-yellow-900/50 text-yellow-300'
                       }`}>
-                        <span className={`w-1.5 h-1.5 rounded-full ${r.isActive ? 'bg-green-400' : 'bg-gray-500'}`}/>
-                        {r.isActive ? 'Active' : 'Inactive'}
+                        <span className={`w-1.5 h-1.5 rounded-full ${hasInvested ? 'bg-green-400' : 'bg-yellow-400'}`}/>
+                        {hasInvested ? 'Active' : 'Pending Investment'}
                       </span>
                       {r.planName && <span className="text-[10px]" style={{ color: 'var(--text-muted)' }}>• {r.planName}</span>}
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="text-green-400 font-semibold text-sm">+KSh {r.commission.toLocaleString()}</p>
-                    <p className="text-[10px]" style={{ color: 'var(--text-muted)' }}>{new Date(r.date).toLocaleDateString()}</p>
+                    {r.commission > 0 ? (
+                      <>
+                        <p className="text-green-400 font-semibold text-sm">+KSh {r.commission.toLocaleString()}</p>
+                        <p className="text-[10px]" style={{ color: 'var(--text-muted)' }}>{new Date(r.date).toLocaleDateString()}</p>
+                      </>
+                    ) : (
+                      <p className="text-yellow-400 text-xs font-medium">Earns on 1st investment</p>
+                    )}
                   </div>
                 </div>
               )

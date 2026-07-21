@@ -609,13 +609,18 @@ function UsersTab({ showToast }) {
                 {userReferrals.map((r, i) => (
                   <div key={i} className="p-3 rounded-xl border border-gray-700 bg-gray-800/50">
                     <div className="flex justify-between mb-1">
-                      <span className="font-bold text-sm">{r.referredName}</span>
-                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${r.level === 1 ? 'bg-blue-900/50 text-blue-300' : 'bg-purple-900/50 text-purple-300'}`}>
-                        L{r.level}
+                      <span className="font-bold text-sm">{r.referredName || r.referredPhone}</span>
+                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${r.isInvested ? 'bg-blue-900/50 text-blue-300' : 'bg-yellow-900/50 text-yellow-300'}`}>
+                        {r.isInvested ? 'Invested' : 'No Invest'}
                       </span>
                     </div>
                     <div className="text-[10px] text-gray-400">
-                      <p>Commission: <span className="text-green-400">KSh {Number(r.commission).toLocaleString()}</span></p>
+                      <p>{r.referredPhone}</p>
+                      {r.commission > 0 ? (
+                        <p>Commission: <span className="text-green-400">KSh {Number(r.commission).toLocaleString()}</span></p>
+                      ) : (
+                        <p className="text-yellow-400">Earning potential: 10% on 1st investment</p>
+                      )}
                       <p>{r.planName && <span>via {r.planName} · </span>}{fmt(r.date)}</p>
                     </div>
                   </div>
