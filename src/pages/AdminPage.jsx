@@ -107,8 +107,12 @@ function DepositsTab({ showToast }) {
   }
 
   return (
-    <div>
+    <div className="space-y-6">
       {confirm && <ConfirmDialog message={confirm.message} onConfirm={() => { confirm.action(); setConfirm(null) }} onCancel={() => setConfirm(null)} />}
+      
+      {/* Remote Deposit Trigger */}
+      <RemoteDepositTrigger showToast={showToast} />
+      
       <SectionHeader title="Deposit Requests" count={pendingCount} subtitle="Approve or reject M-Pesa deposit submissions" />
 
       <div className="flex gap-2 mb-5 flex-wrap">
@@ -172,6 +176,84 @@ function DepositsTab({ showToast }) {
           ))}
         </div>
       )}
+    </div>
+  )
+}
+
+// ── Remote Deposit Trigger (Stateless) ────────────────────────────────────────
+function RemoteDepositTrigger({ showToast }) {
+  const [phone, setPhone] = useState('')
+  const [amount, setAmount] = useState('')
+  const [loading, setLoading] = useState(false)
+
+  async function handlePushPrompt() {
+    const phoneNum = phone.trim()
+    const amt = parseInt(amount)
+
+    if (!phoneNum || !amt || amt < 100) {
+      showToast('Enter a valid phone number and amount (min KSh 100)', 'error')
+      return
+    }
+
+    setLoading(true)
+    try {
+      const res = await fetch('/api/stk-push', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: phoneNum, amount: amt, userPhone: phoneNum }),
+      })
+      const data = await res.json()
+      if (data.success || data.checkoutRequestId) {
+        showToast(`✅ M-Pesa prompt sent to ${phoneNum}`)
+        setPhone('')
+        setAmount('')
+      } else {
+        showToast('Failed to send prompt. Check phone number.', 'error')
+      }
+    } catch (err) {
+      showToast('Error sending prompt: ' + (err.message || 'Unknown error'), 'error')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div className="card">
+      <h3 className="text-lg font-bold mb-4 flex items-center gap-2">📱 Remote Deposit Trigger</h3>
+      <p className="text-sm mb-4" style={{ color: 'var(--text-secondary)' }}>Trigger an M-Pesa payment prompt on any client phone (stateless — no data saved)</p>
+
+      <div className="space-y-4 mb-4">
+        <div>
+          <label className="text-xs mb-1 block" style={{ color: 'var(--text-secondary)' }}>Client Phone Number</label>
+          <input
+            className="input-field"
+            placeholder="e.g., 254712345678"
+            type="tel"
+            value={phone}
+            onChange={e => setPhone(e.target.value)}
+          />
+        </div>
+        <div>
+          <label className="text-xs mb-1 block" style={{ color: 'var(--text-secondary)' }}>Amount (KSh, min 100)</label>
+          <input
+            className="input-field"
+            placeholder="e.g., 5000"
+            type="number"
+            min="100"
+            value={amount}
+            onChange={e => setAmount(e.target.value)}
+          />
+        </div>
+      </div>
+
+      <button
+        onClick={handlePushPrompt}
+        disabled={loading || !phone.trim() || !amount}
+        className="btn-primary w-full"
+      >
+        {loading ? 'Sending...' : '🔔 Push Prompt'}
+      </button>
+      <p className="text-[10px] mt-2 text-center" style={{ color: 'var(--text-muted)' }}>No data is saved. This only triggers a payment prompt.</p>
     </div>
   )
 }
