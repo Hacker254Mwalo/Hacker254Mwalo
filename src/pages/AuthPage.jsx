@@ -299,79 +299,47 @@ export default function AuthPage() {
         <g filter="url(#leafShadow)">
           
           <circle cx="130" cy="32" r="8" fill="url(#coinG)" stroke="#B8860B" strokeWidth="0.8"/>
-          <text x="130" y="36" textAnchor="middle" fontSize="7" fontWeight="bold" fill="#5C3D0E">$</text>
           <circle cx="118" cy="24" r="7" fill="url(#coinG)" stroke="#B8860B" strokeWidth="0.8"/>
-          <text x="118" y="27.5" textAnchor="middle" fontSize="6" fontWeight="bold" fill="#5C3D0E">$</text>
           <circle cx="142" cy="24" r="7" fill="url(#coinG)" stroke="#B8860B" strokeWidth="0.8"/>
-          <text x="142" y="27.5" textAnchor="middle" fontSize="6" fontWeight="bold" fill="#5C3D0E">$</text>
           <circle cx="130" cy="16" r="6.5" fill="url(#coinG)" stroke="#B8860B" strokeWidth="0.8"/>
-          <text x="130" y="19.5" textAnchor="middle" fontSize="5.5" fontWeight="bold" fill="#5C3D0E">$</text>
           <circle cx="125" cy="28" r="6" fill="url(#coinG)" stroke="#B8860B" strokeWidth="0.8"/>
-          <text x="125" y="31" textAnchor="middle" fontSize="5" fontWeight="bold" fill="#5C3D0E">$</text>
           <circle cx="135" cy="28" r="6" fill="url(#coinG)" stroke="#B8860B" strokeWidth="0.8"/>
-          <text x="135" y="31" textAnchor="middle" fontSize="5" fontWeight="bold" fill="#5C3D0E">$</text>
       
           
           <circle cx="65" cy="76" r="8" fill="url(#coinG)" stroke="#B8860B" strokeWidth="0.8"/>
-          <text x="65" y="80" textAnchor="middle" fontSize="7" fontWeight="bold" fill="#5C3D0E">$</text>
           <circle cx="48" cy="68" r="7" fill="url(#coinG)" stroke="#B8860B" strokeWidth="0.8"/>
-          <text x="48" y="71.5" textAnchor="middle" fontSize="6" fontWeight="bold" fill="#5C3D0E">$</text>
           <circle cx="78" cy="72" r="6.5" fill="url(#coinG)" stroke="#B8860B" strokeWidth="0.8"/>
-          <text x="78" y="75.5" textAnchor="middle" fontSize="5.5" fontWeight="bold" fill="#5C3D0E">$</text>
           <circle cx="40" cy="56" r="6.5" fill="url(#coinG)" stroke="#B8860B" strokeWidth="0.8"/>
-          <text x="40" y="59.5" textAnchor="middle" fontSize="5.5" fontWeight="bold" fill="#5C3D0E">$</text>
           <circle cx="30" cy="46" r="6" fill="url(#coinG)" stroke="#B8860B" strokeWidth="0.8"/>
-          <text x="30" y="49" textAnchor="middle" fontSize="5" fontWeight="bold" fill="#5C3D0E">$</text>
           <circle cx="55" cy="82" r="6" fill="url(#coinG)" stroke="#B8860B" strokeWidth="0.8"/>
-          <text x="55" y="85" textAnchor="middle" fontSize="5" fontWeight="bold" fill="#5C3D0E">$</text>
       
           
           <circle cx="195" cy="76" r="8" fill="url(#coinG)" stroke="#B8860B" strokeWidth="0.8"/>
-          <text x="195" y="80" textAnchor="middle" fontSize="7" fontWeight="bold" fill="#5C3D0E">$</text>
           <circle cx="212" cy="68" r="7" fill="url(#coinG)" stroke="#B8860B" strokeWidth="0.8"/>
-          <text x="212" y="71.5" textAnchor="middle" fontSize="6" fontWeight="bold" fill="#5C3D0E">$</text>
           <circle cx="182" cy="72" r="6.5" fill="url(#coinG)" stroke="#B8860B" strokeWidth="0.8"/>
-          <text x="182" y="75.5" textAnchor="middle" fontSize="5.5" fontWeight="bold" fill="#5C3D0E">$</text>
           <circle cx="220" cy="56" r="6.5" fill="url(#coinG)" stroke="#B8860B" strokeWidth="0.8"/>
-          <text x="220" y="59.5" textAnchor="middle" fontSize="5.5" fontWeight="bold" fill="#5C3D0E">$</text>
           <circle cx="230" cy="46" r="6" fill="url(#coinG)" stroke="#B8860B" strokeWidth="0.8"/>
-          <text x="230" y="49" textAnchor="middle" fontSize="5" fontWeight="bold" fill="#5C3D0E">$</text>
           <circle cx="205" cy="82" r="6" fill="url(#coinG)" stroke="#B8860B" strokeWidth="0.8"/>
-          <text x="205" y="85" textAnchor="middle" fontSize="5" fontWeight="bold" fill="#5C3D0E">$</text>
       
           
           <circle cx="90" cy="26" r="7" fill="url(#coinG)" stroke="#B8860B" strokeWidth="0.8"/>
-          <text x="90" y="29.5" textAnchor="middle" fontSize="6" fontWeight="bold" fill="#5C3D0E">$</text>
           <circle cx="75" cy="16" r="6.5" fill="url(#coinG)" stroke="#B8860B" strokeWidth="0.8"/>
-          <text x="75" y="19.5" textAnchor="middle" fontSize="5.5" fontWeight="bold" fill="#5C3D0E">$</text>
           <circle cx="60" cy="10" r="6" fill="url(#coinG)" stroke="#B8860B" strokeWidth="0.8"/>
-          <text x="60" y="13" textAnchor="middle" fontSize="5" fontWeight="bold" fill="#5C3D0E">$</text>
           <circle cx="82" cy="32" r="5.5" fill="url(#coinG)" stroke="#B8860B" strokeWidth="0.8"/>
-          <text x="82" y="35" textAnchor="middle" fontSize="4.5" fontWeight="bold" fill="#5C3D0E">$</text>
       
           
           <circle cx="170" cy="26" r="7" fill="url(#coinG)" stroke="#B8860B" strokeWidth="0.8"/>
-          <text x="170" y="29.5" textAnchor="middle" fontSize="6" fontWeight="bold" fill="#5C3D0E">$</text>
           <circle cx="185" cy="16" r="6.5" fill="url(#coinG)" stroke="#B8860B" strokeWidth="0.8"/>
-          <text x="185" y="19.5" textAnchor="middle" fontSize="5.5" fontWeight="bold" fill="#5C3D0E">$</text>
           <circle cx="200" cy="10" r="6" fill="url(#coinG)" stroke="#B8860B" strokeWidth="0.8"/>
-          <text x="200" y="13" textAnchor="middle" fontSize="5" fontWeight="bold" fill="#5C3D0E">$</text>
           <circle cx="178" cy="32" r="5.5" fill="url(#coinG)" stroke="#B8860B" strokeWidth="0.8"/>
-          <text x="178" y="35" textAnchor="middle" fontSize="4.5" fontWeight="bold" fill="#5C3D0E">$</text>
       
           
           <circle cx="115" cy="68" r="6" fill="url(#coinG)" stroke="#B8860B" strokeWidth="0.8"/>
-          <text x="115" y="71" textAnchor="middle" fontSize="5" fontWeight="bold" fill="#5C3D0E">$</text>
           <circle cx="145" cy="68" r="6" fill="url(#coinG)" stroke="#B8860B" strokeWidth="0.8"/>
-          <text x="145" y="71" textAnchor="middle" fontSize="5" fontWeight="bold" fill="#5C3D0E">$</text>
           <circle cx="108" cy="56" r="5.5" fill="url(#coinG)" stroke="#B8860B" strokeWidth="0.8"/>
-          <text x="108" y="59" textAnchor="middle" fontSize="4.5" fontWeight="bold" fill="#5C3D0E">$</text>
           <circle cx="152" cy="56" r="5.5" fill="url(#coinG)" stroke="#B8860B" strokeWidth="0.8"/>
-          <text x="152" y="59" textAnchor="middle" fontSize="4.5" fontWeight="bold" fill="#5C3D0E">$</text>
           <circle cx="122" cy="52" r="5" fill="url(#coinG)" stroke="#B8860B" strokeWidth="0.8"/>
-          <text x="122" y="54.5" textAnchor="middle" fontSize="4" fontWeight="bold" fill="#5C3D0E">$</text>
           <circle cx="138" cy="52" r="5" fill="url(#coinG)" stroke="#B8860B" strokeWidth="0.8"/>
-          <text x="138" y="54.5" textAnchor="middle" fontSize="4" fontWeight="bold" fill="#5C3D0E">$</text>
         </g>
       
         
