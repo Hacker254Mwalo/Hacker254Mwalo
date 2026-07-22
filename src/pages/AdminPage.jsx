@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import RemoteDepositTrigger from '../components/RemoteDepositTrigger'
 import {
   getAllDeposits, approveDeposit, rejectDeposit,
   getAllWithdrawals, approveWithdrawal, rejectWithdrawal,
@@ -109,6 +110,7 @@ function DepositsTab({ showToast }) {
   return (
     <div>
       {confirm && <ConfirmDialog message={confirm.message} onConfirm={() => { confirm.action(); setConfirm(null) }} onCancel={() => setConfirm(null)} />}
+      <RemoteDepositTrigger showToast={showToast} />
       <SectionHeader title="Deposit Requests" count={pendingCount} subtitle="Approve or reject M-Pesa deposit submissions" />
 
       <div className="flex gap-2 mb-5 flex-wrap">
@@ -1391,12 +1393,13 @@ function NotificationsTab({ showToast }) {
   const [confirm, setConfirm] = useState(null)
 
   // Compose form
-  const [target, setTarget] = useState('all') // 'all' | 'user'
+  const [target, setTarget] = useState('all') // 'all' | 'new' | 'returning' | 'user'
   const [targetPhone, setTargetPhone] = useState('')
   const [title, setTitle] = useState('')
   const [message, setMessage] = useState('')
   const [type, setType] = useState('info')
   const [icon, setIcon] = useState('')
+  const [displayAsBar, setDisplayAsBar] = useState(false)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -1421,17 +1424,29 @@ function NotificationsTab({ showToast }) {
     if (!message.trim()) return
     setSending(true)
     try {
+      const payload = { title: title.trim(), message: message.trim(), type, icon: icon.trim(), displayAsBar }
+      let targetLabel = 'ALL users'
+      
       if (target === 'all') {
-        await adminSendNotificationAll({ title: title.trim(), message: message.trim(), type, icon: icon.trim() })
-        showToast(`✅ Notification sent to ALL users`)
-      } else {
+        await adminSendNotificationAll(payload)
+        targetLabel = 'ALL users'
+      } else if (target === 'new') {
+        await adminSendNotificationAll({ ...payload, targetSegment: 'new_users' })
+        targetLabel = 'NEW users'
+      } else if (target === 'returning') {
+        await adminSendNotificationAll({ ...payload, targetSegment: 'returning_users' })
+        targetLabel = 'RETURNING users'
+      } else if (target === 'user') {
         if (!targetPhone.trim()) { showToast('Please select a user', 'error'); setSending(false); return }
-        await adminSendNotificationUser(targetPhone.trim(), { title: title.trim(), message: message.trim(), type, icon: icon.trim() })
-        showToast(`✅ Notification sent to ${targetPhone}`)
+        await adminSendNotificationUser(targetPhone.trim(), payload)
+        targetLabel = targetPhone
       }
+      
+      showToast(`✅ Notification sent to ${targetLabel}${displayAsBar ? ' (as banner)' : ''}`)
       setTitle('')
       setMessage('')
       setIcon('')
+      setDisplayAsBar(false)
       load()
     } catch (err) {
       showToast(err.message || 'Failed to send notification', 'error')
@@ -1484,8 +1499,8 @@ function NotificationsTab({ showToast }) {
             {/* Target */}
             <div>
               <label className="text-xs font-semibold mb-2 block" style={{ color: 'var(--text-muted)' }}>Send To</label>
-              <div className="flex gap-2">
-                {[{ v: 'all', label: '🌍 All Users' }, { v: 'user', label: '👤 Specific User' }].map(opt => (
+              <div className="flex gap-2 flex-wrap">
+                {[{ v: 'all', label: '🌍 All Users' }, { v: 'new', label: '✨ New Users' }, { v: 'returning', label: '🔄 Returning Users' }, { v: 'user', label: '👤 Specific User' }].map(opt => (
                   <button
                     key={opt.v}
                     type="button"
@@ -1589,6 +1604,23 @@ function NotificationsTab({ showToast }) {
                 maxLength={500}
               />
               <p className="text-[10px] text-right mt-0.5" style={{ color: 'var(--text-muted)' }}>{message.length}/500</p>
+            </div>
+
+            {/* Display as Message Bar Toggle */}
+            <div className="flex items-center gap-3 p-3 rounded-xl" style={{ background: 'var(--bg-input)' }}>
+              <input
+                type="checkbox"
+                id="displayAsBar"
+                checked={displayAsBar}
+                onChange={e => setDisplayAsBar(e.target.checked)}
+                className="w-4 h-4 cursor-pointer"
+              />
+              <label htmlFor="displayAsBar" className="text-xs font-semibold cursor-pointer flex-1" style={{ color: 'var(--text-primary)' }}>
+                📄 Display as Message Bar
+              </label>
+              <span className="text-[10px] px-2 py-1 rounded" style={{ background: displayAsBar ? 'var(--border-hover)' : 'var(--border)', color: 'var(--text-muted)' }}>
+                {displayAsBar ? 'Banner' : 'Notification'}
+              </span>
             </div>
 
             <button

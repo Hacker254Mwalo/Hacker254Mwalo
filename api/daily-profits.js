@@ -13,6 +13,7 @@ export default async function handler(req, res) {
   )
 
   // Step 1: Process daily profits (uses RPC — single HTTP call, no PG connection)
+  // The process_daily_profits function now handles the last_paid_date check internally.
   const { error: profitError } = await supabase.rpc('process_daily_profits')
   if (profitError) {
     console.error('Profit accumulation error:', profitError)

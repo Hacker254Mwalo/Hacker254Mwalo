@@ -217,7 +217,8 @@ create policy "anon_all" on public.support_messages  for all to anon, authentica
 create policy "anon_all" on public.password_reset_requests for all to anon, authenticated using (true) with check (true);
 
 -- ── Transactions table (audit trail for all balance changes) ─────────────────
-create table if not exists public.transactions (
+create table if not exists public.notifications (
+  display_as_bar boolean not null default false,
   id             uuid primary key default gen_random_uuid(),
   phone_number   text not null,
   user_phone     text,
