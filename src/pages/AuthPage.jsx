@@ -298,48 +298,80 @@ export default function AuthPage() {
         
         <g filter="url(#leafShadow)">
           
-          <ellipse cx="130" cy="32" rx="13" ry="7.5" fill="url(#leafGold1)" transform="rotate(-8 130 32)"/>
-          <ellipse cx="118" cy="24" rx="11" ry="6.5" fill="url(#leafGold2)" transform="rotate(-28 118 24)"/>
-          <ellipse cx="142" cy="24" rx="11" ry="6.5" fill="url(#leafGold2)" transform="rotate(28 142 24)"/>
-          <ellipse cx="130" cy="16" rx="9" ry="5" fill="url(#leafGold3)" transform="rotate(0 130 16)"/>
-          <ellipse cx="125" cy="28" rx="8" ry="5" fill="url(#leafGold3)" transform="rotate(-15 125 28)"/>
-          <ellipse cx="135" cy="28" rx="8" ry="5" fill="url(#leafGold3)" transform="rotate(15 135 28)"/>
+          <circle cx="130" cy="32" r="8" fill="url(#coinG)" stroke="#B8860B" strokeWidth="0.8"/>
+          <text x="130" y="36" textAnchor="middle" fontSize="7" fontWeight="bold" fill="#5C3D0E">$</text>
+          <circle cx="118" cy="24" r="7" fill="url(#coinG)" stroke="#B8860B" strokeWidth="0.8"/>
+          <text x="118" y="27.5" textAnchor="middle" fontSize="6" fontWeight="bold" fill="#5C3D0E">$</text>
+          <circle cx="142" cy="24" r="7" fill="url(#coinG)" stroke="#B8860B" strokeWidth="0.8"/>
+          <text x="142" y="27.5" textAnchor="middle" fontSize="6" fontWeight="bold" fill="#5C3D0E">$</text>
+          <circle cx="130" cy="16" r="6.5" fill="url(#coinG)" stroke="#B8860B" strokeWidth="0.8"/>
+          <text x="130" y="19.5" textAnchor="middle" fontSize="5.5" fontWeight="bold" fill="#5C3D0E">$</text>
+          <circle cx="125" cy="28" r="6" fill="url(#coinG)" stroke="#B8860B" strokeWidth="0.8"/>
+          <text x="125" y="31" textAnchor="middle" fontSize="5" fontWeight="bold" fill="#5C3D0E">$</text>
+          <circle cx="135" cy="28" r="6" fill="url(#coinG)" stroke="#B8860B" strokeWidth="0.8"/>
+          <text x="135" y="31" textAnchor="middle" fontSize="5" fontWeight="bold" fill="#5C3D0E">$</text>
       
           
-          <ellipse cx="65" cy="76" rx="12" ry="7" fill="url(#leafGold1)" transform="rotate(-32 65 76)"/>
-          <ellipse cx="48" cy="68" rx="10" ry="6" fill="url(#leafGold2)" transform="rotate(-48 48 68)"/>
-          <ellipse cx="78" cy="72" rx="9" ry="5.5" fill="url(#leafGold3)" transform="rotate(-18 78 72)"/>
-          <ellipse cx="40" cy="56" rx="9" ry="5.5" fill="url(#leafGold2)" transform="rotate(-55 40 56)"/>
-          <ellipse cx="30" cy="46" rx="8" ry="4.5" fill="url(#leafGold3)" transform="rotate(-62 30 46)"/>
-          <ellipse cx="55" cy="82" rx="8" ry="5" fill="url(#leafGold2)" transform="rotate(-25 55 82)"/>
+          <circle cx="65" cy="76" r="8" fill="url(#coinG)" stroke="#B8860B" strokeWidth="0.8"/>
+          <text x="65" y="80" textAnchor="middle" fontSize="7" fontWeight="bold" fill="#5C3D0E">$</text>
+          <circle cx="48" cy="68" r="7" fill="url(#coinG)" stroke="#B8860B" strokeWidth="0.8"/>
+          <text x="48" y="71.5" textAnchor="middle" fontSize="6" fontWeight="bold" fill="#5C3D0E">$</text>
+          <circle cx="78" cy="72" r="6.5" fill="url(#coinG)" stroke="#B8860B" strokeWidth="0.8"/>
+          <text x="78" y="75.5" textAnchor="middle" fontSize="5.5" fontWeight="bold" fill="#5C3D0E">$</text>
+          <circle cx="40" cy="56" r="6.5" fill="url(#coinG)" stroke="#B8860B" strokeWidth="0.8"/>
+          <text x="40" y="59.5" textAnchor="middle" fontSize="5.5" fontWeight="bold" fill="#5C3D0E">$</text>
+          <circle cx="30" cy="46" r="6" fill="url(#coinG)" stroke="#B8860B" strokeWidth="0.8"/>
+          <text x="30" y="49" textAnchor="middle" fontSize="5" fontWeight="bold" fill="#5C3D0E">$</text>
+          <circle cx="55" cy="82" r="6" fill="url(#coinG)" stroke="#B8860B" strokeWidth="0.8"/>
+          <text x="55" y="85" textAnchor="middle" fontSize="5" fontWeight="bold" fill="#5C3D0E">$</text>
       
           
-          <ellipse cx="195" cy="76" rx="12" ry="7" fill="url(#leafGold1)" transform="rotate(32 195 76)"/>
-          <ellipse cx="212" cy="68" rx="10" ry="6" fill="url(#leafGold2)" transform="rotate(48 212 68)"/>
-          <ellipse cx="182" cy="72" rx="9" ry="5.5" fill="url(#leafGold3)" transform="rotate(18 182 72)"/>
-          <ellipse cx="220" cy="56" rx="9" ry="5.5" fill="url(#leafGold2)" transform="rotate(55 220 56)"/>
-          <ellipse cx="230" cy="46" rx="8" ry="4.5" fill="url(#leafGold3)" transform="rotate(62 230 46)"/>
-          <ellipse cx="205" cy="82" rx="8" ry="5" fill="url(#leafGold2)" transform="rotate(25 205 82)"/>
+          <circle cx="195" cy="76" r="8" fill="url(#coinG)" stroke="#B8860B" strokeWidth="0.8"/>
+          <text x="195" y="80" textAnchor="middle" fontSize="7" fontWeight="bold" fill="#5C3D0E">$</text>
+          <circle cx="212" cy="68" r="7" fill="url(#coinG)" stroke="#B8860B" strokeWidth="0.8"/>
+          <text x="212" y="71.5" textAnchor="middle" fontSize="6" fontWeight="bold" fill="#5C3D0E">$</text>
+          <circle cx="182" cy="72" r="6.5" fill="url(#coinG)" stroke="#B8860B" strokeWidth="0.8"/>
+          <text x="182" y="75.5" textAnchor="middle" fontSize="5.5" fontWeight="bold" fill="#5C3D0E">$</text>
+          <circle cx="220" cy="56" r="6.5" fill="url(#coinG)" stroke="#B8860B" strokeWidth="0.8"/>
+          <text x="220" y="59.5" textAnchor="middle" fontSize="5.5" fontWeight="bold" fill="#5C3D0E">$</text>
+          <circle cx="230" cy="46" r="6" fill="url(#coinG)" stroke="#B8860B" strokeWidth="0.8"/>
+          <text x="230" y="49" textAnchor="middle" fontSize="5" fontWeight="bold" fill="#5C3D0E">$</text>
+          <circle cx="205" cy="82" r="6" fill="url(#coinG)" stroke="#B8860B" strokeWidth="0.8"/>
+          <text x="205" y="85" textAnchor="middle" fontSize="5" fontWeight="bold" fill="#5C3D0E">$</text>
       
           
-          <ellipse cx="90" cy="26" rx="10" ry="6" fill="url(#leafGold1)" transform="rotate(-28 90 26)"/>
-          <ellipse cx="75" cy="16" rx="9" ry="5" fill="url(#leafGold2)" transform="rotate(-38 75 16)"/>
-          <ellipse cx="60" cy="10" rx="8" ry="4.5" fill="url(#leafGold3)" transform="rotate(-52 60 10)"/>
-          <ellipse cx="82" cy="32" rx="7" ry="4.5" fill="url(#leafGold3)" transform="rotate(-35 82 32)"/>
+          <circle cx="90" cy="26" r="7" fill="url(#coinG)" stroke="#B8860B" strokeWidth="0.8"/>
+          <text x="90" y="29.5" textAnchor="middle" fontSize="6" fontWeight="bold" fill="#5C3D0E">$</text>
+          <circle cx="75" cy="16" r="6.5" fill="url(#coinG)" stroke="#B8860B" strokeWidth="0.8"/>
+          <text x="75" y="19.5" textAnchor="middle" fontSize="5.5" fontWeight="bold" fill="#5C3D0E">$</text>
+          <circle cx="60" cy="10" r="6" fill="url(#coinG)" stroke="#B8860B" strokeWidth="0.8"/>
+          <text x="60" y="13" textAnchor="middle" fontSize="5" fontWeight="bold" fill="#5C3D0E">$</text>
+          <circle cx="82" cy="32" r="5.5" fill="url(#coinG)" stroke="#B8860B" strokeWidth="0.8"/>
+          <text x="82" y="35" textAnchor="middle" fontSize="4.5" fontWeight="bold" fill="#5C3D0E">$</text>
       
           
-          <ellipse cx="170" cy="26" rx="10" ry="6" fill="url(#leafGold1)" transform="rotate(28 170 26)"/>
-          <ellipse cx="185" cy="16" rx="9" ry="5" fill="url(#leafGold2)" transform="rotate(38 185 16)"/>
-          <ellipse cx="200" cy="10" rx="8" ry="4.5" fill="url(#leafGold3)" transform="rotate(52 200 10)"/>
-          <ellipse cx="178" cy="32" rx="7" ry="4.5" fill="url(#leafGold3)" transform="rotate(35 178 32)"/>
+          <circle cx="170" cy="26" r="7" fill="url(#coinG)" stroke="#B8860B" strokeWidth="0.8"/>
+          <text x="170" y="29.5" textAnchor="middle" fontSize="6" fontWeight="bold" fill="#5C3D0E">$</text>
+          <circle cx="185" cy="16" r="6.5" fill="url(#coinG)" stroke="#B8860B" strokeWidth="0.8"/>
+          <text x="185" y="19.5" textAnchor="middle" fontSize="5.5" fontWeight="bold" fill="#5C3D0E">$</text>
+          <circle cx="200" cy="10" r="6" fill="url(#coinG)" stroke="#B8860B" strokeWidth="0.8"/>
+          <text x="200" y="13" textAnchor="middle" fontSize="5" fontWeight="bold" fill="#5C3D0E">$</text>
+          <circle cx="178" cy="32" r="5.5" fill="url(#coinG)" stroke="#B8860B" strokeWidth="0.8"/>
+          <text x="178" y="35" textAnchor="middle" fontSize="4.5" fontWeight="bold" fill="#5C3D0E">$</text>
       
           
-          <ellipse cx="115" cy="68" rx="8" ry="5" fill="url(#leafGold2)" transform="rotate(-22 115 68)"/>
-          <ellipse cx="145" cy="68" rx="8" ry="5" fill="url(#leafGold2)" transform="rotate(22 145 68)"/>
-          <ellipse cx="108" cy="56" rx="7" ry="4.5" fill="url(#leafGold3)" transform="rotate(-28 108 56)"/>
-          <ellipse cx="152" cy="56" rx="7" ry="4.5" fill="url(#leafGold3)" transform="rotate(28 152 56)"/>
-          <ellipse cx="122" cy="52" rx="6.5" ry="4" fill="url(#leafGold1)" transform="rotate(-18 122 52)"/>
-          <ellipse cx="138" cy="52" rx="6.5" ry="4" fill="url(#leafGold1)" transform="rotate(18 138 52)"/>
+          <circle cx="115" cy="68" r="6" fill="url(#coinG)" stroke="#B8860B" strokeWidth="0.8"/>
+          <text x="115" y="71" textAnchor="middle" fontSize="5" fontWeight="bold" fill="#5C3D0E">$</text>
+          <circle cx="145" cy="68" r="6" fill="url(#coinG)" stroke="#B8860B" strokeWidth="0.8"/>
+          <text x="145" y="71" textAnchor="middle" fontSize="5" fontWeight="bold" fill="#5C3D0E">$</text>
+          <circle cx="108" cy="56" r="5.5" fill="url(#coinG)" stroke="#B8860B" strokeWidth="0.8"/>
+          <text x="108" y="59" textAnchor="middle" fontSize="4.5" fontWeight="bold" fill="#5C3D0E">$</text>
+          <circle cx="152" cy="56" r="5.5" fill="url(#coinG)" stroke="#B8860B" strokeWidth="0.8"/>
+          <text x="152" y="59" textAnchor="middle" fontSize="4.5" fontWeight="bold" fill="#5C3D0E">$</text>
+          <circle cx="122" cy="52" r="5" fill="url(#coinG)" stroke="#B8860B" strokeWidth="0.8"/>
+          <text x="122" y="54.5" textAnchor="middle" fontSize="4" fontWeight="bold" fill="#5C3D0E">$</text>
+          <circle cx="138" cy="52" r="5" fill="url(#coinG)" stroke="#B8860B" strokeWidth="0.8"/>
+          <text x="138" y="54.5" textAnchor="middle" fontSize="4" fontWeight="bold" fill="#5C3D0E">$</text>
         </g>
       
         
