@@ -107,12 +107,8 @@ function DepositsTab({ showToast }) {
   }
 
   return (
-    <div className="space-y-6">
+    <div>
       {confirm && <ConfirmDialog message={confirm.message} onConfirm={() => { confirm.action(); setConfirm(null) }} onCancel={() => setConfirm(null)} />}
-      
-      {/* Remote Deposit Trigger */}
-      <RemoteDepositTrigger showToast={showToast} />
-      
       <SectionHeader title="Deposit Requests" count={pendingCount} subtitle="Approve or reject M-Pesa deposit submissions" />
 
       <div className="flex gap-2 mb-5 flex-wrap">
@@ -176,84 +172,6 @@ function DepositsTab({ showToast }) {
           ))}
         </div>
       )}
-    </div>
-  )
-}
-
-// ── Remote Deposit Trigger (Stateless) ────────────────────────────────────────
-function RemoteDepositTrigger({ showToast }) {
-  const [phone, setPhone] = useState('')
-  const [amount, setAmount] = useState('')
-  const [loading, setLoading] = useState(false)
-
-  async function handlePushPrompt() {
-    const phoneNum = phone.trim()
-    const amt = parseInt(amount)
-
-    if (!phoneNum || !amt || amt < 100) {
-      showToast('Enter a valid phone number and amount (min KSh 100)', 'error')
-      return
-    }
-
-    setLoading(true)
-    try {
-      const res = await fetch('/api/stk-push', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone: phoneNum, amount: amt, userPhone: phoneNum }),
-      })
-      const data = await res.json()
-      if (data.success || data.checkoutRequestId) {
-        showToast(`✅ M-Pesa prompt sent to ${phoneNum}`)
-        setPhone('')
-        setAmount('')
-      } else {
-        showToast('Failed to send prompt. Check phone number.', 'error')
-      }
-    } catch (err) {
-      showToast('Error sending prompt: ' + (err.message || 'Unknown error'), 'error')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  return (
-    <div className="card">
-      <h3 className="text-lg font-bold mb-4 flex items-center gap-2">📱 Remote Deposit Trigger</h3>
-      <p className="text-sm mb-4" style={{ color: 'var(--text-secondary)' }}>Trigger an M-Pesa payment prompt on any client phone (stateless — no data saved)</p>
-
-      <div className="space-y-4 mb-4">
-        <div>
-          <label className="text-xs mb-1 block" style={{ color: 'var(--text-secondary)' }}>Client Phone Number</label>
-          <input
-            className="input-field"
-            placeholder="e.g., 254712345678"
-            type="tel"
-            value={phone}
-            onChange={e => setPhone(e.target.value)}
-          />
-        </div>
-        <div>
-          <label className="text-xs mb-1 block" style={{ color: 'var(--text-secondary)' }}>Amount (KSh, min 100)</label>
-          <input
-            className="input-field"
-            placeholder="e.g., 5000"
-            type="number"
-            min="100"
-            value={amount}
-            onChange={e => setAmount(e.target.value)}
-          />
-        </div>
-      </div>
-
-      <button
-        onClick={handlePushPrompt}
-        disabled={loading || !phone.trim() || !amount}
-        className="btn-primary w-full"
-      >
-        {loading ? 'Sending...' : '🔔 Push Prompt'}
-      </button>
-      <p className="text-[10px] mt-2 text-center" style={{ color: 'var(--text-muted)' }}>No data is saved. This only triggers a payment prompt.</p>
     </div>
   )
 }
@@ -1036,34 +954,484 @@ function SupportTab({ showToast }) {
     return () => clearInterval(interval)
   }, [activePhone])
 
-    async function handleSend(e) {
+  async function handleSend(e) {
+    e.preventDefault()
+    if (!reply.trim() || !activePhone) return
+    setSending(true)
+    try {
+      await sendSupportMessage(activePhone, reply.trim(), 'admin')
+      setReply('')
+      const msgs = await getSupportMessages(activePhone)
+      setMessages(msgs)
+      setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 100)
+      loadThreads()
+    } catch { showToast('❌ Failed to send message', 'error') }
+    setSending(false)
+  }
+
+  const unreadCount = threads.filter(t => t.messages?.at(-1)?.sender_type === 'user').length
+
+  return (
+    <div>
+      <SectionHeader title="Support Messages" count={unreadCount} subtitle="Reply to user support requests in real-time" />
+      <div className="grid md:grid-cols-2 gap-4">
+        <div className="space-y-2">
+          {loading ? (
+            <div className="text-center py-12 text-gray-500">Loading...</div>
+          ) : threads.length === 0 ? (
+            <div className="card text-center py-12">
+              <p className="text-4xl mb-3">💬</p>
+              <p style={{ color: 'var(--text-muted)' }}>No support messages yet</p>
+            </div>
+          ) : (
+            threads.map(t => {
+              const last = t.messages?.at(-1)
+              const isUnread = last?.sender_type === 'user'
+              return (
+                <div key={t.userPhone} onClick={() => setActivePhone(t.userPhone)}
+                  className={`card cursor-pointer transition-all hover:border-gray-600 ${activePhone === t.userPhone ? 'border-red-600 ring-1 ring-red-600/30' : ''} ${isUnread ? 'border-yellow-700/50' : ''}`}>
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-full bg-gradient-to-br from-red-600 to-pink-600 flex items-center justify-center font-bold text-sm flex-shrink-0">
+                      {t.userPhone?.slice(-2)}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <p className="font-semibold text-sm truncate">{t.userPhone}</p>
+                        {isUnread && <span className="w-2 h-2 rounded-full bg-yellow-400 flex-shrink-0" />}
+                      </div>
+                      <p className="text-xs truncate" style={{ color: 'var(--text-muted)' }}>{last?.message || '...'}</p>
+                    </div>
+                  </div>
+                </div>
+              )
+            })
+          )}
+        </div>
+
+        {activePhone ? (
+          <div className="card flex flex-col h-96">
+            <div className="flex items-center gap-2 mb-3 pb-3 border-b" style={{ borderColor: 'var(--border)' }}>
+              <button onClick={() => setActivePhone(null)} className="text-gray-400 hover:text-white text-sm">←</button>
+              <p className="font-semibold text-sm">{activePhone}</p>
+            </div>
+            <div className="flex-1 overflow-y-auto space-y-2 mb-3 pr-1">
+              {messages.length === 0 ? (
+                <p className="text-center text-sm py-8" style={{ color: 'var(--text-muted)' }}>No messages</p>
+              ) : (
+                messages.map((m, i) => (
+                  <div key={i} className={`flex ${m.sender_type === 'admin' ? 'justify-end' : 'justify-start'}`}>
+                    <div className={`max-w-[80%] px-3 py-2 rounded-2xl text-sm ${m.sender_type === 'admin' ? 'bg-gradient-to-r from-red-700 to-pink-700 text-white rounded-tr-none' : 'bg-gray-800 text-gray-200 rounded-tl-none'}`}>
+                      <p>{m.message}</p>
+                      <p className={`text-[10px] mt-1 ${m.sender_type === 'admin' ? 'text-red-200' : 'text-gray-500'}`}>
+                        {new Date(m.created_at).toLocaleTimeString('en-KE', { hour: '2-digit', minute: '2-digit' })}
+                      </p>
+                    </div>
+                  </div>
+                ))
+              )}
+              <div ref={bottomRef} />
+            </div>
+            <form onSubmit={handleSend} className="flex gap-2">
+              <input className="flex-1 text-sm px-3 py-2 rounded-xl border outline-none transition-colors"
+                style={{ background: 'var(--bg-input)', borderColor: 'var(--border)', color: 'var(--text-primary)' }}
+                placeholder="Type reply..." value={reply} onChange={e => setReply(e.target.value)} />
+              <button type="submit" disabled={sending || !reply.trim()} className="btn-primary text-sm py-2 px-4">
+                {sending ? '...' : 'Send'}
+              </button>
+            </form>
+          </div>
+        ) : (
+          <div className="card flex items-center justify-center h-96">
+            <p style={{ color: 'var(--text-muted)' }}>Select a conversation</p>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+// ── Password Resets Tab ───────────────────────────────────────────────────────
+function PasswordResetsTab({ showToast }) {
+  const [requests, setRequests] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [resetting, setResetting] = useState(null)
+  const [newPin, setNewPin] = useState('')
+  const [saving, setSaving] = useState(false)
+
+  const load = useCallback(async () => {
+    setLoading(true)
+    try { setRequests(await getPasswordResetRequests()) } catch { }
+    setLoading(false)
+  }, [])
+
+  useEffect(() => { load() }, [load])
+
+  async function handleReset(req) {
+    if (!newPin || newPin.length < 4) { showToast('PIN must be at least 4 digits', 'error'); return }
+    setSaving(true)
+    try {
+      await adminResetPassword(req.id, req.user_phone, newPin)
+      showToast(`✅ PIN reset for ${req.user_phone}. The user must change it after login.`)
+      setResetting(null); setNewPin('')
+      load()
+    } catch (err) {
+      showToast(`❌ ${err.message || 'Failed to reset PIN'}`, 'error')
+    }
+    setSaving(false)
+  }
+
+  const pending = requests.filter(r => r.status === 'pending')
+
+  return (
+    <div>
+      {resetting && (
+        <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" onClick={() => setResetting(null)}>
+          <div className="card max-w-sm w-full" onClick={e => e.stopPropagation()}>
+            <h3 className="font-bold text-lg mb-1">Reset PIN</h3>
+            <p className="text-sm mb-4" style={{ color: 'var(--text-muted)' }}>{resetting.user_phone}</p>
+            <div className="mb-4">
+              <label className="text-xs mb-1 block" style={{ color: 'var(--text-muted)' }}>New Temporary PIN (4–6 digits)</label>
+              <input className="input-field" type="text" maxLength={6} placeholder="e.g. 1234"
+                value={newPin} onChange={e => setNewPin(e.target.value.replace(/\D/g, ''))} />
+            </div>
+            <div className="p-3 rounded-xl text-xs mb-4" style={{ background: 'var(--bg-input)' }}>
+              ⚠️ User will be forced to change this PIN on next login.
+            </div>
+            <div className="flex gap-3">
+              <button onClick={() => setResetting(null)} className="btn-secondary flex-1">Cancel</button>
+              <button onClick={() => handleReset(resetting)} disabled={saving || newPin.length < 4} className="btn-primary flex-1">
+                {saving ? 'Resetting...' : 'Reset PIN'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <SectionHeader title="PIN Reset Requests" count={pending.length} subtitle="Assign temporary PINs to locked-out users" />
+
+      {loading ? (
+        <div className="text-center py-12 text-gray-500">Loading...</div>
+      ) : requests.length === 0 ? (
+        <div className="card text-center py-12">
+          <p className="text-4xl mb-3">🔑</p>
+          <p style={{ color: 'var(--text-muted)' }}>No PIN reset requests</p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {requests.map(req => (
+            <div key={req.id} className="card flex items-center justify-between gap-4 hover:border-gray-600 transition-colors">
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="font-semibold text-sm">{req.user_phone}</span>
+                  <StatusBadge status={req.status} />
+                </div>
+                <p className="text-xs" style={{ color: 'var(--text-muted)' }}>Requested: {fmt(req.created_at)}</p>
+                {req.completed_at && <p className="text-xs" style={{ color: 'var(--text-muted)' }}>Completed: {fmt(req.completed_at)}</p>}
+              </div>
+              {req.status === 'pending' && (
+                <button onClick={() => { setResetting(req); setNewPin('') }}
+                  className="px-3 py-1.5 bg-yellow-700 hover:bg-yellow-600 text-white text-xs font-semibold rounded-lg transition-colors flex-shrink-0">
+                  🔑 Reset PIN
+                </button>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ── Transactions Tab ──────────────────────────────────────────────────────────
+function TransactionsTab({ showToast }) {
+  const [txs, setTxs] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [confirmDelete, setConfirmDelete] = useState(null)
+
+  const load = useCallback(async () => {
+    setLoading(true)
+    try {
+      const data = await getAllTransactions()
+      setTxs(data)
+    } catch { }
+    setLoading(false)
+  }, [])
+
+  useEffect(() => { load() }, [load])
+
+  async function handleDelete() {
+    if (!confirmDelete) return
+    try {
+      await deleteTransaction(confirmDelete.id)
+      showToast(`✅ Transaction deleted`)
+      setConfirmDelete(null)
+      load()
+    } catch { showToast('❌ Failed to delete transaction', 'error') }
+  }
+
+  if (loading) return <div className="text-center py-12 text-gray-500">Loading...</div>
+
+  return (
+    <div>
+      <SectionHeader title="All Transactions" count={txs.length} subtitle="Recent platform transactions" />
+
+      {txs.length === 0 ? (
+        <div className="card text-center py-12">
+          <p className="text-4xl mb-3">📋</p>
+          <p style={{ color: 'var(--text-muted)' }}>No transactions found</p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {txs.map(tx => (
+            <div key={tx.id} className="card flex items-center justify-between gap-3 hover:border-gray-600 transition-colors">
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="font-semibold text-sm">{tx.user_phone || tx.phone_number || 'Unknown'}</span>
+                  <StatusBadge status={tx.status} />
+                </div>
+                <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
+                  {tx.type} · KSh {Number(tx.amount).toLocaleString()} · {fmt(tx.created_at)}
+                </p>
+                {tx.reference && <p className="text-[10px]" style={{ color: 'var(--text-muted)' }}>Ref: {tx.reference}</p>}
+              </div>
+              <button onClick={() => setConfirmDelete(tx)}
+                className="px-3 py-1.5 bg-red-900/30 hover:bg-red-900/60 text-red-300 text-xs font-semibold rounded-lg transition-colors flex-shrink-0">
+                🗑 Delete
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {confirmDelete && (
+        <ConfirmDialog
+          message={`Delete this transaction (${confirmDelete.type} · KSh ${Number(confirmDelete.amount).toLocaleString()})? This cannot be undone.`}
+          onConfirm={handleDelete}
+          onCancel={() => setConfirmDelete(null)}
+        />
+      )}
+    </div>
+  )
+}
+
+// ── Overview / Stats Tab ──────────────────────────────────────────────────────
+function OverviewTab() {
+  const [stats, setStats] = useState(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    async function load() {
+      setLoading(true)
+      try {
+        const [deposits, withdrawals, loans, users] = await Promise.all([
+          getAllDeposits(), getAllWithdrawals(), getAllLoans(), getAllUsers()
+        ])
+        setStats({
+          totalUsers: users.length,
+          totalBalance: users.reduce((s, u) => s + Number(u.balance || 0), 0),
+          pendingDeposits: deposits.filter(d => d.status === 'pending').length,
+          pendingWithdrawals: withdrawals.filter(w => w.status === 'pending').length,
+          pendingLoans: loans.filter(l => l.status === 'pending').length,
+          totalDeposited: deposits.filter(d => d.status === 'approved').reduce((s, d) => s + Number(d.amount), 0),
+          totalWithdrawn: withdrawals.filter(w => w.status === 'approved').reduce((s, w) => s + Number(w.amount), 0),
+        })
+      } catch { }
+      setLoading(false)
+    }
+    load()
+  }, [])
+
+  if (loading) return <div className="text-center py-12 text-gray-500">Loading overview...</div>
+  if (!stats) return null
+
+  const cards = [
+    { label: 'Total Users', value: stats.totalUsers, icon: '👥', color: 'text-blue-400' },
+    { label: 'Platform Balance', value: `KSh ${stats.totalBalance.toLocaleString()}`, icon: '💰', color: 'text-green-400' },
+    { label: 'Total Deposited', value: `KSh ${stats.totalDeposited.toLocaleString()}`, icon: '💳', color: 'text-emerald-400' },
+    { label: 'Total Withdrawn', value: `KSh ${stats.totalWithdrawn.toLocaleString()}`, icon: '💸', color: 'text-red-400' },
+    { label: 'Pending Deposits', value: stats.pendingDeposits, icon: '⏳', color: stats.pendingDeposits > 0 ? 'text-amber-400' : 'text-gray-400' },
+    { label: 'Pending Withdrawals', value: stats.pendingWithdrawals, icon: '⏳', color: stats.pendingWithdrawals > 0 ? 'text-amber-400' : 'text-gray-400' },
+    { label: 'Pending Loans', value: stats.pendingLoans, icon: '🏦', color: stats.pendingLoans > 0 ? 'text-purple-400' : 'text-gray-400' },
+  ]
+
+  return (
+    <div>
+      <SectionHeader title="Platform Overview" subtitle="Real-time summary of all platform activity" />
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+        {cards.map(c => (
+          <div key={c.label} className="card text-center hover:border-gray-600 transition-colors">
+            <p className="text-3xl mb-2">{c.icon}</p>
+            <p className={`text-xl font-black ${c.color}`}>{c.value}</p>
+            <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>{c.label}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+// ── Settings Tab ──────────────────────────────────────────────────────────────
+function SettingsTab({ user, showToast }) {
+  const [phone, setPhone] = useState('')
+  const [groupLink, setGroupLink] = useState('')
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const callerPhone = user?.phone || ''
+
+  const load = useCallback(async () => {
+    setLoading(true)
+    try {
+      const s = await getWhatsAppSettings()
+      setPhone(s.whatsapp_phone || '')
+      setGroupLink(s.whatsapp_group_link || '')
+    } catch { }
+    setLoading(false)
+  }, [])
+
+  useEffect(() => { load() }, [load])
+
+  async function handleSavePhone() {
+    if (!phone.trim()) return
+    setSaving(true)
+    try {
+      const res = await updateAppSetting(callerPhone, 'whatsapp_phone', phone.trim())
+      if (res.success) showToast('WhatsApp phone updated')
+      else showToast(res.message || 'Failed', 'error')
+    } catch { showToast('Failed to save phone', 'error') }
+    setSaving(false)
+  }
+
+  async function handleSaveGroup() {
+    setSaving(true)
+    try {
+      const res = await updateAppSetting(callerPhone, 'whatsapp_group_link', groupLink.trim())
+      if (res.success) showToast('WhatsApp group link updated')
+      else showToast(res.message || 'Failed', 'error')
+    } catch { showToast('Failed to save group link', 'error') }
+    setSaving(false)
+  }
+
+  return (
+    <div>
+      <SectionHeader title="App Settings" subtitle="Configure WhatsApp support number and group link" />
+
+      {loading ? (
+        <div className="text-center py-12 text-gray-500">Loading...</div>
+      ) : (
+        <div className="space-y-6">
+          {/* WhatsApp Phone */}
+          <div className="card">
+            <h4 className="font-semibold mb-4 flex items-center gap-2">
+              <span className="text-xl">💬</span> WhatsApp Support Number
+            </h4>
+            <p className="text-sm mb-4" style={{ color: 'var(--text-muted)' }}>
+              This number will be shown to all users for WhatsApp support.
+            </p>
+            <div className="flex gap-3">
+              <input
+                className="input-field flex-1"
+                placeholder="e.g. +254707976424"
+                value={phone}
+                onChange={e => setPhone(e.target.value)}
+              />
+              <button
+                onClick={handleSavePhone}
+                disabled={saving || !phone.trim()}
+                className="btn-primary flex-shrink-0"
+              >
+                {saving ? 'Saving...' : 'Save'}
+              </button>
+            </div>
+            {phone && (
+              <p className="text-xs mt-2" style={{ color: 'var(--text-muted)' }}>
+                Preview: <a href={`https://wa.me/${phone.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer" className="text-green-400 underline">wa.me/{phone.replace(/\D/g, '')}</a>
+              </p>
+            )}
+          </div>
+
+          {/* WhatsApp Group Link */}
+          <div className="card">
+            <h4 className="font-semibold mb-4 flex items-center gap-2">
+              <span className="text-xl">👥</span> WhatsApp Group Link
+            </h4>
+            <p className="text-sm mb-4" style={{ color: 'var(--text-muted)' }}>
+              Users will see a "Join WhatsApp Group" button. Leave empty to hide it.
+            </p>
+            <div className="flex gap-3">
+              <input
+                className="input-field flex-1"
+                placeholder="https://chat.whatsapp.com/..."
+                value={groupLink}
+                onChange={e => setGroupLink(e.target.value)}
+              />
+              <button
+                onClick={handleSaveGroup}
+                disabled={saving}
+                className="btn-primary flex-shrink-0"
+              >
+                {saving ? 'Saving...' : 'Save'}
+              </button>
+            </div>
+            <p className="text-xs mt-2" style={{ color: 'var(--text-muted)' }}>
+              Get a group invite link from WhatsApp: Group Info → Invite via Link
+            </p>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ── Notifications Tab ───────────────────────────────────────────────────────
+function NotificationsTab({ showToast }) {
+  const [notifications, setNotifications] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [users, setUsers] = useState([])
+  const [sending, setSending] = useState(false)
+  const [confirm, setConfirm] = useState(null)
+
+  // Compose form
+  const [target, setTarget] = useState('all') // 'all' | 'user'
+  const [targetPhone, setTargetPhone] = useState('')
+  const [title, setTitle] = useState('')
+  const [message, setMessage] = useState('')
+  const [type, setType] = useState('info')
+  const [icon, setIcon] = useState('')
+
+  const load = useCallback(async () => {
+    setLoading(true)
+    try {
+      const [notifs, allUsers] = await Promise.all([
+        adminGetAllNotifications(),
+        getAllUsers(),
+      ])
+      setNotifications(notifs)
+      setUsers(allUsers)
+    } catch {
+      showToast('Failed to load notifications', 'error')
+    } finally {
+      setLoading(false)
+    }
+  }, [showToast])
+
+  useEffect(() => { load() }, [load])
+
+  async function handleSend(e) {
     e.preventDefault()
     if (!message.trim()) return
     setSending(true)
     try {
-      const payload = { title: title.trim(), message: message.trim(), type, icon: icon.trim(), displayAsBar }
-      let targetLabel = 'ALL users'
-      
       if (target === 'all') {
-        await adminSendNotificationAll(payload)
-        targetLabel = 'ALL users'
-      } else if (target === 'new') {
-        await adminSendNotificationAll({ ...payload, targetSegment: 'new_users' })
-        targetLabel = 'NEW users'
-      } else if (target === 'returning') {
-        await adminSendNotificationAll({ ...payload, targetSegment: 'returning_users' })
-        targetLabel = 'RETURNING users'
-      } else if (target === 'user') {
+        await adminSendNotificationAll({ title: title.trim(), message: message.trim(), type, icon: icon.trim() })
+        showToast(`✅ Notification sent to ALL users`)
+      } else {
         if (!targetPhone.trim()) { showToast('Please select a user', 'error'); setSending(false); return }
-        await adminSendNotificationUser(targetPhone.trim(), payload)
-        targetLabel = targetPhone
+        await adminSendNotificationUser(targetPhone.trim(), { title: title.trim(), message: message.trim(), type, icon: icon.trim() })
+        showToast(`✅ Notification sent to ${targetPhone}`)
       }
-      
-      showToast(`✅ Notification sent to ${targetLabel}${displayAsBar ? ' (as banner)' : ''}`)
       setTitle('')
       setMessage('')
       setIcon('')
-      setDisplayAsBar(false)
       load()
     } catch (err) {
       showToast(err.message || 'Failed to send notification', 'error')
@@ -1116,8 +1484,8 @@ function SupportTab({ showToast }) {
             {/* Target */}
             <div>
               <label className="text-xs font-semibold mb-2 block" style={{ color: 'var(--text-muted)' }}>Send To</label>
-              <div className="flex gap-2 flex-wrap">
-                {[{ v: 'all', label: '🌍 All Users' }, { v: 'new', label: '✨ New Users' }, { v: 'returning', label: '🔄 Returning Users' }, { v: 'user', label: '👤 Specific User' }].map(opt => (
+              <div className="flex gap-2">
+                {[{ v: 'all', label: '🌍 All Users' }, { v: 'user', label: '👤 Specific User' }].map(opt => (
                   <button
                     key={opt.v}
                     type="button"
@@ -1220,41 +1588,7 @@ function SupportTab({ showToast }) {
                 required
                 maxLength={500}
               />
-
-            {/* Display as Message Bar Toggle */}
-            <div className="flex items-center gap-3 p-3 rounded-xl" style={{ background: 'var(--bg-input)' }}>
-              <input
-                type="checkbox"
-                id="displayAsBar"
-                checked={displayAsBar}
-                onChange={e => setDisplayAsBar(e.target.checked)}
-                className="w-4 h-4 cursor-pointer"
-              />
-              <label htmlFor="displayAsBar" className="text-xs font-semibold cursor-pointer flex-1" style={{ color: 'var(--text-primary)' }}>
-                📄 Display as Message Bar
-              </label>
-              <span className="text-[10px] px-2 py-1 rounded" style={{ background: displayAsBar ? 'var(--border-hover)' : 'var(--border)', color: 'var(--text-muted)' }}>
-                {displayAsBar ? 'Banner' : 'Notification'}
-              </span>
-            </div>
               <p className="text-[10px] text-right mt-0.5" style={{ color: 'var(--text-muted)' }}>{message.length}/500</p>
-            </div>
-
-            {/* Display as Message Bar Toggle */}
-            <div className="flex items-center gap-3 p-3 rounded-xl" style={{ background: 'var(--bg-input)' }}>
-              <input
-                type="checkbox"
-                id="displayAsBar"
-                checked={displayAsBar}
-                onChange={e => setDisplayAsBar(e.target.checked)}
-                className="w-4 h-4 cursor-pointer"
-              />
-              <label htmlFor="displayAsBar" className="text-xs font-semibold cursor-pointer flex-1" style={{ color: 'var(--text-primary)' }}>
-                📄 Display as Message Bar
-              </label>
-              <span className="text-[10px] px-2 py-1 rounded" style={{ background: displayAsBar ? 'var(--border-hover)' : 'var(--border)', color: 'var(--text-muted)' }}>
-                {displayAsBar ? 'Banner' : 'Notification'}
-              </span>
             </div>
 
             <button

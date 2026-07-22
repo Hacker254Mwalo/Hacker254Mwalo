@@ -12,7 +12,6 @@ function DepositModal({ user, onClose, onPending }) {
   const [txCode, setTxCode] = useState('')
   const [txLoading, setTxLoading] = useState(false)
   const [txError, setTxError] = useState('')
-  const [selectedMethod, setSelectedMethod] = useState(null)
 
   async function initiateStkPush() {
     const amt = parseInt(amount)
@@ -81,47 +80,16 @@ function DepositModal({ user, onClose, onPending }) {
                   />
                 </div>
 
-                <div className="mb-4">
-                  <p className="text-xs mb-3" style={{ color: 'var(--text-secondary)' }}>Choose payment method:</p>
-                  <div className="flex gap-3">
-                    {/* M-Pesa Button */}
-                    <button
-                      onClick={() => setSelectedMethod('mpesa')}
-                      className={`flex-1 p-3 rounded-xl border-2 transition-all ${
-                        selectedMethod === 'mpesa'
-                          ? 'border-green-500 bg-green-900/20'
-                          : 'border-gray-600 hover:border-green-500'
-                      }`}
-                    >
-                      <svg className="w-6 h-6 mx-auto mb-1" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <rect width="100" height="100" rx="20" fill="#22c55e" />
-                        <text x="50" y="60" fontSize="40" fontWeight="bold" fill="white" textAnchor="middle">M</text>
-                      </svg>
-                      <p className="text-xs font-semibold">M-Pesa</p>
-                    </button>
-                    {/* Airtel Money Button */}
-                    <button
-                      onClick={() => setSelectedMethod('airtel')}
-                      className={`flex-1 p-3 rounded-xl border-2 transition-all ${
-                        selectedMethod === 'airtel'
-                          ? 'border-red-500 bg-red-900/20'
-                          : 'border-gray-600 hover:border-red-500'
-                      }`}
-                    >
-                      <svg className="w-6 h-6 mx-auto mb-1" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <rect width="100" height="100" rx="20" fill="#e31e24" />
-                        <text x="50" y="60" fontSize="40" fontWeight="bold" fill="white" textAnchor="middle">A</text>
-                      </svg>
-                      <p className="text-xs font-semibold">Airtel Money</p>
-                    </button>
-                  </div>
+                <div className="rounded-xl p-3 mb-4 text-xs" style={{ background: 'var(--bg-elevated)', color: 'var(--text-secondary)' }}>
+                  <p>Paybill: <span className="font-bold" style={{ color: 'var(--text-primary)' }}>{MPESA_PAYBILL}</span></p>
+                  <p>Account: <span className="font-bold" style={{ color: 'var(--text-primary)' }}>21210</span></p>
                 </div>
 
                 <div className="flex gap-3">
                   <button onClick={onClose} className="btn-secondary flex-1">Cancel</button>
                   <button
                     onClick={initiateStkPush}
-                    disabled={loading || !amount || parseInt(amount) < 100 || !selectedMethod}
+                    disabled={loading || !amount || parseInt(amount) < 100}
                     className="btn-primary flex-1"
                   >
                     {loading ? 'Sending...' : 'Pay Now'}
