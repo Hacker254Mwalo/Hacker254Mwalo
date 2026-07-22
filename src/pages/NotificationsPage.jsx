@@ -54,7 +54,7 @@ export default function NotificationsPage() {
   }
 
   async function handleDelete(id) {
-    await deleteUserNotification(id).catch(() => {})
+    await deleteUserNotification(id, user.phone).catch(() => {})
     setNotifications(prev => prev.filter(n => n.id !== id))
   }
 

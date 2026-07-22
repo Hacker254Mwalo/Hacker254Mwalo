@@ -57,6 +57,7 @@ export default function Navbar() {
     invest:    { active: 'from-emerald-500 to-green-400', dot: '#10b981', icon: '#34d399' },
     history:   { active: 'from-violet-500 to-purple-500', dot: '#8b5cf6', icon: '#a78bfa' },
     notifications: { active: 'from-amber-500 to-orange-400', dot: '#f59e0b', icon: '#fbbf24' },
+    profile:   { active: 'from-pink-500 to-rose-500', dot: '#ec4899', icon: '#f43f5e' },
   }
 
   // Professional SVG icon paths
@@ -290,16 +291,48 @@ export default function Navbar() {
             )
           })}
 
-          {/* Theme toggle */}
-          <button
-            onClick={toggleTheme}
-            className="flex-1 flex flex-col items-center pt-3 pb-2 text-[9px] font-bold tracking-wide text-gray-500 hover:text-gray-300 transition-colors duration-200"
-          >
-            <div className="mb-1 text-gray-500">
-              {theme === 'dark' ? icons.theme.light : icons.theme.dark}
-            </div>
-            <span className="opacity-50">{theme === 'dark' ? 'Light' : 'Dark'}</span>
-          </button>
+          {/* Profile tab */}
+          {user && (
+            <NavLink
+              to="/profile"
+              className={({ isActive }) =>
+                `flex-1 flex flex-col items-center pt-3 pb-2 text-[9px] font-bold tracking-wide transition-colors duration-200 ${
+                  isActive ? 'text-rose-400' : 'text-gray-500 hover:text-gray-300'
+                }`
+              }
+            >
+              {({ isActive }) => (
+                <>
+                  {/* Active pill background */}
+                  {isActive && (
+                    <span
+                      className="absolute top-1.5 left-1/2 -translate-x-1/2 w-10 h-10 rounded-2xl bg-gradient-to-br from-pink-500 to-rose-500 opacity-20 blur-sm"
+                    />
+                  )}
+                  {/* Active top indicator dot */}
+                  {isActive && (
+                    <span
+                      className="absolute top-0 left-1/2 -translate-x-1/2 w-6 h-[3px] rounded-b-full"
+                      style={{ background: '#ec4899' }}
+                    />
+                  )}
+                  {/* Icon container */}
+                  <div
+                    className={`relative mb-1 transition-all duration-200 ${isActive ? 'scale-110' : 'scale-100'}`}
+                    style={{ color: isActive ? '#f43f5e' : '#6b7280' }}
+                  >
+                    {icons.profile}
+                  </div>
+                  <span
+                    className={`text-[9px] font-bold tracking-wide transition-all duration-200 ${isActive ? 'opacity-100' : 'opacity-50'}`}
+                    style={{ color: isActive ? '#f43f5e' : '#6b7280' }}
+                  >
+                    Profile
+                  </span>
+                </>
+              )}
+            </NavLink>
+          )}
 
           {user && waDigits && (
             <a

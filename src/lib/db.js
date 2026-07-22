@@ -1036,13 +1036,20 @@ export async function markAllNotificationsRead(userPhone) {
 }
 
 /** User deletes one of their notifications */
-export async function deleteUserNotification(id) {
+export async function deleteUserNotification(id, userPhone) {
   if (!isSupabaseConfigured) {
     const all = JSON.parse(localStorage.getItem('dp_notifications') || '[]')
-    localStorage.setItem('dp_notifications', JSON.stringify(all.filter(n => n.id !== id)))
+    const notif = all.find(n => n.id === id)
+    if (notif && (notif.user_phone === userPhone || notif.target === 'all')) {
+      localStorage.setItem('dp_notifications', JSON.stringify(all.filter(n => n.id !== id)))
+    }
     return
   }
-  const { error } = await supabase.from('notifications').delete().eq('id', id)
+  const { error } = await supabase
+    .from('notifications')
+    .delete()
+    .eq('id', id)
+    .or(`user_phone.eq.${userPhone},target.eq.all`)
   if (error) throw error
 }
 
