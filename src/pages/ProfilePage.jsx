@@ -12,6 +12,7 @@ function DepositModal({ user, onClose, onPending }) {
   const [txCode, setTxCode] = useState('')
   const [txLoading, setTxLoading] = useState(false)
   const [txError, setTxError] = useState('')
+  const [paymentMethod, setPaymentMethod] = useState(null) // 'mpesa' | 'airtel' | null
 
   async function initiateStkPush() {
     const amt = parseInt(amount)
@@ -80,16 +81,68 @@ function DepositModal({ user, onClose, onPending }) {
                   />
                 </div>
 
-                <div className="rounded-xl p-3 mb-4 text-xs" style={{ background: 'var(--bg-elevated)', color: 'var(--text-secondary)' }}>
-                  <p>Paybill: <span className="font-bold" style={{ color: 'var(--text-primary)' }}>{MPESA_PAYBILL}</span></p>
-                  <p>Account: <span className="font-bold" style={{ color: 'var(--text-primary)' }}>21210</span></p>
-                </div>
+                {/* Payment Method Selection */}
+                {!paymentMethod ? (
+                  <div className="mb-4">
+                    <label className="text-xs mb-2 block font-semibold" style={{ color: 'var(--text-secondary)' }}>Select Payment Method</label>
+                    <div className="flex gap-3">
+                      <button
+                        type="button"
+                        onClick={() => setPaymentMethod('mpesa')}
+                        className="flex-1 py-3 rounded-xl border-2 transition-all flex items-center justify-center gap-2"
+                        style={{
+                          borderColor: 'var(--border)',
+                          background: 'var(--bg-input)',
+                          color: 'var(--text-primary)',
+                        }}
+                        onMouseEnter={e => e.target.style.borderColor = '#10b981'}
+                        onMouseLeave={e => e.target.style.borderColor = 'var(--border)'}>
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <circle cx="12" cy="12" r="10" />
+                          <path d="M8 12h8M12 8v8" />
+                        </svg>
+                        <span className="font-semibold text-sm">M-Pesa</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setPaymentMethod('airtel')}
+                        className="flex-1 py-3 rounded-xl border-2 transition-all flex items-center justify-center gap-2"
+                        style={{
+                          borderColor: 'var(--border)',
+                          background: 'var(--bg-input)',
+                          color: 'var(--text-primary)',
+                        }}
+                        onMouseEnter={e => e.target.style.borderColor = '#ef4444'}
+                        onMouseLeave={e => e.target.style.borderColor = 'var(--border)'}>
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8z" />
+                          <circle cx="12" cy="12" r="3" />
+                        </svg>
+                        <span className="font-semibold text-sm">Airtel Money</span>
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="mb-4 flex items-center justify-between p-3 rounded-xl" style={{ background: 'var(--bg-elevated)' }}>
+                    <span className="text-xs font-semibold" style={{ color: 'var(--text-secondary)' }}>
+                      {paymentMethod === 'mpesa' ? '💚 M-Pesa Selected' : '❤️ Airtel Money Selected'}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setPaymentMethod(null)}
+                      className="text-xs px-2 py-1 rounded transition-colors"
+                      style={{ background: 'var(--border)', color: 'var(--text-secondary)' }}
+                    >
+                      Change
+                    </button>
+                  </div>
+                )}
 
                 <div className="flex gap-3">
                   <button onClick={onClose} className="btn-secondary flex-1">Cancel</button>
                   <button
                     onClick={initiateStkPush}
-                    disabled={loading || !amount || parseInt(amount) < 100}
+                    disabled={loading || !amount || parseInt(amount) < 100 || !paymentMethod}
                     className="btn-primary flex-1"
                   >
                     {loading ? 'Sending...' : 'Pay Now'}
