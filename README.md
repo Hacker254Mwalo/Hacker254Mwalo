@@ -48,3 +48,4 @@ Without these, the app runs fully on **localStorage**.
 ## ⚠️ Risk Disclaimer
 
 This is a **demo platform**. All investment returns shown are illustrative only. Never invest money you cannot afford to lose.
+
