@@ -39,8 +39,8 @@ BEGIN
   WHERE id = p_investment_id;
 
   -- Record transaction
-  INSERT INTO transactions (user_phone, type, amount, description)
-  VALUES (p_user_phone, 'compute_yield', v_yield, '24h Compute Yield for ' || v_inv.plan_name);
+  INSERT INTO transactions (phone_number, user_phone, type, amount, description)
+  VALUES (p_user_phone, p_user_phone, 'compute_yield', v_yield, '24h Compute Yield for ' || v_inv.plan_name);
 
   -- Return updated balance
   SELECT balance INTO v_new_balance FROM users WHERE phone = p_user_phone;
