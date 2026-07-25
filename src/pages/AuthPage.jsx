@@ -403,14 +403,23 @@ export default function AuthPage() {
         {/* Investor Stats Banner */}
         <div className="mb-4 grid grid-cols-3 gap-2">
           <div className="text-center p-2.5 rounded-xl" style={{ background: 'linear-gradient(135deg, rgba(255,215,0,0.08) 0%, rgba(218,165,32,0.04) 100%)', border: '1px solid rgba(255,215,0,0.12)' }}>
+            <div className="flex items-center justify-center gap-1.5 mb-1">
+              <img src="/icons/stat-yield.webp" alt="AI Yield" className="w-8 h-8 rounded-full object-contain" style={{ filter: 'brightness(1.1)' }} />
+            </div>
             <p className="text-lg font-bold" style={{ color: '#FFD700' }}>AI Yield</p>
             <p className="text-[10px] text-gray-400 tracking-wide">Earn Daily Compute Returns</p>
           </div>
           <div className="text-center p-2.5 rounded-xl" style={{ background: 'linear-gradient(135deg, rgba(255,215,0,0.08) 0%, rgba(218,165,32,0.04) 100%)', border: '1px solid rgba(255,215,0,0.12)' }}>
+            <div className="flex items-center justify-center gap-1.5 mb-1">
+              <img src="/icons/stat-withdrawal.webp" alt="24/7" className="w-8 h-8 rounded-full object-contain" style={{ filter: 'brightness(1.1)' }} />
+            </div>
             <p className="text-lg font-bold" style={{ color: '#FFD700' }}>24/7</p>
             <p className="text-[10px] text-gray-400 tracking-wide">Instant M-Pesa Withdrawals</p>
           </div>
           <div className="text-center p-2.5 rounded-xl" style={{ background: 'linear-gradient(135deg, rgba(255,215,0,0.08) 0%, rgba(218,165,32,0.04) 100%)', border: '1px solid rgba(255,215,0,0.12)' }}>
+            <div className="flex items-center justify-center gap-1.5 mb-1">
+              <img src="/icons/stat-node.webp" alt="Node" className="w-8 h-8 rounded-full object-contain" style={{ filter: 'brightness(1.1)' }} />
+            </div>
             <p className="text-lg font-bold" style={{ color: '#FFD700' }}>Instant Node</p>
             <p className="text-[10px] text-gray-400 tracking-wide">Deploy Rigs & Cash Out Directly</p>
           </div>
