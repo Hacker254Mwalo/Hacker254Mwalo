@@ -305,6 +305,28 @@
     box-shadow: 0 0 0 3px rgba(255,215,0,0.2) !important;
   }
 
+  /* ── AI Loading Screen Animations ─────────────────────────────────────────── */
+  @keyframes aiPulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50%       { opacity: 0.85; transform: scale(1.03); }
+  }
+  @keyframes aiFloat {
+    0%, 100% { transform: translateY(0); }
+    50%       { transform: translateY(-8px); }
+  }
+  @keyframes aiRing {
+    0%, 100% { transform: scale(1); opacity: 0.4; }
+    50%       { transform: scale(1.15); opacity: 0; }
+  }
+  @keyframes aiFade {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: 0.5; }
+  }
+  @keyframes aiSlide {
+    0%   { transform: translateX(-100%); }
+    100% { transform: translateX(350%); }
+  }
+
   /* ── Reduced Motion for Battery/Accessibility ─────────────────────────────── */
   @media (prefers-reduced-motion: reduce) {
     .gold-particle,
