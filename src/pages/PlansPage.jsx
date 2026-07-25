@@ -3,35 +3,39 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { getInvestments, addInvestment, getUser } from '../lib/db'
 import { PLANS, getDailyReturn, getTotalReturn } from '../lib/plans'
-import { PLAN_ICONS } from '../components/PlanIcons'
 
-const ICON_COLORS = {
-  starter: 'text-gray-400',
-  basic: 'text-blue-400',
-  silver: 'text-gray-300',
-  gold: 'text-yellow-400',
-  platinum: 'text-cyan-400',
-  diamond: 'text-indigo-400',
-  ruby: 'text-red-400',
-  emerald: 'text-green-400',
-  sapphire: 'text-blue-400',
-  vip: 'text-pink-400',
+const PLAN_IMAGES = {
+  starter: '/icons/starter.png',
+  basic: '/icons/basic.png',
+  silver: '/icons/silver.png',
+  gold: '/icons/gold.png',
+  platinum: '/icons/platinum.png',
+  diamond: '/icons/diamond.png',
+  ruby: '/icons/ruby.png',
+  emerald: '/icons/emerald.png',
+  sapphire: '/icons/sapphire.png',
+  vip: '/icons/vip.png',
 }
 
 function PlanCard({ plan, onInvest, alreadyUsed }) {
   const daily = getDailyReturn(plan.amount)
   const total = getTotalReturn(plan.amount)
-  const IconComponent = PLAN_ICONS[plan.id]
-  const iconColor = ICON_COLORS[plan.id] || 'text-white'
+  const planImage = PLAN_IMAGES[plan.id]
 
   return (
-    <div className="card flex flex-col gap-4 hover:border-gray-600 transition-colors">
+    <div className="card flex flex-col gap-4 hover:border-gray-600 transition-colors overflow-hidden">
       {/* Header with gradient */}
       <div className={`bg-gradient-to-r ${plan.color} rounded-xl p-4 flex items-center justify-between`}>
         <div className="flex items-center gap-3">
-          <div className={`w-12 h-12 rounded-xl bg-white/10 backdrop-blur-sm flex items-center justify-center ${iconColor}`}>
-            {IconComponent && <IconComponent className="w-8 h-8" />}
-          </div>
+          {planImage && (
+            <div className="w-14 h-14 rounded-xl overflow-hidden bg-white/10 backdrop-blur-sm flex-shrink-0 border border-white/20 shadow-lg">
+              <img
+                src={planImage}
+                alt={plan.name}
+                className="w-full h-full object-cover"
+              />
+            </div>
+          )}
           <div>
             <p className="text-[10px] text-white/70 font-semibold uppercase tracking-widest">{plan.once ? 'One-Time Only' : 'Repeatable'}</p>
             <p className="text-lg font-black text-white mt-0.5">{plan.name}</p>
@@ -90,16 +94,15 @@ function PlanCard({ plan, onInvest, alreadyUsed }) {
 function ConfirmModal({ plan, balance, onConfirm, onClose, confirming, onDeposit }) {
   if (!plan) return null
   const enough = balance >= plan.amount
-  const IconComponent = PLAN_ICONS[plan.id]
-  const iconColor = ICON_COLORS[plan.id] || 'text-white'
+  const planImage = PLAN_IMAGES[plan.id]
 
   return (
     <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4" onClick={onClose}>
       <div className="card max-w-sm w-full" onClick={e => e.stopPropagation()}>
         <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
-          <span className={iconColor}>
-            {IconComponent && <IconComponent className="w-6 h-6" />}
-          </span>
+          {planImage && (
+            <img src={planImage} alt={plan.name} className="w-8 h-8 rounded-lg object-cover border border-white/20" />
+          )}
           Deploy Node
         </h3>
 
@@ -179,7 +182,6 @@ export default function PlansPage() {
     const userPhone = user.phone || user.id
 
     try {
-      // atomic_invest handles: balance deduction + investment insert + referral commissions
       const result = await addInvestment(userPhone, {
         planId: plan.id,
         planName: plan.name,
@@ -188,11 +190,9 @@ export default function PlansPage() {
         totalReturn: getTotalReturn(plan.amount),
       })
 
-      // Update local user balance from DB result
       if (result?.new_balance !== undefined) {
         updateUser({ balance: result.new_balance })
       } else {
-        // Fallback: fetch fresh user data
         const fresh = await getUser(userPhone)
         if (fresh) updateUser({ balance: fresh.balance })
       }
