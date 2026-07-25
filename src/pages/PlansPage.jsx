@@ -10,35 +10,56 @@ function PlanCard({ plan, onInvest, alreadyUsed }) {
 
   return (
     <div className="card flex flex-col gap-4 hover:border-gray-600 transition-colors">
+      {/* Header with gradient */}
       <div className={`bg-gradient-to-r ${plan.color} rounded-xl p-4 flex items-center justify-between`}>
         <div>
-          <p className="text-xs text-white/70 font-medium uppercase tracking-widest">{plan.once ? 'One-Time Only' : 'Repeatable'}</p>
-          <p className="text-xl font-black text-white mt-1">{plan.icon} {plan.name}</p>
+          <p className="text-[10px] text-white/70 font-semibold uppercase tracking-widest">{plan.once ? 'One-Time Only' : 'Repeatable'}</p>
+          <p className="text-lg font-black text-white mt-1">{plan.icon} {plan.name}</p>
         </div>
         <div className="text-right">
-          <p className="text-2xl font-black text-white">KSh {plan.amount.toLocaleString()}</p>
-          <p className="text-white/70 text-xs">Investment</p>
+          <p className="text-xl font-black text-white">KSh {plan.amount.toLocaleString()}</p>
+          <p className="text-white/60 text-[10px] uppercase tracking-wider mt-0.5">Share Worth</p>
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
+      {/* Specs badge */}
+      {plan.specs && (
+        <div className="rounded-lg px-3 py-2 flex flex-wrap gap-1.5" style={{ background: 'var(--bg-elevated)' }}>
+          <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-blue-900/40 text-blue-300 border border-blue-700/30">
+            {plan.specs}
+          </span>
+        </div>
+      )}
+
+      {/* Yield breakdown */}
+      <div className="grid grid-cols-3 gap-2">
         <div className="rounded-xl p-3 text-center" style={{ background: 'var(--bg-elevated)' }}>
-          <p className="text-green-400 font-bold text-lg">KSh {daily.toLocaleString()}</p>
-          <p className="text-xs mt-0.5" style={{ color: 'var(--text-secondary)' }}>24h Compute Yield (3%)</p>
+          <p className="text-green-400 font-bold text-base">KSh {daily.toLocaleString()}</p>
+          <p className="text-[9px] mt-0.5" style={{ color: 'var(--text-secondary)' }}>24h Yield</p>
         </div>
         <div className="rounded-xl p-3 text-center" style={{ background: 'var(--bg-elevated)' }}>
-          <p className="text-yellow-400 font-bold text-lg">KSh {total.toLocaleString()}</p>
-          <p className="text-xs mt-0.5" style={{ color: 'var(--text-secondary)' }}>90-Day Total</p>
+          <p className="text-yellow-400 font-bold text-base">KSh {total.toLocaleString()}</p>
+          <p className="text-[9px] mt-0.5" style={{ color: 'var(--text-secondary)' }}>90-Day Total</p>
+        </div>
+        <div className="rounded-xl p-3 text-center" style={{ background: 'var(--bg-elevated)' }}>
+          <p className="text-cyan-400 font-bold text-base">{Math.round((total / plan.amount - 1) * 100)}%</p>
+          <p className="text-[9px] mt-0.5" style={{ color: 'var(--text-secondary)' }}>ROI</p>
         </div>
       </div>
 
+      {/* Description */}
+      <p className="text-xs leading-relaxed px-1" style={{ color: 'var(--text-secondary)' }}>
+        {plan.description}
+      </p>
+
+      {/* Action button */}
       {alreadyUsed ? (
         <div className="text-center text-sm rounded-xl py-3" style={{ background: 'var(--bg-elevated)', color: 'var(--text-secondary)' }}>
           ✓ Already purchased (one-time plan)
         </div>
       ) : (
-        <button onClick={() => onInvest(plan)} className="btn-primary w-full">
-          Deploy Node — KSh {plan.amount.toLocaleString()}
+        <button onClick={() => onInvest(plan)} className="btn-primary w-full text-sm">
+          Deploy Node — {plan.shareWorth}
         </button>
       )}
     </div>
@@ -57,9 +78,10 @@ function ConfirmModal({ plan, balance, onConfirm, onClose, confirming, onDeposit
         <div className="rounded-xl p-4 space-y-2 mb-4" style={{ background: 'var(--bg-elevated)' }}>
           {[
             ['Plan', plan.name, ''],
-            ['Amount', `KSh ${plan.amount.toLocaleString()}`, 'text-red-400'],
+            ['Share Worth', `KSh ${plan.amount.toLocaleString()}`, 'text-red-400'],
             ['24h Compute Yield', `KSh ${getDailyReturn(plan.amount).toLocaleString()}`, 'text-green-400'],
-            ['90-Day Total', `KSh ${getTotalReturn(plan.amount).toLocaleString()}`, 'text-yellow-400'],
+            ['90-Day Total Yield', `KSh ${getTotalReturn(plan.amount).toLocaleString()}`, 'text-yellow-400'],
+            ['ROI', `${Math.round((getTotalReturn(plan.amount) / plan.amount - 1) * 100)}%`, 'text-cyan-400'],
           ].map(([label, value, cls]) => (
             <div key={label} className="flex justify-between text-sm">
               <span style={{ color: 'var(--text-secondary)' }}>{label}</span>
@@ -74,6 +96,10 @@ function ConfirmModal({ plan, balance, onConfirm, onClose, confirming, onDeposit
             </span>
           </div>
         </div>
+
+        <p className="text-xs mb-4 px-1 leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
+          {plan.description}
+        </p>
 
         {!enough && (
           <div className="bg-red-900/40 border border-red-700 text-red-300 text-sm rounded-lg px-4 py-3 mb-4">
@@ -184,7 +210,7 @@ export default function PlansPage() {
 
       <div className="mb-6">
         <h2 className="text-2xl font-black">AI Compute Nodes</h2>
-        <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>24h Compute Yield (3%) • 90-day duration</p>
+        <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>Invest in GPU compute infrastructure and earn 24h yields daily</p>
       </div>
 
       <div className="balance-gradient rounded-xl px-5 py-4 mb-6 flex items-center justify-between">
