@@ -1,6 +1,24 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { getInvestments, getDeposits, getWithdrawals } from '../lib/db'
+import { PLANS } from '../lib/plans'
+
+const PLAN_NAME_MAP = {
+  'Starter': '⚡ Micro-AI Node (V1)',
+  'Basic': '🚀 Cloud GPU Rig (RTX 4090)',
+  'Silver': '💻 AI Server Cluster (A100)',
+  'Gold': '🔥 Neural Network Array (H100)',
+  'Platinum': '🌐 Deep Learning Center',
+  'Diamond': '⚡ Quantum-AI Gateway',
+  'Ruby': '🏗️ DataCenter Pod V1',
+  'Emerald': '🛡️ Sovereign AI Rig',
+  'Sapphire': '🚀 HyperScale AI Grid',
+  'VIP': '👑 Enterprise Compute Matrix',
+}
+
+function getRebrandedName(planName) {
+  return PLAN_NAME_MAP[planName] || planName
+}
 
 function StatusBadge({ status }) {
   const map = {
@@ -122,12 +140,12 @@ export default function HistoryPage() {
       {/* Metrics Overview */}
       <div className="grid grid-cols-2 gap-3 mb-6">
         <div className="card">
-          <p className="text-xs uppercase tracking-wider mb-1" style={{ color: 'var(--text-muted)' }}>Today's Interest</p>
+          <p className="text-xs uppercase tracking-wider mb-1" style={{ color: 'var(--text-muted)' }}>Today's Compute Yield</p>
           <p className="text-2xl font-black text-green-400">+KSh {todayInterest.toLocaleString()}</p>
           <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>From {activeInvestments.length} active plan{activeInvestments.length !== 1 ? 's' : ''}</p>
         </div>
         <div className="card">
-          <p className="text-xs uppercase tracking-wider mb-1" style={{ color: 'var(--text-muted)' }}>Total Invested</p>
+          <p className="text-xs uppercase tracking-wider mb-1" style={{ color: 'var(--text-muted)' }}>Total Compute Deployed</p>
           <p className="text-2xl font-black text-red-400">KSh {totalInvested.toLocaleString()}</p>
           <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>Expected: KSh {totalExpectedReturn.toLocaleString()}</p>
         </div>
@@ -205,11 +223,11 @@ export default function HistoryPage() {
               <div className="grid grid-cols-2 gap-3 mb-4">
                 <div className="card text-center">
                   <p className="text-red-400 text-xl font-black">KSh {totalInvested.toLocaleString()}</p>
-                  <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>Total Invested</p>
+                  <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>Total Compute Deployed</p>
                 </div>
                 <div className="card text-center">
                   <p className="text-green-400 text-xl font-black">KSh {totalExpectedReturn.toLocaleString()}</p>
-                  <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>Expected Earnings</p>
+                  <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>Expected Compute Return</p>
                 </div>
               </div>
               {investments.map(inv => {
@@ -238,7 +256,7 @@ export default function HistoryPage() {
                       <div className="flex items-center gap-2 mb-2">
                         <StatusBadge status={inv.status || 'active'} />
                       </div>
-                      <p className="font-semibold">{inv.planName} Plan</p>
+                      <p className="font-semibold">{getRebrandedName(inv.planName)}</p>
                       <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>{fmt(inv.date)}</p>
                     </div>
                     <div className="text-right flex-shrink-0">
