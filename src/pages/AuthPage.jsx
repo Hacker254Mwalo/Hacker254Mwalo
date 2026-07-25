@@ -203,7 +203,16 @@ export default function AuthPage() {
         <div className="mt-3 h-px w-32 mx-auto" style={{ background: 'linear-gradient(90deg, transparent, #FFD700, #DAA520, transparent)' }}/>
       </div>
 
-      <svg width="220" height="185" viewBox="0 0 260 205" fill="none" xmlns="http://www.w3.org/2000/svg" className="mb-4 mx-auto drop-shadow-lg relative z-10">
+      <div className="relative mx-auto mb-4 z-10 w-full max-w-xs">
+        <img
+          src="/datacenter-ai.webp"
+          alt="AI Datacenter"
+          className="w-full h-auto object-contain rounded-2xl drop-shadow-lg"
+          style={{ filter: 'brightness(1.05)', maxHeight: '200px' }}
+        />
+      </div>
+      {/* AI Datacenter image above, tree SVG replaced */}
+      <svg width="0" height="0" viewBox="0 0 0 0" className="hidden" aria-hidden="true">
         <defs>
           <radialGradient id="bgGlow" cx="50%" cy="45%" r="45%">
             <stop offset="0%" stopColor="#FFD700" stopOpacity="0.2"/>
