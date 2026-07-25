@@ -5,16 +5,16 @@ import { getInvestments, addInvestment, getUser } from '../lib/db'
 import { PLANS, getDailyReturn, getTotalReturn } from '../lib/plans'
 
 const PLAN_IMAGES = {
-  starter: '/icons/starter.png',
-  basic: '/icons/basic.png',
-  silver: '/icons/silver.png',
-  gold: '/icons/gold.png',
-  platinum: '/icons/platinum.png',
-  diamond: '/icons/diamond.png',
-  ruby: '/icons/ruby.png',
-  emerald: '/icons/emerald.png',
-  sapphire: '/icons/sapphire.png',
-  vip: '/icons/vip.png',
+  starter: '/icons/starter.webp',
+  basic: '/icons/basic.webp',
+  silver: '/icons/silver.webp',
+  gold: '/icons/gold.webp',
+  platinum: '/icons/platinum.webp',
+  diamond: '/icons/diamond.webp',
+  ruby: '/icons/ruby.webp',
+  emerald: '/icons/emerald.webp',
+  sapphire: '/icons/sapphire.webp',
+  vip: '/icons/vip.webp',
 }
 
 function PlanCard({ plan, onInvest, alreadyUsed }) {

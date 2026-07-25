@@ -154,7 +154,7 @@ export default function AuthPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-4 relative overflow-hidden" style={{ backgroundImage: 'url(/ai-splash-bg.png)', backgroundSize: 'cover', backgroundPosition: 'center', backgroundAttachment: 'fixed' }}>
+    <div className="min-h-screen flex flex-col items-center justify-center p-4 relative overflow-hidden" style={{ backgroundImage: 'url(/ai-splash-bg.webp)', backgroundSize: 'cover', backgroundPosition: 'center', backgroundAttachment: 'fixed' }}>
       {/* Dark overlay over AI background */}
       <div className="absolute inset-0 pointer-events-none" style={{ background: 'rgba(3, 7, 18, 0.65)', zIndex: 0 }} />
 

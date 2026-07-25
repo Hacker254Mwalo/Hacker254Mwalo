@@ -52,13 +52,13 @@ export default function Navbar() {
 
   // Realistic image icons for bottom nav
   const navIcons = {
-    dashboard: '/icons/nav-dashboard.png',
-    invest: '/icons/nav-invest.png',
-    history: '/icons/nav-history.png',
-    notifications: '/icons/nav-alerts.png',
-    profile: '/icons/nav-profile.png',
-    support: '/icons/nav-support.png',
-    admin: '/icons/nav-admin.png',
+    dashboard: '/icons/nav-dashboard.webp',
+    invest: '/icons/nav-invest.webp',
+    history: '/icons/nav-history.webp',
+    notifications: '/icons/nav-alerts.webp',
+    profile: '/icons/nav-profile.webp',
+    support: '/icons/nav-support.webp',
+    admin: '/icons/nav-admin.webp',
   }
 
   const tabColors = {
@@ -124,7 +124,7 @@ export default function Navbar() {
       )
     },
     whatsapp: (
-      <img src="/icons/whatsapp-support.png" alt="WhatsApp" className="w-5 h-5 object-contain" />
+      <img src="/icons/whatsapp-support.webp" alt="WhatsApp" className="w-5 h-5 object-contain" />
     ),
     admin: (
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">

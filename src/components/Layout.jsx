@@ -22,7 +22,7 @@ export default function Layout() {
         {/* Animated AI Brain Image */}
         <div className="relative mb-6">
           <img
-            src="/ai-loading.png"
+            src="/ai-loading.webp"
             alt="AI Computing"
             className="w-48 h-48 object-contain"
             style={{

@@ -612,7 +612,7 @@ export default function Dashboard() {
       <div className="card mb-4">
         <div className="flex items-center justify-between">
           <div>
-            <p className="font-bold flex items-center gap-2"><img src="/icons/compute-bonus.png" alt="Bonus" className="w-6 h-6 rounded-lg object-cover border border-yellow-500/30" /> Daily Compute Bonus</p>
+            <p className="font-bold flex items-center gap-2"><img src="/icons/compute-bonus.webp" alt="Bonus" className="w-6 h-6 rounded-lg object-cover border border-yellow-500/30" /> Daily Compute Bonus</p>
             <p className="text-xs mt-0.5" style={{ color: 'var(--text-secondary)' }}>
               {!hasActiveInvestment
                 ? 'Requires active investment to claim'
@@ -682,7 +682,7 @@ export default function Dashboard() {
         ) : (
           <div className="flex items-center justify-between">
             <div>
-              <p className="font-bold flex items-center gap-2"><img src="/icons/lucky-spin.png" alt="Spin" className="w-6 h-6 rounded-lg object-cover border border-yellow-500/30" /> Lucky Spin</p>
+              <p className="font-bold flex items-center gap-2"><img src="/icons/lucky-spin.webp" alt="Spin" className="w-6 h-6 rounded-lg object-cover border border-yellow-500/30" /> Lucky Spin</p>
               <p className="text-xs mt-0.5" style={{ color: 'var(--text-secondary)' }}>
                 {!todayIsSpinDay
                   ? 'Available on Mondays & Fridays'
@@ -719,7 +719,7 @@ export default function Dashboard() {
             onClick={() => showToast('Coming Soon 📶')}
           >
             <div className="w-16 h-16 rounded-full overflow-hidden flex items-center justify-center bg-gray-800/40">
-              <img src="/icons/airtime.png" alt="Airtime" className="w-full h-full object-contain" />
+              <img src="/icons/airtime.webp" alt="Airtime" className="w-full h-full object-contain" />
             </div>
             <p className="font-semibold text-xs text-center">Buy Airtime</p>
           </div>
@@ -729,7 +729,7 @@ export default function Dashboard() {
             onClick={handleOpenPromo}
           >
             <div className="w-16 h-16 rounded-full overflow-hidden flex items-center justify-center bg-gray-800/40">
-              <img src="/icons/voucher.png" alt="Voucher" className="w-full h-full object-contain" />
+              <img src="/icons/voucher.webp" alt="Voucher" className="w-full h-full object-contain" />
             </div>
             <p className="font-semibold text-xs text-center">Redeem Voucher</p>
           </div>
@@ -739,7 +739,7 @@ export default function Dashboard() {
             onClick={handleOpenLoan}
           >
             <div className="w-16 h-16 rounded-full overflow-hidden flex items-center justify-center bg-gray-800/40">
-              <img src="/icons/compute-credit.png" alt="Credit" className="w-full h-full object-contain" />
+              <img src="/icons/compute-credit.webp" alt="Credit" className="w-full h-full object-contain" />
             </div>
             <p className="font-semibold text-xs text-center">Request Compute Credit</p>
           </div>
@@ -749,7 +749,7 @@ export default function Dashboard() {
             onClick={() => setShowContactAdmin(true)}
           >
             <div className="w-16 h-16 rounded-full overflow-hidden flex items-center justify-center bg-gray-800/40">
-              <img src="/icons/contact-admin.png" alt="Chat" className="w-full h-full object-contain" />
+              <img src="/icons/contact-admin.webp" alt="Chat" className="w-full h-full object-contain" />
             </div>
             <p className="font-semibold text-xs text-center">Contact Admin</p>
           </div>
@@ -864,7 +864,7 @@ export default function Dashboard() {
             rel="noopener noreferrer"
             className="flex items-center gap-4 cursor-pointer transition-all active:scale-95 no-underline p-2 -m-2"
           >
-            <div className="w-10 h-10 rounded-xl overflow-hidden flex-shrink-0 border border-green-500/20"><img src="/icons/whatsapp-support.png" alt="WhatsApp" className="w-full h-full object-cover" /></div>
+            <div className="w-10 h-10 rounded-xl overflow-hidden flex-shrink-0 border border-green-500/20"><img src="/icons/whatsapp-support.webp" alt="WhatsApp" className="w-full h-full object-cover" /></div>
             <div className="flex-1">
               <p className="font-semibold">WhatsApp Support</p>
               <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>Chat with us on WhatsApp</p>
@@ -878,7 +878,7 @@ export default function Dashboard() {
               rel="noopener noreferrer"
               className="flex items-center gap-4 cursor-pointer transition-all active:scale-95 no-underline p-2 -m-2 border-t border-gray-700/50"
             >
-              <div className="w-10 h-10 rounded-xl overflow-hidden flex-shrink-0 border border-blue-500/20"><img src="/icons/contact-admin.png" alt="Group" className="w-full h-full object-cover" /></div>
+              <div className="w-10 h-10 rounded-xl overflow-hidden flex-shrink-0 border border-blue-500/20"><img src="/icons/contact-admin.webp" alt="Group" className="w-full h-full object-cover" /></div>
               <div className="flex-1">
                 <p className="font-semibold">Join WhatsApp Group</p>
                 <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>Get updates, tips & announcements</p>
