@@ -32,10 +32,25 @@
 @layer base {
   body {
     background-color: var(--bg-base);
+    background-image: url('/bg-wallpaper.jpg');
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed;
     color: var(--text-primary);
     min-height: 100vh;
     font-family: 'Inter', system-ui, sans-serif;
     transition: background-color 0.3s ease, color 0.3s ease;
+  }
+  body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(3, 7, 18, 0.78);
+    pointer-events: none;
+    z-index: 0;
   }
 }
 

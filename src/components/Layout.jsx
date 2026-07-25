@@ -27,7 +27,7 @@ export default function Layout() {
   return (
     <>
       <Navbar />
-      <main>
+      <main className="relative z-10">
         <Outlet />
       </main>
     </>
