@@ -612,7 +612,7 @@ export default function Dashboard() {
       <div className="card mb-4">
         <div className="flex items-center justify-between">
           <div>
-            <p className="font-bold">🎁 Daily Compute Bonus</p>
+            <p className="font-bold flex items-center gap-2"><img src="/icons/compute-bonus.png" alt="Bonus" className="w-5 h-5 rounded-md object-cover" /> Daily Compute Bonus</p>
             <p className="text-xs mt-0.5" style={{ color: 'var(--text-secondary)' }}>
               {!hasActiveInvestment
                 ? 'Requires active investment to claim'
@@ -682,7 +682,7 @@ export default function Dashboard() {
         ) : (
           <div className="flex items-center justify-between">
             <div>
-              <p className="font-bold">🎰 Lucky Spin</p>
+              <p className="font-bold flex items-center gap-2"><img src="/icons/lucky-spin.png" alt="Spin" className="w-5 h-5 rounded-md object-cover" /> Lucky Spin</p>
               <p className="text-xs mt-0.5" style={{ color: 'var(--text-secondary)' }}>
                 {!todayIsSpinDay
                   ? 'Available on Mondays & Fridays'
@@ -718,7 +718,9 @@ export default function Dashboard() {
             className="card flex flex-col items-center gap-2 cursor-pointer transition-all active:scale-95 hover:border-blue-700"
             onClick={() => showToast('Coming Soon 📶')}
           >
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 to-cyan-600 flex items-center justify-center text-xl">📶</div>
+            <div className="w-12 h-12 rounded-xl overflow-hidden flex items-center justify-center bg-gray-800/50 border border-blue-500/20">
+              <img src="/icons/airtime.png" alt="Airtime" className="w-full h-full object-cover" />
+            </div>
             <p className="font-semibold text-xs text-center">Buy Airtime</p>
           </div>
 
@@ -726,8 +728,8 @@ export default function Dashboard() {
             className="card flex flex-col items-center gap-2 cursor-pointer transition-all active:scale-95 hover:border-teal-700"
             onClick={handleOpenPromo}
           >
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-green-600 to-teal-600 flex items-center justify-center text-xl">
-              {hasActiveInvestment ? '🎟️' : '🔒'}
+            <div className="w-12 h-12 rounded-xl overflow-hidden flex items-center justify-center bg-gray-800/50 border border-teal-500/20">
+              <img src="/icons/voucher.png" alt="Voucher" className="w-full h-full object-cover" />
             </div>
             <p className="font-semibold text-xs text-center">Redeem Voucher</p>
           </div>
@@ -736,8 +738,8 @@ export default function Dashboard() {
             className="card flex flex-col items-center gap-2 cursor-pointer transition-all active:scale-95 hover:border-purple-700"
             onClick={handleOpenLoan}
           >
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-600 to-indigo-600 flex items-center justify-center text-xl">
-              {hasActiveInvestment ? '🏦' : '🔒'}
+            <div className="w-12 h-12 rounded-xl overflow-hidden flex items-center justify-center bg-gray-800/50 border border-purple-500/20">
+              <img src="/icons/compute-credit.png" alt="Credit" className="w-full h-full object-cover" />
             </div>
             <p className="font-semibold text-xs text-center">Request Compute Credit</p>
           </div>
@@ -746,7 +748,9 @@ export default function Dashboard() {
             className="card flex flex-col items-center gap-2 cursor-pointer transition-all active:scale-95 hover:border-green-700"
             onClick={() => setShowContactAdmin(true)}
           >
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-green-600 to-emerald-600 flex items-center justify-center text-xl">💬</div>
+            <div className="w-12 h-12 rounded-xl overflow-hidden flex items-center justify-center bg-gray-800/50 border border-green-500/20">
+              <img src="/icons/contact-admin.png" alt="Chat" className="w-full h-full object-cover" />
+            </div>
             <p className="font-semibold text-xs text-center">Contact Admin</p>
           </div>
         </div>
@@ -860,7 +864,7 @@ export default function Dashboard() {
             rel="noopener noreferrer"
             className="flex items-center gap-4 cursor-pointer transition-all active:scale-95 no-underline p-2 -m-2"
           >
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-green-600 to-emerald-600 flex items-center justify-center text-xl flex-shrink-0">💬</div>
+            <div className="w-10 h-10 rounded-xl overflow-hidden flex-shrink-0 border border-green-500/20"><img src="/icons/whatsapp-support.png" alt="WhatsApp" className="w-full h-full object-cover" /></div>
             <div className="flex-1">
               <p className="font-semibold">WhatsApp Support</p>
               <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>Chat with us on WhatsApp</p>
@@ -874,7 +878,7 @@ export default function Dashboard() {
               rel="noopener noreferrer"
               className="flex items-center gap-4 cursor-pointer transition-all active:scale-95 no-underline p-2 -m-2 border-t border-gray-700/50"
             >
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 to-cyan-600 flex items-center justify-center text-xl flex-shrink-0">👥</div>
+              <div className="w-10 h-10 rounded-xl overflow-hidden flex-shrink-0 border border-blue-500/20"><img src="/icons/contact-admin.png" alt="Group" className="w-full h-full object-cover" /></div>
               <div className="flex-1">
                 <p className="font-semibold">Join WhatsApp Group</p>
                 <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>Get updates, tips & announcements</p>
