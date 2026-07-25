@@ -154,12 +154,15 @@ export default function AuthPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-4 relative overflow-hidden" style={{ background: 'linear-gradient(160deg, #050510 0%, #0a0a1a 30%, #0d0d25 60%, #050510 100%)' }}>
+    <div className="min-h-screen flex flex-col items-center justify-center p-4 relative overflow-hidden" style={{ backgroundImage: 'url(/ai-splash-bg.png)', backgroundSize: 'cover', backgroundPosition: 'center', backgroundAttachment: 'fixed' }}>
+      {/* Dark overlay over AI background */}
+      <div className="absolute inset-0 pointer-events-none" style={{ background: 'rgba(3, 7, 18, 0.65)', zIndex: 0 }} />
+
       {/* Animated background orbs */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-20 -left-20 w-72 h-72 rounded-full opacity-20" style={{ background: 'radial-gradient(circle, #FFD700 0%, transparent 70%)', animation: 'floatSymbol 12s ease-in-out infinite' }}/>
-        <div className="absolute -bottom-32 -right-20 w-96 h-96 rounded-full opacity-10" style={{ background: 'radial-gradient(circle, #DAA520 0%, transparent 70%)', animation: 'floatSymbol 15s ease-in-out infinite', animationDelay: '3s' }}/>
-        <div className="absolute top-1/3 right-1/4 w-48 h-48 rounded-full opacity-15" style={{ background: 'radial-gradient(circle, #B8860B 0%, transparent 70%)', animation: 'floatSymbol 10s ease-in-out infinite', animationDelay: '6s' }}/>
+      <div className="absolute inset-0 overflow-hidden pointer-events-none" style={{ zIndex: 1 }}>
+        <div className="absolute -top-20 -left-20 w-72 h-72 rounded-full opacity-20" style={{ background: 'radial-gradient(circle, #38bdf8 0%, transparent 70%)', animation: 'floatSymbol 12s ease-in-out infinite' }}/>
+        <div className="absolute -bottom-32 -right-20 w-96 h-96 rounded-full opacity-10" style={{ background: 'radial-gradient(circle, #0ea5e9 0%, transparent 70%)', animation: 'floatSymbol 15s ease-in-out infinite', animationDelay: '3s' }}/>
+        <div className="absolute top-1/3 right-1/4 w-48 h-48 rounded-full opacity-15" style={{ background: 'radial-gradient(circle, #7c3aed 0%, transparent 70%)', animation: 'floatSymbol 10s ease-in-out infinite', animationDelay: '6s' }}/>
         {/* Gold Particles — 10 on mobile, 20 on desktop */}
         {Array.from({ length: mobile ? 10 : 20 }).map((_, i) => (
           <div
@@ -200,7 +203,7 @@ export default function AuthPage() {
         <div className="mt-3 h-px w-32 mx-auto" style={{ background: 'linear-gradient(90deg, transparent, #FFD700, #DAA520, transparent)' }}/>
       </div>
 
-      <svg width="220" height="185" viewBox="0 0 260 205" fill="none" xmlns="http://www.w3.org/2000/svg" className="mb-4 mx-auto drop-shadow-lg">
+      <svg width="220" height="185" viewBox="0 0 260 205" fill="none" xmlns="http://www.w3.org/2000/svg" className="mb-4 mx-auto drop-shadow-lg relative z-10">
         <defs>
           <radialGradient id="bgGlow" cx="50%" cy="45%" r="45%">
             <stop offset="0%" stopColor="#FFD700" stopOpacity="0.2"/>
