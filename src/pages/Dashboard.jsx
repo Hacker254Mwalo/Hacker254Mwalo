@@ -490,6 +490,22 @@ export default function Dashboard() {
   const todayIsSpinDay = isTodaySpinDay()
   const waDigits = waPhone.replace(/\D/g, '')
 
+  // AI GPU Compute theme style constants
+  const NEON_CARD_STYLE = {
+    background: 'linear-gradient(145deg, rgba(10,12,30,0.95) 0%, rgba(6,8,20,0.98) 100%)',
+    border: '1px solid rgba(0,180,255,0.15)',
+    borderRadius: '16px',
+    boxShadow: '0 0 20px rgba(0,180,255,0.05), inset 0 0 20px rgba(0,180,255,0.02)',
+  }
+  const SECTION_LABEL = {
+    fontSize: '10px',
+    fontWeight: 700,
+    letterSpacing: '0.15em',
+    textTransform: 'uppercase',
+    color: '#00B4FF',
+    marginBottom: '12px',
+  }
+
   return (
     <div className="pt-4 md:pt-20 pb-24 md:pb-8 px-4 max-w-2xl mx-auto">
       <Toast msg={toast.msg} type={toast.type} />
