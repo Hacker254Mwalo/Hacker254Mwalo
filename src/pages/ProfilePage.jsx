@@ -516,7 +516,7 @@ export default function ProfilePage() {
   }, [])
 
   const refCode = user ? (user.referralCode || generateReferralCode(user.phone)) : ''
-  const baseUrl = import.meta.env.VITE_APP_URL || window.location.origin || 'https://dumiropay.space'
+  const baseUrl = 'https://dumiropay.space'
   const link = `${baseUrl}/r/${refCode}`
   const totalL1 = referrals.filter(r => r.level === 1).reduce((s, r) => s + Number(r.commission || 0), 0)
   const totalL2 = referrals.filter(r => r.level === 2).reduce((s, r) => s + Number(r.commission || 0), 0)
