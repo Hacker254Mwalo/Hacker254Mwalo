@@ -718,8 +718,8 @@ export default function Dashboard() {
             className="card flex flex-col items-center gap-1.5 cursor-pointer transition-all active:scale-95 hover:border-blue-700"
             onClick={() => showToast('Coming Soon 📶')}
           >
-            <div className="w-14 h-14 rounded-2xl overflow-hidden flex items-center justify-center bg-gray-800/40 border border-blue-500/30 p-0.5">
-              <img src="/icons/airtime.png" alt="Airtime" className="w-full h-full object-cover rounded-xl" />
+            <div className="w-16 h-16 rounded-full overflow-hidden flex items-center justify-center bg-gray-800/40">
+              <img src="/icons/airtime.png" alt="Airtime" className="w-full h-full object-contain" />
             </div>
             <p className="font-semibold text-xs text-center">Buy Airtime</p>
           </div>
@@ -728,8 +728,8 @@ export default function Dashboard() {
             className="card flex flex-col items-center gap-1.5 cursor-pointer transition-all active:scale-95 hover:border-teal-700"
             onClick={handleOpenPromo}
           >
-            <div className="w-14 h-14 rounded-2xl overflow-hidden flex items-center justify-center bg-gray-800/40 border border-teal-500/30 p-0.5">
-              <img src="/icons/voucher.png" alt="Voucher" className="w-full h-full object-cover rounded-xl" />
+            <div className="w-16 h-16 rounded-full overflow-hidden flex items-center justify-center bg-gray-800/40">
+              <img src="/icons/voucher.png" alt="Voucher" className="w-full h-full object-contain" />
             </div>
             <p className="font-semibold text-xs text-center">Redeem Voucher</p>
           </div>
@@ -738,8 +738,8 @@ export default function Dashboard() {
             className="card flex flex-col items-center gap-1.5 cursor-pointer transition-all active:scale-95 hover:border-purple-700"
             onClick={handleOpenLoan}
           >
-            <div className="w-14 h-14 rounded-2xl overflow-hidden flex items-center justify-center bg-gray-800/40 border border-purple-500/30 p-0.5">
-              <img src="/icons/compute-credit.png" alt="Credit" className="w-full h-full object-cover rounded-xl" />
+            <div className="w-16 h-16 rounded-full overflow-hidden flex items-center justify-center bg-gray-800/40">
+              <img src="/icons/compute-credit.png" alt="Credit" className="w-full h-full object-contain" />
             </div>
             <p className="font-semibold text-xs text-center">Request Compute Credit</p>
           </div>
@@ -748,8 +748,8 @@ export default function Dashboard() {
             className="card flex flex-col items-center gap-1.5 cursor-pointer transition-all active:scale-95 hover:border-green-700"
             onClick={() => setShowContactAdmin(true)}
           >
-            <div className="w-14 h-14 rounded-2xl overflow-hidden flex items-center justify-center bg-gray-800/40 border border-green-500/30 p-0.5">
-              <img src="/icons/contact-admin.png" alt="Chat" className="w-full h-full object-cover rounded-xl" />
+            <div className="w-16 h-16 rounded-full overflow-hidden flex items-center justify-center bg-gray-800/40">
+              <img src="/icons/contact-admin.png" alt="Chat" className="w-full h-full object-contain" />
             </div>
             <p className="font-semibold text-xs text-center">Contact Admin</p>
           </div>

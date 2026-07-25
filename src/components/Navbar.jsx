@@ -271,8 +271,8 @@ export default function Navbar() {
                       <img
                         src={l.img}
                         alt={l.label}
-                        className="w-7 h-7 object-contain"
-                        style={{ filter: isActive ? 'brightness(1.2) saturate(1.1) drop-shadow(0 0 4px rgba(255,255,255,0.3))' : 'brightness(0.85) saturate(0.8)' }}
+                        className="w-10 h-10 object-contain"
+                        style={{ filter: isActive ? 'brightness(1.05) saturate(1.1) drop-shadow(0 0 6px rgba(255,255,255,0.4))' : 'brightness(0.7) saturate(0.6)' }}
                       />
                       {/* Notification badge on bell icon */}
                       {l.key === 'notifications' && unreadCount > 0 && (
@@ -322,8 +322,8 @@ export default function Navbar() {
                     <img
                       src={navIcons.profile}
                       alt="Profile"
-                      className="w-7 h-7 object-contain"
-                      style={{ filter: isActive ? 'brightness(1.2) saturate(1.1) drop-shadow(0 0 4px rgba(255,255,255,0.3))' : 'brightness(0.85) saturate(0.8)' }}
+                      className="w-10 h-10 object-contain"
+                      style={{ filter: isActive ? 'brightness(1.05) saturate(1.1) drop-shadow(0 0 6px rgba(255,255,255,0.4))' : 'brightness(0.7) saturate(0.6)' }}
                     />
                   </div>
                   <span
@@ -349,8 +349,8 @@ export default function Navbar() {
                 <img
                   src={navIcons.support}
                   alt="Support"
-                  className="w-7 h-7 object-contain"
-                  style={{ filter: 'brightness(1.0) saturate(1.0)' }}
+                  className="w-10 h-10 object-contain"
+                  style={{ filter: 'brightness(0.7) saturate(0.6)' }}
                 />
               </div>
               <span className="opacity-70">Support</span>
@@ -370,8 +370,8 @@ export default function Navbar() {
                 <img
                   src={navIcons.admin}
                   alt="Admin"
-                  className="w-7 h-7 object-contain"
-                  style={{ filter: 'brightness(1.0) saturate(1.0)' }}
+                  className="w-10 h-10 object-contain"
+                  style={{ filter: 'brightness(0.7) saturate(0.6)' }}
                 />
               </div>
               <span className="opacity-70">Admin</span>
