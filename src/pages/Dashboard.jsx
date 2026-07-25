@@ -618,7 +618,7 @@ export default function Dashboard() {
                 ? 'Requires active investment to claim'
                 : bonusClaimed
                   ? 'Reward claimed — compute cycle resets tomorrow'
-                  : 'Tap Claim to collect your KSh 10 daily compute reward'}
+                  : 'Tap Claim to collect your daily compute Reward'}
             </p>
           </div>
           <button
@@ -747,7 +747,7 @@ export default function Dashboard() {
             onClick={() => setShowContactAdmin(true)}
           >
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-green-600 to-emerald-600 flex items-center justify-center text-xl">💬</div>
-            <p className="font-semibold text-xs text-center">Refer & Earn</p>
+            <p className="font-semibold text-xs text-center">Contact Admin</p>
           </div>
         </div>
       </div>
