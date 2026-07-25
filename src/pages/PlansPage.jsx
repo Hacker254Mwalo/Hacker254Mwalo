@@ -24,7 +24,7 @@ function PlanCard({ plan, onInvest, alreadyUsed }) {
       <div className="grid grid-cols-2 gap-3">
         <div className="rounded-xl p-3 text-center" style={{ background: 'var(--bg-elevated)' }}>
           <p className="text-green-400 font-bold text-lg">KSh {daily.toLocaleString()}</p>
-          <p className="text-xs mt-0.5" style={{ color: 'var(--text-secondary)' }}>Daily Return (3%)</p>
+          <p className="text-xs mt-0.5" style={{ color: 'var(--text-secondary)' }}>24h Compute Yield (3%)</p>
         </div>
         <div className="rounded-xl p-3 text-center" style={{ background: 'var(--bg-elevated)' }}>
           <p className="text-yellow-400 font-bold text-lg">KSh {total.toLocaleString()}</p>
@@ -38,7 +38,7 @@ function PlanCard({ plan, onInvest, alreadyUsed }) {
         </div>
       ) : (
         <button onClick={() => onInvest(plan)} className="btn-primary w-full">
-          Invest Now — KSh {plan.amount.toLocaleString()}
+          Deploy Node — KSh {plan.amount.toLocaleString()}
         </button>
       )}
     </div>
@@ -52,13 +52,13 @@ function ConfirmModal({ plan, balance, onConfirm, onClose, confirming, onDeposit
   return (
     <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4" onClick={onClose}>
       <div className="card max-w-sm w-full" onClick={e => e.stopPropagation()}>
-        <h3 className="text-xl font-bold mb-4">{plan.icon} Confirm Investment</h3>
+        <h3 className="text-xl font-bold mb-4">{plan.icon} Deploy Node</h3>
 
         <div className="rounded-xl p-4 space-y-2 mb-4" style={{ background: 'var(--bg-elevated)' }}>
           {[
             ['Plan', plan.name, ''],
             ['Amount', `KSh ${plan.amount.toLocaleString()}`, 'text-red-400'],
-            ['Daily Return', `KSh ${getDailyReturn(plan.amount).toLocaleString()}`, 'text-green-400'],
+            ['24h Compute Yield', `KSh ${getDailyReturn(plan.amount).toLocaleString()}`, 'text-green-400'],
             ['90-Day Total', `KSh ${getTotalReturn(plan.amount).toLocaleString()}`, 'text-yellow-400'],
           ].map(([label, value, cls]) => (
             <div key={label} className="flex justify-between text-sm">
@@ -183,8 +183,8 @@ export default function PlansPage() {
       )}
 
       <div className="mb-6">
-        <h2 className="text-2xl font-black">Investment Plans</h2>
-        <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>3% daily returns • 90-day duration</p>
+        <h2 className="text-2xl font-black">AI Compute Nodes</h2>
+        <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>24h Compute Yield (3%) • 90-day duration</p>
       </div>
 
       <div className="balance-gradient rounded-xl px-5 py-4 mb-6 flex items-center justify-between">

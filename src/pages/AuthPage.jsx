@@ -195,8 +195,8 @@ export default function AuthPage() {
             Dumiropay
           </h1>
         </div>
-        <p className="text-gray-300 mt-1 text-sm tracking-wide">Kenya's Premier Investment Platform</p>
-        <p className="mt-0.5 text-xs font-bold tracking-widest uppercase" style={{ background: 'linear-gradient(90deg, #FFD700, #DAA520)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>TOP KENYA 1 ONLINE EARNING PLATFORM</p>
+        <p className="text-gray-300 mt-1 text-sm tracking-wide">Kenya's Premier AI Compute Network</p>
+        <p className="mt-0.5 text-xs font-bold tracking-widest uppercase" style={{ background: 'linear-gradient(90deg, #FFD700, #DAA520)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>DECENTRALIZED GPU NODE INFRASTRUCTURE</p>
         <div className="mt-3 h-px w-32 mx-auto" style={{ background: 'linear-gradient(90deg, transparent, #FFD700, #DAA520, transparent)' }}/>
       </div>
 
@@ -400,16 +400,16 @@ export default function AuthPage() {
         {/* Investor Stats Banner */}
         <div className="mb-4 grid grid-cols-3 gap-2">
           <div className="text-center p-2.5 rounded-xl" style={{ background: 'linear-gradient(135deg, rgba(255,215,0,0.08) 0%, rgba(218,165,32,0.04) 100%)', border: '1px solid rgba(255,215,0,0.12)' }}>
-            <p className="text-lg font-bold" style={{ color: '#FFD700' }}>KES</p>
-            <p className="text-[10px] text-gray-400 tracking-wide">Make Money Online Watching Grow</p>
+            <p className="text-lg font-bold" style={{ color: '#FFD700' }}>AI Yield</p>
+            <p className="text-[10px] text-gray-400 tracking-wide">Earn Daily Compute Returns</p>
           </div>
           <div className="text-center p-2.5 rounded-xl" style={{ background: 'linear-gradient(135deg, rgba(255,215,0,0.08) 0%, rgba(218,165,32,0.04) 100%)', border: '1px solid rgba(255,215,0,0.12)' }}>
             <p className="text-lg font-bold" style={{ color: '#FFD700' }}>24/7</p>
-            <p className="text-[10px] text-gray-400 tracking-wide">Withdrawal</p>
+            <p className="text-[10px] text-gray-400 tracking-wide">Instant M-Pesa Withdrawals</p>
           </div>
           <div className="text-center p-2.5 rounded-xl" style={{ background: 'linear-gradient(135deg, rgba(255,215,0,0.08) 0%, rgba(218,165,32,0.04) 100%)', border: '1px solid rgba(255,215,0,0.12)' }}>
-            <p className="text-lg font-bold" style={{ color: '#FFD700' }}>100%</p>
-            <p className="text-[10px] text-gray-400 tracking-wide">Start Earning & Withdraw Directly to M-Pesa</p>
+            <p className="text-lg font-bold" style={{ color: '#FFD700' }}>Instant Node</p>
+            <p className="text-[10px] text-gray-400 tracking-wide">Deploy Rigs & Cash Out Directly</p>
           </div>
         </div>
 
@@ -519,7 +519,7 @@ export default function AuthPage() {
                       <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
                       Signing In...
                     </span>
-                  ) : tab === 'login' ? 'Access Dashboard →' : 'Start Investing Today'}
+                  ) : tab === 'login' ? 'Access Compute Console →' : 'Deploy Your First Node'}
                 </button>
               </form>
 

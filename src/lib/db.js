@@ -57,6 +57,7 @@ function dbInvToApp(row) {
     startedAt: row.started_at,
     endsAt: row.ends_at,
     lastProfitAt: row.last_profit_at,
+    lastExecutedAt: row.last_executed_at || null,
   }
 }
 
@@ -154,7 +155,7 @@ export async function getInvestments(userPhone) {
   if (!isSupabaseConfigured) return local.getInvestments(userPhone)
   const { data, error } = await supabase
     .from('investments')
-    .select('id, plan_id, plan_name, amount, daily_return, total_return, profit, status, created_at, started_at, ends_at, last_profit_at')
+    .select('id, plan_id, plan_name, amount, daily_return, total_return, profit, status, created_at, started_at, ends_at, last_profit_at, last_executed_at')
     .eq('user_phone', userPhone)
     .order('created_at', { ascending: false })
   if (error) throw error
@@ -1128,4 +1129,18 @@ export async function adminDeleteNotification(id) {
   }
   const { error } = await supabase.from('notifications').delete().eq('id', id)
   if (error) throw error
+}
+// ── 24h Compute Cycle ──────────────────────────────────────────────────────
+export async function executeComputeCycle(investmentId, userPhone) {
+  if (!isSupabaseConfigured) {
+    // localStorage fallback: no cooldown enforcement, just credit 3%
+    const inv = (local.getInvestments(userPhone) || []).find(i => i.id === investmentId)
+    if (!inv) return { success: false, error: 'Investment not found' }
+    const yield_ = Math.floor(inv.amount * 0.03)
+    return { success: true, yield: yield_, new_balance: (local.getUser(userPhone)?.balance || 0) + yield_, new_profit: (inv.profit || 0) + yield_ }
+  }
+  const { data, error } = await supabase
+    .rpc('execute_compute_cycle', { p_investment_id: investmentId, p_user_phone: userPhone })
+  if (error) throw error
+  return data
 }

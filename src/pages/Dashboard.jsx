@@ -13,6 +13,7 @@ import {
   getWhatsAppSettings,
   checkIsAdmin,
   getClaimedKeywords,
+  executeComputeCycle,
 } from '../lib/db'
 
 const SPIN_DAYS = [1, 5] // Monday=1, Friday=5
@@ -296,6 +297,46 @@ export default function Dashboard() {
 
   const hasActiveInvestment = activeInvestments.length > 0
   const userBalance = user?.balance || 0
+  const [executingId, setExecutingId] = useState(null)
+  const [execStage, setExecStage] = useState(0)
+
+  function getExecTimeRemaining(inv) {
+    const last = inv.lastExecutedAt ? new Date(inv.lastExecutedAt) : new Date(Date.now() - 25 * 3600000)
+    const next = new Date(last.getTime() + 24 * 3600000)
+    const remaining = next - new Date()
+    if (remaining <= 0) return null // eligible
+    const h = Math.floor(remaining / 3600000)
+    const m = Math.floor((remaining % 3600000) / 60000)
+    const s = Math.floor((remaining % 60000) / 1000)
+    return { h, m, s, ms: remaining }
+  }
+
+  async function handleExecuteCycle(inv) {
+    if (executingId) return
+    setExecutingId(inv.id)
+    setExecStage(1)
+    try {
+      // Stage 1: Allocating
+      await new Promise(r => setTimeout(r, 1600))
+      setExecStage(2)
+      // Stage 2: Processing
+      await new Promise(r => setTimeout(r, 1800))
+      setExecStage(3)
+      // Stage 3: Complete — call RPC
+      await new Promise(r => setTimeout(r, 1600))
+      const result = await executeComputeCycle(inv.id, user.phone || user.id)
+      if (result.success) {
+        showToast(`Compute cycle complete. +KSh ${Number(result.yield).toLocaleString()} yield`, 'success')
+        await loadData()
+      } else {
+        showToast(result.error || 'Execute failed', 'error')
+      }
+    } catch (e) {
+      showToast('Execute failed: ' + (e.message || 'unknown error'), 'error')
+    }
+    setExecutingId(null)
+    setExecStage(0)
+  }
 
   /** Redirect helper: first tell user to invest, then if no balance → deposit */
   function requireInvestment(action) {
@@ -526,7 +567,7 @@ export default function Dashboard() {
             <p className="text-yellow-400 text-sm mt-1">+ KSh {(user.bonusBalance || 0).toLocaleString()} bonus</p>
           )}
           <div className="flex gap-3 mt-4">
-            <button onClick={() => navigate('/plans')} className="btn-primary flex-1 text-sm py-2.5">Invest</button>
+            <button onClick={() => navigate('/plans')} className="btn-primary flex-1 text-sm py-2.5">Deploy Node</button>
             <button onClick={() => navigate('/profile')} className="btn-secondary flex-1 text-sm py-2.5">Withdraw</button>
           </div>
         </div>
@@ -537,16 +578,16 @@ export default function Dashboard() {
         <div className="rounded-2xl p-4 mb-5 border border-yellow-700/50 bg-yellow-900/20 flex items-center gap-3">
           <span className="text-2xl">⚠️</span>
           <div className="flex-1">
-            <p className="font-semibold text-yellow-300 text-sm">No Active Investment</p>
+            <p className="font-semibold text-yellow-300 text-sm">No Active Node</p>
             <p className="text-xs mt-0.5" style={{ color: 'var(--text-secondary)' }}>
-              Invest to unlock daily bonus, lucky spin, promo codes &amp; loans.
+              Deploy a node to unlock daily bonus, lucky spin, promo codes &amp; loans.
             </p>
           </div>
           <button
             onClick={() => navigate('/plans')}
             className="text-xs bg-yellow-600 hover:bg-yellow-500 text-white px-3 py-2 rounded-xl font-semibold whitespace-nowrap"
           >
-            Invest →
+            Deploy →
           </button>
         </div>
       )}
@@ -577,6 +618,20 @@ export default function Dashboard() {
           >
             {claimingBonus ? '...' : bonusClaimed ? '✓ Claimed' : !hasActiveInvestment ? '🔒' : 'Claim'}
           </button>
+          {bonusClaimed && (() => {
+            const now = new Date()
+            const nextMidnight = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1, 0, 0, 0))
+            const diff = nextMidnight - now
+            const h = Math.floor(diff / 3600000)
+            const m = Math.floor((diff % 3600000) / 60000)
+            const s = Math.floor((diff % 60000) / 1000)
+            return (
+              <span className="text-xs ml-2" style={{ color: 'var(--text-secondary)' }}>
+                Next in {String(h).padStart(2,'0')}:{String(m).padStart(2,'0')}:{String(s).padStart(2,'0')}
+              </span>
+            )
+          })()}
+        </div>
         </div>
       </div>
 
@@ -685,11 +740,11 @@ export default function Dashboard() {
       {/* Invest CTA */}
       <div className="card mb-6 flex items-center justify-between bg-gradient-to-r from-gray-900 to-gray-800 border-red-900/40 hover:border-red-700/60 transition-colors">
         <div>
-          <p className="font-bold">Start Investing</p>
-          <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>3% daily returns • 90 days</p>
+          <p className="font-bold">Start Computing</p>
+          <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>3% daily yield • 90 days</p>
         </div>
         <button onClick={() => navigate('/plans')} className="btn-primary text-sm py-2 px-5 whitespace-nowrap">
-          Invest Now →
+          Deploy Node →
         </button>
       </div>
 
@@ -745,6 +800,35 @@ export default function Dashboard() {
                     <span>Target: KSh {targetTotal.toLocaleString()}</span>
                     <span>Remaining: KSh {remaining.toLocaleString()}</span>
                   </div>
+                  {/* 24h Compute Cycle */}
+                  {executingId === inv.id ? (
+                    <div className="mt-3 rounded-lg p-3 font-mono text-xs bg-black/50 border border-green-700/50">
+                      <div className="text-green-400 mb-1">{execStage >= 1 ? '>_ Allocating GPU Cores...' : ''}</div>
+                      <div className="text-green-400 mb-1">{execStage >= 2 ? '>_ Processing AI Datasets...' : ''}</div>
+                      <div className="text-green-400">{execStage >= 3 ? '>_ Cycle Complete. Yield Generated.' : ''}</div>
+                    </div>
+                  ) : (() => {
+                    const remaining = getExecTimeRemaining(inv)
+                    if (remaining) {
+                      return (
+                        <div className="mt-3 text-center">
+                          <button disabled className="text-xs px-4 py-2 rounded-xl bg-gray-700 text-gray-500 cursor-not-allowed w-full">
+                            ⏳ Next Cycle in {String(remaining.h).padStart(2,'0')}:{String(remaining.m).padStart(2,'0')}:{String(remaining.s).padStart(2,'0')}
+                          </button>
+                        </div>
+                      )
+                    }
+                    return (
+                      <div className="mt-3 text-center">
+                        <button
+                          onClick={() => handleExecuteCycle(inv)}
+                          className="text-xs px-4 py-2 rounded-xl bg-green-600 hover:bg-green-500 text-white font-semibold w-full active:scale-95 transition-all"
+                        >
+                          ▶ Execute 24h Compute Cycle
+                        </button>
+                      </div>
+                    )
+                  })()}
                 </div>
               )
             })}
