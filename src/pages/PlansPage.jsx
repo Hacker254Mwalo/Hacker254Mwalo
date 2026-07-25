@@ -3,18 +3,39 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { getInvestments, addInvestment, getUser } from '../lib/db'
 import { PLANS, getDailyReturn, getTotalReturn } from '../lib/plans'
+import { PLAN_ICONS } from '../components/PlanIcons'
+
+const ICON_COLORS = {
+  starter: 'text-gray-400',
+  basic: 'text-blue-400',
+  silver: 'text-gray-300',
+  gold: 'text-yellow-400',
+  platinum: 'text-cyan-400',
+  diamond: 'text-indigo-400',
+  ruby: 'text-red-400',
+  emerald: 'text-green-400',
+  sapphire: 'text-blue-400',
+  vip: 'text-pink-400',
+}
 
 function PlanCard({ plan, onInvest, alreadyUsed }) {
   const daily = getDailyReturn(plan.amount)
   const total = getTotalReturn(plan.amount)
+  const IconComponent = PLAN_ICONS[plan.id]
+  const iconColor = ICON_COLORS[plan.id] || 'text-white'
 
   return (
     <div className="card flex flex-col gap-4 hover:border-gray-600 transition-colors">
       {/* Header with gradient */}
       <div className={`bg-gradient-to-r ${plan.color} rounded-xl p-4 flex items-center justify-between`}>
-        <div>
-          <p className="text-[10px] text-white/70 font-semibold uppercase tracking-widest">{plan.once ? 'One-Time Only' : 'Repeatable'}</p>
-          <p className="text-lg font-black text-white mt-1">{plan.icon} {plan.name}</p>
+        <div className="flex items-center gap-3">
+          <div className={`w-12 h-12 rounded-xl bg-white/10 backdrop-blur-sm flex items-center justify-center ${iconColor}`}>
+            {IconComponent && <IconComponent className="w-8 h-8" />}
+          </div>
+          <div>
+            <p className="text-[10px] text-white/70 font-semibold uppercase tracking-widest">{plan.once ? 'One-Time Only' : 'Repeatable'}</p>
+            <p className="text-lg font-black text-white mt-0.5">{plan.name}</p>
+          </div>
         </div>
         <div className="text-right">
           <p className="text-xl font-black text-white">KSh {plan.amount.toLocaleString()}</p>
@@ -69,11 +90,18 @@ function PlanCard({ plan, onInvest, alreadyUsed }) {
 function ConfirmModal({ plan, balance, onConfirm, onClose, confirming, onDeposit }) {
   if (!plan) return null
   const enough = balance >= plan.amount
+  const IconComponent = PLAN_ICONS[plan.id]
+  const iconColor = ICON_COLORS[plan.id] || 'text-white'
 
   return (
     <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4" onClick={onClose}>
       <div className="card max-w-sm w-full" onClick={e => e.stopPropagation()}>
-        <h3 className="text-xl font-bold mb-4">{plan.icon} Deploy Node</h3>
+        <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
+          <span className={iconColor}>
+            {IconComponent && <IconComponent className="w-6 h-6" />}
+          </span>
+          Deploy Node
+        </h3>
 
         <div className="rounded-xl p-4 space-y-2 mb-4" style={{ background: 'var(--bg-elevated)' }}>
           {[
