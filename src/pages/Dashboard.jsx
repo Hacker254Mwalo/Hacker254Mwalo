@@ -371,7 +371,7 @@ export default function Dashboard() {
         setBonusClaimed(true)
         if (result.balance !== undefined) updateUser({ balance: result.balance })
         else await refreshUser()
-        showToast(`🎁 Daily bonus of KSh ${Number(result.amount || 10).toLocaleString()} collected!`)
+        showToast(`🎁 Daily compute reward of KSh ${Number(result.amount || 10).toLocaleString()} collected!`)
       } else if (result.code === 'NO_ACTIVE_INVESTMENT') {
         setShowInvestFirst(true)
       } else {
@@ -612,13 +612,13 @@ export default function Dashboard() {
       <div className="card mb-4">
         <div className="flex items-center justify-between">
           <div>
-            <p className="font-bold">🎁 Daily Login Bonus</p>
+            <p className="font-bold">🎁 Daily Compute Bonus</p>
             <p className="text-xs mt-0.5" style={{ color: 'var(--text-secondary)' }}>
               {!hasActiveInvestment
                 ? 'Requires active investment to claim'
                 : bonusClaimed
-                  ? 'Claimed today — come back tomorrow!'
-                  : 'Tap Claim to collect your KSh 10 daily bonus'}
+                  ? 'Reward claimed — compute cycle resets tomorrow'
+                  : 'Tap Claim to collect your KSh 10 daily compute reward'}
             </p>
           </div>
           <button
@@ -729,7 +729,7 @@ export default function Dashboard() {
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-green-600 to-teal-600 flex items-center justify-center text-xl">
               {hasActiveInvestment ? '🎟️' : '🔒'}
             </div>
-            <p className="font-semibold text-xs text-center">Redeem Code</p>
+            <p className="font-semibold text-xs text-center">Redeem Voucher</p>
           </div>
 
           <div
@@ -739,7 +739,7 @@ export default function Dashboard() {
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-600 to-indigo-600 flex items-center justify-center text-xl">
               {hasActiveInvestment ? '🏦' : '🔒'}
             </div>
-            <p className="font-semibold text-xs text-center">Request Loan</p>
+            <p className="font-semibold text-xs text-center">Request Compute Credit</p>
           </div>
 
           <div
@@ -747,7 +747,7 @@ export default function Dashboard() {
             onClick={() => setShowContactAdmin(true)}
           >
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-green-600 to-emerald-600 flex items-center justify-center text-xl">💬</div>
-            <p className="font-semibold text-xs text-center">Contact Admin</p>
+            <p className="font-semibold text-xs text-center">Refer & Earn</p>
           </div>
         </div>
       </div>
@@ -756,7 +756,7 @@ export default function Dashboard() {
       <div className="card mb-6 flex items-center justify-between bg-gradient-to-r from-gray-900 to-gray-800 border-red-900/40 hover:border-red-700/60 transition-colors">
         <div>
           <p className="font-bold">Start Computing</p>
-          <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>3% daily yield • 90 days</p>
+          <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>3% 24h Compute Yield • 90 days</p>
         </div>
         <button onClick={() => navigate('/plans')} className="btn-primary text-sm py-2 px-5 whitespace-nowrap">
           Deploy Node →
@@ -768,7 +768,7 @@ export default function Dashboard() {
         <div className="card mb-6">
           <h3 className="font-semibold mb-3 flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
-            Active Investments
+            Active AI Nodes
           </h3>
           <div className="space-y-3">
             {activeInvestments.slice(0, 3).map(inv => {
