@@ -1396,14 +1396,24 @@ function SettingsTab({ user, showToast }) {
                   checked={stkEnabled}
                   onChange={async (e) => {
                     const val = e.target.checked
-                    setStkEnabled(val)
+                    setSaving(true)
                     try {
-                      await updateAppSetting(callerPhone, 'stk_enabled', String(val))
-                      showToast(`STK Push ${val ? 'enabled' : 'disabled'}`)
+                      const res = await updateAppSetting(callerPhone, 'stk_enabled', String(val))
+                      if (res && res.success) {
+                        setStkEnabled(val)
+                        showToast(`STK Push ${val ? 'enabled' : 'disabled'}`)
+                      } else {
+                        setStkEnabled(!val)
+                        showToast('Failed to update STK setting', 'error')
+                      }
                     } catch {
+                      setStkEnabled(!val)
                       showToast('Failed to update STK setting', 'error')
+                    } finally {
+                      setSaving(false)
                     }
                   }}
+                  disabled={saving}
                   className="sr-only peer"
                 />
                 <div className="w-14 h-7 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-green-600"></div>
