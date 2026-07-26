@@ -617,7 +617,7 @@ export default function Dashboard() {
               {!hasActiveInvestment
                 ? 'Requires active investment to claim'
                 : bonusClaimed
-                  ? 'Reward claimed — compute cycle resets tomorrow'
+                  ? 'Claim 2% of your active investment shares'
                   : 'Tap Claim to collect your daily compute Reward'}
             </p>
           </div>
