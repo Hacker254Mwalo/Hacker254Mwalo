@@ -208,7 +208,11 @@ export default function AuthPage() {
           src="/datacenter-ai.webp"
           alt="AI Datacenter"
           className="w-full h-auto object-contain rounded-2xl drop-shadow-lg"
-          style={{ filter: 'brightness(1.05)', maxHeight: '200px' }}
+          style={{
+            filter: 'brightness(1.05)',
+            maxHeight: '200px',
+            animation: 'coinHeartbeat 4s ease-in-out infinite',
+          }}
         />
       </div>
       {/* AI Datacenter image above, tree SVG replaced */}
