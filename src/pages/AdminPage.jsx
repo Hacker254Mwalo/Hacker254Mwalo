@@ -1276,6 +1276,7 @@ function OverviewTab() {
 function SettingsTab({ user, showToast }) {
   const [phone, setPhone] = useState('')
   const [groupLink, setGroupLink] = useState('')
+  const [stkEnabled, setStkEnabled] = useState(true)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const callerPhone = user?.phone || ''
@@ -1286,6 +1287,7 @@ function SettingsTab({ user, showToast }) {
       const s = await getWhatsAppSettings()
       setPhone(s.whatsapp_phone || '')
       setGroupLink(s.whatsapp_group_link || '')
+      setStkEnabled(s.stk_enabled !== 'false')
     } catch { }
     setLoading(false)
   }, [])
@@ -1315,7 +1317,7 @@ function SettingsTab({ user, showToast }) {
 
   return (
     <div>
-      <SectionHeader title="App Settings" subtitle="Configure WhatsApp support number and group link" />
+      <SectionHeader title="App Settings" subtitle="Configure WhatsApp support number, group link, and payment methods" />
 
       {loading ? (
         <div className="text-center py-12 text-gray-500">Loading...</div>
@@ -1377,6 +1379,47 @@ function SettingsTab({ user, showToast }) {
             <p className="text-xs mt-2" style={{ color: 'var(--text-muted)' }}>
               Get a group invite link from WhatsApp: Group Info → Invite via Link
             </p>
+          </div>
+
+          {/* STK Push Toggle */}
+          <div className="card">
+            <h4 className="font-semibold mb-4 flex items-center gap-2">
+              <span className="text-xl">📱</span> STK Push Payment
+            </h4>
+            <p className="text-sm mb-4" style={{ color: 'var(--text-muted)' }}>
+              Enable or disable STK push for deposits. When disabled, users deposit via Paybill only.
+            </p>
+            <div className="flex items-center gap-4 p-4 rounded-xl" style={{ background: 'var(--bg-input)' }}>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={stkEnabled}
+                  onChange={async (e) => {
+                    const val = e.target.checked
+                    setStkEnabled(val)
+                    try {
+                      await updateAppSetting(callerPhone, 'stk_enabled', String(val))
+                      showToast(`STK Push ${val ? 'enabled' : 'disabled'}`)
+                    } catch {
+                      showToast('Failed to update STK setting', 'error')
+                    }
+                  }}
+                  className="sr-only peer"
+                />
+                <div className="w-14 h-7 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-green-600"></div>
+              </label>
+              <div className="flex-1">
+                <span className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
+                  {stkEnabled ? 'STK Push is ON' : 'STK Push is OFF'}
+                </span>
+                <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>
+                  {stkEnabled ? 'Users can deposit via STK push (auto M-Pesa prompt). Falls back to Paybill if STK fails.' : 'Users deposit via Paybill number only.'}
+                </p>
+              </div>
+              <span className={`text-[10px] px-2 py-1 rounded font-bold uppercase ${stkEnabled ? 'bg-green-900/40 text-green-300' : 'bg-red-900/40 text-red-300'}`}>
+                {stkEnabled ? 'Active' : 'Disabled'}
+              </span>
+            </div>
           </div>
         </div>
       )}
