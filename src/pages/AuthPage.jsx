@@ -415,29 +415,32 @@ export default function AuthPage() {
       <div className="w-full max-w-sm relative z-10">
         {/* Investor Stats Banner */}
         <div className="mb-4 grid grid-cols-3 gap-2">
-          <div className="text-center p-2.5 rounded-xl" style={{ background: 'linear-gradient(135deg, rgba(255,215,0,0.08) 0%, rgba(218,165,32,0.04) 100%)', border: '1px solid rgba(255,215,0,0.12)' }}>
+          {/* AI Yield - Gold/Amber warm glow */}
+          <div className="text-center p-2.5 rounded-xl" style={{ background: 'linear-gradient(135deg, rgba(255,215,0,0.12) 0%, rgba(180,120,0,0.06) 50%, rgba(30,25,10,0.8) 100%)', border: '1px solid rgba(255,215,0,0.2)', boxShadow: '0 0 15px rgba(255,215,0,0.06), inset 0 1px 0 rgba(255,215,0,0.08)' }}>
             <div className="flex items-center justify-center gap-1.5 mb-1 relative">
-              <div className="icon-glow-ring" style={{ position: 'absolute', width: '28px', height: '28px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(255,215,0,0.3) 0%, transparent 70%)', top: '2px' }}></div>
-              <img src="/icons/stat-yield.webp" alt="AI Yield" className="w-8 h-8 rounded-full object-contain icon-heartbeat" style={{ position: 'relative', zIndex: 1 }} />
+              <div className="icon-glow-ring" style={{ position: 'absolute', width: '32px', height: '32px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(255,215,0,0.4) 0%, transparent 70%)', top: '0px' }}></div>
+              <img src="/icons/stat-yield.webp" alt="AI Yield" className="w-9 h-9 rounded-full object-contain icon-heartbeat" style={{ position: 'relative', zIndex: 1 }} />
             </div>
-            <p className="text-lg font-bold" style={{ color: '#FFD700' }}>AI Yield</p>
-            <p className="text-[10px] text-gray-400 tracking-wide">Earn Daily Compute Returns</p>
+            <p className="text-lg font-bold" style={{ color: '#FFD700', textShadow: '0 0 8px rgba(255,215,0,0.2)' }}>AI Yield</p>
+            <p className="text-[10px] tracking-wide" style={{ color: 'rgba(255,215,0,0.5)' }}>Earn Daily Compute Returns</p>
           </div>
-          <div className="text-center p-2.5 rounded-xl" style={{ background: 'linear-gradient(135deg, rgba(255,215,0,0.08) 0%, rgba(218,165,32,0.04) 100%)', border: '1px solid rgba(255,215,0,0.12)' }}>
+          {/* 24/7 - Emerald green for always-on */}
+          <div className="text-center p-2.5 rounded-xl" style={{ background: 'linear-gradient(135deg, rgba(52,211,153,0.1) 0%, rgba(16,185,129,0.05) 50%, rgba(10,25,15,0.8) 100%)', border: '1px solid rgba(52,211,153,0.2)', boxShadow: '0 0 15px rgba(52,211,153,0.06), inset 0 1px 0 rgba(52,211,153,0.08)' }}>
             <div className="flex items-center justify-center gap-1.5 mb-1 relative">
-              <div className="icon-glow-ring" style={{ position: 'absolute', width: '28px', height: '28px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(255,215,0,0.3) 0%, transparent 70%)', top: '2px' }}></div>
-              <img src="/icons/stat-withdrawal.webp" alt="24/7" className="w-8 h-8 rounded-full object-contain icon-heartbeat" style={{ position: 'relative', zIndex: 1 }} />
+              <div className="icon-glow-ring" style={{ position: 'absolute', width: '32px', height: '32px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(52,211,153,0.35) 0%, transparent 70%)', top: '0px' }}></div>
+              <img src="/icons/stat-withdrawal.webp" alt="24/7" className="w-9 h-9 rounded-full object-contain icon-heartbeat" style={{ position: 'relative', zIndex: 1 }} />
             </div>
-            <p className="text-lg font-bold" style={{ color: '#FFD700' }}>24/7</p>
-            <p className="text-[10px] text-gray-400 tracking-wide">Instant M-Pesa Withdrawals</p>
+            <p className="text-lg font-bold" style={{ color: '#34D399', textShadow: '0 0 8px rgba(52,211,153,0.2)' }}>24/7</p>
+            <p className="text-[10px] tracking-wide" style={{ color: 'rgba(52,211,153,0.5)' }}>Instant M-Pesa Withdrawals</p>
           </div>
-          <div className="text-center p-2.5 rounded-xl" style={{ background: 'linear-gradient(135deg, rgba(255,215,0,0.08) 0%, rgba(218,165,32,0.04) 100%)', border: '1px solid rgba(255,215,0,0.12)' }}>
+          {/* Instant Node - Blue tech glow */}
+          <div className="text-center p-2.5 rounded-xl" style={{ background: 'linear-gradient(135deg, rgba(96,165,250,0.1) 0%, rgba(59,130,246,0.05) 50%, rgba(10,15,30,0.8) 100%)', border: '1px solid rgba(96,165,250,0.2)', boxShadow: '0 0 15px rgba(96,165,250,0.06), inset 0 1px 0 rgba(96,165,250,0.08)' }}>
             <div className="flex items-center justify-center gap-1.5 mb-1 relative">
-              <div className="icon-glow-ring" style={{ position: 'absolute', width: '28px', height: '28px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(255,215,0,0.3) 0%, transparent 70%)', top: '2px' }}></div>
-              <img src="/icons/stat-node.webp" alt="Node" className="w-8 h-8 rounded-full object-contain icon-heartbeat" style={{ position: 'relative', zIndex: 1 }} />
+              <div className="icon-glow-ring" style={{ position: 'absolute', width: '32px', height: '32px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(96,165,250,0.35) 0%, transparent 70%)', top: '0px' }}></div>
+              <img src="/icons/stat-node.webp" alt="Node" className="w-9 h-9 rounded-full object-contain icon-heartbeat" style={{ position: 'relative', zIndex: 1 }} />
             </div>
-            <p className="text-lg font-bold" style={{ color: '#FFD700' }}>Instant Node</p>
-            <p className="text-[10px] text-gray-400 tracking-wide">Deploy Rigs & Cash Out Directly</p>
+            <p className="text-lg font-bold" style={{ color: '#60A5FA', textShadow: '0 0 8px rgba(96,165,250,0.2)' }}>Instant Node</p>
+            <p className="text-[10px] tracking-wide" style={{ color: 'rgba(96,165,250,0.5)' }}>Deploy Rigs & Cash Out Directly</p>
           </div>
         </div>
 
