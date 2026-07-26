@@ -613,12 +613,12 @@ export default function Dashboard() {
         <div className="flex items-center justify-between">
           <div>
             <p className="font-bold flex items-center gap-2"><img src="/icons/compute-bonus.webp" alt="Bonus" className="w-6 h-6 rounded-lg object-cover border border-yellow-500/30" /> Daily Compute Bonus</p>
-            <p className="text-xs mt-0.5" style={{ color: 'var(--text-secondary)' }}>
+            <p className="text-xs mt-1 font-semibold">
               {!hasActiveInvestment
-                ? 'Requires active investment to claim'
+                ? <span style={{ color: 'var(--text-muted)' }}>Requires active investment to claim</span>
                 : bonusClaimed
-                  ? '+2% of your active investment shares'
-                  : 'Tap Claim to collect your daily compute Reward'}
+                  ? <><span style={{ color: '#34D399' }}>Claim </span><span style={{ color: '#FFD700', fontSize: '13px' }}>+2%</span><span style={{ color: 'var(--text-secondary)' }}> of your investment shares</span></>
+                  : <span style={{ color: '#FFD700' }}>Tap Claim to collect your daily compute Reward</span>}
             </p>
           </div>
           <button
