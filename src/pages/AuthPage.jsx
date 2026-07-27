@@ -123,13 +123,21 @@ export default function AuthPage() {
         const existing = await getUser(normalPhone)
         if (existing) { setError('Account already exists. Please login.'); setLoading(false); return }
 
-        const referralCode = generateReferralCode(normalPhone)
-        let referredBy = null
-
-        if (refCode.trim()) {
-          const referrer = await findUserByReferralCode(refCode.trim().toUpperCase())
-          if (referrer) referredBy = referrer.phone
+        if (!refCode.trim()) {
+          setError('A referral code is required to join Dumiropay.')
+          setLoading(false)
+          return
         }
+
+        const referrer = await findUserByReferralCode(refCode.trim().toUpperCase())
+        if (!referrer) {
+          setError('Invalid referral code. You must be referred by an existing member.')
+          setLoading(false)
+          return
+        }
+
+        const referralCode = generateReferralCode(normalPhone)
+        const referredBy = referrer.phone
 
         const userData = await createUser({
           phone: normalPhone,
