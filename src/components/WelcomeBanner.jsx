@@ -22,7 +22,7 @@ export default function WelcomeBanner() {
     if (enabled && message && !dismissed) {
       const timer = setTimeout(() => {
         handleDismiss()
-      }, 15000) // Auto-dismiss after 15 seconds
+      }, 21000) // Auto-dismiss after 21 seconds
       return () => clearTimeout(timer)
     }
   }, [enabled, message, dismissed])
@@ -81,7 +81,7 @@ export default function WelcomeBanner() {
           to { width: 0%; }
         }
         .animate-slideDown { animation: slideDown 0.5s cubic-bezier(0.16, 1, 0.3, 1); }
-        .animate-shrinkWidth { animation: shrinkWidth 15s linear forwards; }
+        .animate-shrinkWidth { animation: shrinkWidth 21s linear forwards; }
       `}} />
     </div>
   )
