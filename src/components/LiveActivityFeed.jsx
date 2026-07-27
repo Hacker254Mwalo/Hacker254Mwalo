@@ -258,7 +258,22 @@ export default function LiveActivityFeed({ enabled, userPhone }) {
     return () => document.removeEventListener('visibilitychange', handleVisibility)
   }, [enabled, scheduleNext])
 
-  if (!enabled || !current) return null
+  if (!enabled) return null
+
+  // Show subtle "fetching" text when no activity is currently showing
+  if (!current) {
+    return (
+      <div className="live-activity-notification" style={{
+        borderColor: 'rgba(148, 163, 184, 0.4)',
+        animation: 'activityHeartbeat 0.6s ease-out forwards',
+      }}>
+        <div className="flex items-center gap-2">
+          <span className="activity-icon-dot" style={{ background: '#94A3B8' }} />
+          <p className="text-[10px]" style={{ color: '#94A3B8' }}>No live actions — fetching latest...</p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div
