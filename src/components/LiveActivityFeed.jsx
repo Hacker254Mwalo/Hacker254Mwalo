@@ -11,133 +11,168 @@ const KENYAN_FIRST_NAMES = [
   'Allan', 'Miriam', 'Collins', 'Violet', 'Gideon', 'Tabitha', 'Hillary', 'Joyce',
 ]
 
-const KENYAN_LAST_INITIALS = [
-  'M', 'K', 'O', 'N', 'W', 'A', 'G', 'S', 'L', 'B',
-  'T', 'R', 'C', 'F', 'H', 'E', 'D', 'J', 'P', 'V',
-]
+// Withdrawal amounts: mostly 1000-25000
+const WITHDRAWAL_AMOUNTS = [1000, 1200, 1500, 1800, 2000, 2500, 3000, 3500, 4000, 5000, 6000, 7000, 8000, 10000, 12000, 15000, 18000, 20000, 25000]
 
-const WITHDRAWAL_AMOUNTS = [500, 600, 950, 1200, 2700, 3500, 4500, 6000, 8700, 12000, 9000]
-const EARNING_AMOUNTS = [19, 20, 50, 99, 100, 250]
-const BONUS_AMOUNTS = [8, 9, 12, 19, 20]
-const BIG_BONUS = [500, 800, 1200]
+// Earning amounts (AI Yield daily)
+const EARNING_AMOUNTS = [19, 20, 25, 30, 50, 75, 99, 100, 120, 150, 200, 250]
 
-// Weighted random — smaller amounts appear more often (realistic distribution)
-function weightedRandom(weights) {
-  const total = weights.reduce((s, w) => s + w.weight, 0)
-  let r = Math.random() * total
-  for (const item of weights) {
-    r -= item.weight
-    if (r <= 0) return item.value
-  }
-  return weights[0].value
-}
+// Bonus claim amounts
+const BONUS_AMOUNTS = [8, 9, 12, 15, 19, 20, 25, 30]
+const BIG_BONUS = [500, 800, 1000, 1200]
 
-// ── Random data generators ────────────────────────────────────────────────────
+// ── Phone number generator: starts with 2547 or 2541 ─────────────────────────
 function randomPhone() {
-  const prefixes = ['070', '071', '072', '073', '074', '075', '076', '077', '078', '079']
+  const prefixes = ['25470', '25471', '25472', '25473', '25474', '25475', '25476', '25477', '25478', '25479', '25410', '25411']
   const prefix = prefixes[Math.floor(Math.random() * prefixes.length)]
-  const mid = String(Math.floor(100 + Math.random() * 900))
+  const mid = String(Math.floor(1000 + Math.random() * 9000))
   const last = String(Math.floor(10 + Math.random() * 90))
   return `${prefix}${mid}***${last}`
 }
 
-function randomName() {
-  const first = KENYAN_FIRST_NAMES[Math.floor(Math.random() * KENYAN_FIRST_NAMES.length)]
-  const last = KENYAN_LAST_INITIALS[Math.floor(Math.random() * KENYAN_LAST_INITIALS.length)]
-  return `${first} ${last}***`
-}
-
-// Generate a realistic activity entry
-function generateEntry() {
-  const typeRoll = Math.random()
-  let actionType, amount, description, color
-
-  if (typeRoll < 0.40) {
-    // 40% — Earning from AI Yield
-    amount = weightedRandom(EARNING_AMOUNTS.map(v => ({ value: v, weight: v <= 50 ? 4 : 2 })))
-    actionType = 'earning'
-    description = `earned KSh ${amount} from AI Yield`
-    color = '#34D399' // green
-  } else if (typeRoll < 0.75) {
-    // 35% — Withdrawal
-    amount = weightedRandom(WITHDRAWAL_AMOUNTS.map(v => ({ value: v, weight: v <= 1200 ? 5 : v <= 4500 ? 3 : 1 })))
-    actionType = 'withdrawal'
-    description = `requested withdrawal — KSh ${amount.toLocaleString()}`
-    color = '#60A5FA' // blue
-  } else {
-    // 25% — Daily bonus claim
-    const isBigBonus = Math.random() < 0.05 // 5% chance of big bonus
-    amount = isBigBonus
-      ? BIG_BONUS[Math.floor(Math.random() * BIG_BONUS.length)]
-      : weightedRandom(BONUS_AMOUNTS.map(v => ({ value: v, weight: 3 })))
-    actionType = 'bonus'
-    description = `claimed daily login +KSh ${amount}`
-    color = '#FFD700' // gold
-  }
-
-  return {
-    id: Date.now() + Math.random(),
-    phone: randomPhone(),
-    description,
-    amount,
-    color,
-    actionType,
-    createdAt: new Date(),
-  }
-}
+// ── Notification types that cycle through ─────────────────────────────────────
+const NOTIFICATION_TYPES = [
+  // claim
+  {
+    type: 'claim',
+    label: 'claimed daily bonus',
+    color: '#FFD700',
+    generateAmount: () => {
+      const isBig = Math.random() < 0.05
+      if (isBig) return BIG_BONUS[Math.floor(Math.random() * BIG_BONUS.length)]
+      return BONUS_AMOUNTS[Math.floor(Math.random() * BONUS_AMOUNTS.length)]
+    },
+    format: (phone, amount) => ({ phone, text: `claimed daily bonus +KSh ${amount}`, color: '#FFD700' }),
+  },
+  // withdrawal
+  {
+    type: 'withdrawal',
+    label: 'requested withdrawal',
+    color: '#60A5FA',
+    generateAmount: () => {
+      // Mostly 1000-25000
+      return WITHDRAWAL_AMOUNTS[Math.floor(Math.random() * WITHDRAWAL_AMOUNTS.length)]
+    },
+    format: (phone, amount) => ({ phone, text: `requested withdrawal — KSh ${amount.toLocaleString()}`, color: '#60A5FA' }),
+  },
+  // compute loan
+  {
+    type: 'compute_loan',
+    label: 'requested compute loan',
+    color: '#A78BFA',
+    generateAmount: () => {
+      const amounts = [500, 1000, 1500, 2000, 2500, 3000, 5000, 7500, 10000]
+      return amounts[Math.floor(Math.random() * amounts.length)]
+    },
+    format: (phone, amount) => ({ phone, text: `requested compute credit — KSh ${amount.toLocaleString()}`, color: '#A78BFA' }),
+  },
+  // earning (AI Yield)
+  {
+    type: 'earning',
+    label: 'earned from AI Yield',
+    color: '#34D399',
+    generateAmount: () => EARNING_AMOUNTS[Math.floor(Math.random() * EARNING_AMOUNTS.length)],
+    format: (phone, amount) => ({ phone, text: `earned KSh ${amount} from AI Yield`, color: '#34D399' }),
+  },
+  // random approved
+  {
+    type: 'approved',
+    label: 'approved',
+    color: '#34D399',
+    generateAmount: () => {
+      // Approved deposit or withdrawal — realistic amounts
+      const amounts = [1000, 2000, 3000, 5000, 7000, 10000, 15000, 20000]
+      return amounts[Math.floor(Math.random() * amounts.length)]
+    },
+    format: (phone, amount) => ({ phone, text: `approved withdrawal — KSh ${amount.toLocaleString()}`, color: '#34D399' }),
+  },
+  // investment
+  {
+    type: 'investment',
+    label: 'invested',
+    color: '#F59E0B',
+    generateAmount: () => {
+      const amounts = [500, 1000, 2000, 3000, 5000, 7000, 10000, 15000]
+      return amounts[Math.floor(Math.random() * amounts.length)]
+    },
+    format: (phone, amount) => ({ phone, text: `invested KSh ${amount.toLocaleString()}`, color: '#F59E0B' }),
+  },
+]
 
 // ── Component ─────────────────────────────────────────────────────────────────
 export default function LiveActivityFeed({ enabled }) {
-  const [entries, setEntries] = useState([])
   const [current, setCurrent] = useState(null)
+  const [isFading, setIsFading] = useState(false)
   const timeoutRef = useRef(null)
   const countRef = useRef(0)
-  const MAX_PER_HOUR = 8
+  const cycleIndexRef = useRef(0)
+  const MAX_PER_HOUR = 12
+
+  const generateEntry = useCallback(() => {
+    // Cycle through notification types one at a time
+    const typeDef = NOTIFICATION_TYPES[cycleIndexRef.current % NOTIFICATION_TYPES.length]
+    cycleIndexRef.current++
+
+    const phone = randomPhone()
+    const amount = typeDef.generateAmount()
+    const formatted = typeDef.format(phone, amount)
+
+    return {
+      id: Date.now() + Math.random(),
+      ...formatted,
+      actionType: typeDef.type,
+    }
+  }, [])
 
   const scheduleNext = useCallback(() => {
     if (timeoutRef.current) clearTimeout(timeoutRef.current)
 
-    // Rate limiting: max 8 per hour
+    // Rate limiting: max 12 per hour
     if (countRef.current >= MAX_PER_HOUR) {
-      // Wait 10 minutes then reset counter
       timeoutRef.current = setTimeout(() => {
         countRef.current = 0
         scheduleNext()
-      }, 10 * 60 * 1000)
+      }, 8 * 60 * 1000)
       return
     }
 
-    // Random interval 6-15 seconds
-    const delay = 6000 + Math.random() * 9000
+    // Random interval 5-12 seconds
+    const delay = 5000 + Math.random() * 7000
 
     timeoutRef.current = setTimeout(() => {
       const entry = generateEntry()
+      setIsFading(false)
       setCurrent(entry)
-      setEntries(prev => [...prev, entry])
       countRef.current++
 
-      // Fade out after random 3-6 seconds
-      const visibleTime = 3000 + Math.random() * 3000
+      // Visible for 4-6 seconds, then fade out
+      const visibleTime = 4000 + Math.random() * 2000
       setTimeout(() => {
-        setCurrent(null)
+        setIsFading(true)
+        // After fade animation completes, clear
+        setTimeout(() => {
+          setCurrent(null)
+          setIsFading(false)
+        }, 400)
       }, visibleTime)
 
       // Schedule next
       scheduleNext()
     }, delay)
-  }, [])
+  }, [generateEntry])
 
   useEffect(() => {
     if (!enabled) {
       if (timeoutRef.current) clearTimeout(timeoutRef.current)
       setCurrent(null)
+      setIsFading(false)
       return
     }
 
-    // Small initial delay before first notification appears
+    // Small initial delay
     const initialDelay = setTimeout(() => {
       scheduleNext()
-    }, 4000 + Math.random() * 6000)
+    }, 3000 + Math.random() * 5000)
 
     return () => {
       clearTimeout(initialDelay)
@@ -149,10 +184,10 @@ export default function LiveActivityFeed({ enabled }) {
 
   return (
     <div
-      className="live-activity-notification"
+      className={`live-activity-notification ${isFading ? 'activity-fade-out' : ''}`}
       style={{
         borderColor: current.color,
-        animation: 'activityHeartbeat 0.6s ease-out forwards',
+        animation: isFading ? undefined : 'activityHeartbeat 0.6s ease-out forwards',
       }}
     >
       <div className="flex items-center gap-2.5">
@@ -163,7 +198,7 @@ export default function LiveActivityFeed({ enabled }) {
         <div className="flex-1 min-w-0">
           <p className="text-xs font-medium" style={{ color: 'var(--text-primary)' }}>
             <span style={{ color: current.color }}>●</span>{' '}
-            {current.phone} {current.description}
+            {current.phone} {current.text}
           </p>
           <p className="text-[10px] mt-0.5" style={{ color: 'var(--text-muted)' }}>
             just now
