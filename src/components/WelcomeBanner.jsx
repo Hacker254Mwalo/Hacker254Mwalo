@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { getAppSettings } from '../lib/db'
+import { getWhatsAppSettings } from '../lib/db'
 
 export default function WelcomeBanner() {
   const [message, setMessage] = useState('')
@@ -12,9 +12,9 @@ export default function WelcomeBanner() {
     setDismissed(isDismissed)
 
     // Fetch welcome message settings from app_settings
-    getAppSettings()
+    getWhatsAppSettings()
       .then(settings => {
-        if (settings && settings.welcome_message_enabled && settings.welcome_message_text) {
+        if (settings && (settings.welcome_message_enabled === 'true' || settings.welcome_message_enabled === true) && settings.welcome_message_text) {
           setEnabled(true)
           setMessage(settings.welcome_message_text)
         }
