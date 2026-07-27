@@ -87,6 +87,16 @@ const NOTIFICATION_TYPES = [
     },
     format: (phone, amount) => ({ phone, text: `invested KSh ${amount.toLocaleString()}`, color: '#F59E0B' }),
   },
+  // deposit (M-Pesa)
+  {
+    type: 'deposit',
+    color: '#22C55E',
+    generateAmount: () => {
+      const amounts = [500, 600, 800, 1000, 1200, 1500, 2000, 2500, 3000, 3500, 4000, 5000, 6000, 7000, 8000, 10000, 12000, 15000, 20000, 25000, 30000, 35000, 40000, 45000]
+      return amounts[Math.floor(Math.random() * amounts.length)]
+    },
+    format: (phone, amount) => ({ phone, text: `deposited KSh ${amount.toLocaleString()} via M-Pesa`, color: '#22C55E' }),
+  },
   // login (no amount)
   {
     type: 'login',
@@ -129,8 +139,8 @@ export default function LiveActivityFeed({ enabled }) {
   const scheduleNext = useCallback(() => {
     if (timeoutRef.current) clearTimeout(timeoutRef.current)
 
-    // Natural random interval — 3-10 seconds, fully random
-    const delay = 3000 + Math.random() * 7000
+    // Fast natural random interval — 2-6 seconds, feels alive
+    const delay = 2000 + Math.random() * 4000
 
     timeoutRef.current = setTimeout(() => {
       const entry = generateEntry()
@@ -160,12 +170,12 @@ export default function LiveActivityFeed({ enabled }) {
       return
     }
 
-    // Instant but noticeable start — 0-2 seconds after login
+    // Instant start — sub-second delay after login
     if (!hasStartedRef.current) {
       hasStartedRef.current = true
       const initialDelay = setTimeout(() => {
         scheduleNext()
-      }, Math.random() * 2000)
+      }, Math.random() * 800)
 
       return () => {
         clearTimeout(initialDelay)
