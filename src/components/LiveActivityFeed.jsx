@@ -30,12 +30,11 @@ function randomPhone() {
   return `${prefix}${mid}***${last}`
 }
 
-// ── Notification types that cycle through ─────────────────────────────────────
+// ── Notification types that cycle through (including login/signup) ────────────
 const NOTIFICATION_TYPES = [
   // claim
   {
     type: 'claim',
-    label: 'claimed daily bonus',
     color: '#FFD700',
     generateAmount: () => {
       const isBig = Math.random() < 0.05
@@ -47,18 +46,13 @@ const NOTIFICATION_TYPES = [
   // withdrawal
   {
     type: 'withdrawal',
-    label: 'requested withdrawal',
     color: '#60A5FA',
-    generateAmount: () => {
-      // Mostly 1000-25000
-      return WITHDRAWAL_AMOUNTS[Math.floor(Math.random() * WITHDRAWAL_AMOUNTS.length)]
-    },
+    generateAmount: () => WITHDRAWAL_AMOUNTS[Math.floor(Math.random() * WITHDRAWAL_AMOUNTS.length)],
     format: (phone, amount) => ({ phone, text: `requested withdrawal — KSh ${amount.toLocaleString()}`, color: '#60A5FA' }),
   },
   // compute loan
   {
     type: 'compute_loan',
-    label: 'requested compute loan',
     color: '#A78BFA',
     generateAmount: () => {
       const amounts = [500, 1000, 1500, 2000, 2500, 3000, 5000, 7500, 10000]
@@ -69,18 +63,15 @@ const NOTIFICATION_TYPES = [
   // earning (AI Yield)
   {
     type: 'earning',
-    label: 'earned from AI Yield',
     color: '#34D399',
     generateAmount: () => EARNING_AMOUNTS[Math.floor(Math.random() * EARNING_AMOUNTS.length)],
     format: (phone, amount) => ({ phone, text: `earned KSh ${amount} from AI Yield`, color: '#34D399' }),
   },
-  // random approved
+  // approved
   {
     type: 'approved',
-    label: 'approved',
     color: '#34D399',
     generateAmount: () => {
-      // Approved deposit or withdrawal — realistic amounts
       const amounts = [1000, 2000, 3000, 5000, 7000, 10000, 15000, 20000]
       return amounts[Math.floor(Math.random() * amounts.length)]
     },
@@ -89,13 +80,26 @@ const NOTIFICATION_TYPES = [
   // investment
   {
     type: 'investment',
-    label: 'invested',
     color: '#F59E0B',
     generateAmount: () => {
       const amounts = [500, 1000, 2000, 3000, 5000, 7000, 10000, 15000]
       return amounts[Math.floor(Math.random() * amounts.length)]
     },
     format: (phone, amount) => ({ phone, text: `invested KSh ${amount.toLocaleString()}`, color: '#F59E0B' }),
+  },
+  // login (no amount)
+  {
+    type: 'login',
+    color: '#38BDF8',
+    generateAmount: () => 0,
+    format: (phone) => ({ phone, text: `logged in`, color: '#38BDF8' }),
+  },
+  // signup (no amount)
+  {
+    type: 'signup',
+    color: '#FB7185',
+    generateAmount: () => 0,
+    format: (phone) => ({ phone, text: `created an account`, color: '#FB7185' }),
   },
 ]
 
@@ -104,12 +108,10 @@ export default function LiveActivityFeed({ enabled }) {
   const [current, setCurrent] = useState(null)
   const [isFading, setIsFading] = useState(false)
   const timeoutRef = useRef(null)
-  const countRef = useRef(0)
   const cycleIndexRef = useRef(0)
-  const MAX_PER_SESSION = 10
+  const hasStartedRef = useRef(false)
 
   const generateEntry = useCallback(() => {
-    // Cycle through notification types one at a time
     const typeDef = NOTIFICATION_TYPES[cycleIndexRef.current % NOTIFICATION_TYPES.length]
     cycleIndexRef.current++
 
@@ -127,37 +129,25 @@ export default function LiveActivityFeed({ enabled }) {
   const scheduleNext = useCallback(() => {
     if (timeoutRef.current) clearTimeout(timeoutRef.current)
 
-    // Hard stop after 10 notifications per session
-    if (countRef.current >= MAX_PER_SESSION) {
-      // Completely stop — no more notifications this session
-      if (timeoutRef.current) clearTimeout(timeoutRef.current)
-      return
-    }
-
-    // Natural random interval — faster early, slower later (cool & natural)
-    const progress = countRef.current / MAX_PER_SESSION
-    const minDelay = 3000 + progress * 4000  // 3s early → 7s late
-    const maxDelay = 6000 + progress * 8000  // 6s early → 14s late
-    const delay = minDelay + Math.random() * (maxDelay - minDelay)
+    // Natural random interval — 3-10 seconds, fully random
+    const delay = 3000 + Math.random() * 7000
 
     timeoutRef.current = setTimeout(() => {
       const entry = generateEntry()
       setIsFading(false)
       setCurrent(entry)
-      countRef.current++
 
       // Visible for 4-6 seconds, then fade out
       const visibleTime = 4000 + Math.random() * 2000
       setTimeout(() => {
         setIsFading(true)
-        // After fade animation completes, clear
         setTimeout(() => {
           setCurrent(null)
           setIsFading(false)
         }, 400)
       }, visibleTime)
 
-      // Schedule next
+      // Schedule next — never stops
       scheduleNext()
     }, delay)
   }, [generateEntry])
@@ -170,13 +160,20 @@ export default function LiveActivityFeed({ enabled }) {
       return
     }
 
-    // Quick start after login — first notification in 1-3 seconds
-    const initialDelay = setTimeout(() => {
-      scheduleNext()
-    }, 1000 + Math.random() * 2000)
+    // Instant but noticeable start — 0-2 seconds after login
+    if (!hasStartedRef.current) {
+      hasStartedRef.current = true
+      const initialDelay = setTimeout(() => {
+        scheduleNext()
+      }, Math.random() * 2000)
+
+      return () => {
+        clearTimeout(initialDelay)
+        if (timeoutRef.current) clearTimeout(timeoutRef.current)
+      }
+    }
 
     return () => {
-      clearTimeout(initialDelay)
       if (timeoutRef.current) clearTimeout(timeoutRef.current)
     }
   }, [enabled, scheduleNext])
