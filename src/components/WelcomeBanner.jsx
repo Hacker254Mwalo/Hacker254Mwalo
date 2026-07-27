@@ -7,8 +7,8 @@ export default function WelcomeBanner() {
   const [dismissed, setDismissed] = useState(false)
 
   useEffect(() => {
-    // Check if user has dismissed the banner
-    const isDismissed = localStorage.getItem('dumiropay_welcome_dismissed') === 'true'
+    // Check if user has dismissed the banner in this session
+    const isDismissed = sessionStorage.getItem('dumiropay_welcome_dismissed') === 'true'
     setDismissed(isDismissed)
 
     // Fetch welcome message settings from app_settings
@@ -23,7 +23,8 @@ export default function WelcomeBanner() {
   }, [])
 
   const handleDismiss = () => {
-    localStorage.setItem('dumiropay_welcome_dismissed', 'true')
+    // Dismiss for current session (re-appears on new login/tab)
+    sessionStorage.setItem('dumiropay_welcome_dismissed', 'true')
     setDismissed(true)
   }
 

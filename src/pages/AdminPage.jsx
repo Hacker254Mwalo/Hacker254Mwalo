@@ -1278,6 +1278,8 @@ function SettingsTab({ user, showToast }) {
   const [groupLink, setGroupLink] = useState('')
   const [stkEnabled, setStkEnabled] = useState(true)
   const [activityEnabled, setActivityEnabled] = useState(true)
+  const [welcomeEnabled, setWelcomeEnabled] = useState(false)
+  const [welcomeText, setWelcomeText] = useState('')
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const callerPhone = user?.phone || ''
@@ -1290,6 +1292,8 @@ function SettingsTab({ user, showToast }) {
       setGroupLink(s.whatsapp_group_link || '')
       setStkEnabled(s.stk_enabled !== 'false')
       setActivityEnabled(s.activity_enabled !== 'false')
+      setWelcomeEnabled(s.welcome_message_enabled === 'true')
+      setWelcomeText(s.welcome_message_text || '')
     } catch { }
     setLoading(false)
   }, [])
@@ -1314,6 +1318,22 @@ function SettingsTab({ user, showToast }) {
       if (res.success) showToast('WhatsApp group link updated')
       else showToast(res.message || 'Failed', 'error')
     } catch { showToast('Failed to save group link', 'error') }
+    setSaving(false)
+  }
+
+  async function handleSaveWelcome() {
+    setSaving(true)
+    try {
+      const { updateWelcomeMessageSettings } = await import('../lib/db')
+      const res = await updateWelcomeMessageSettings(callerPhone, {
+        enabled: welcomeEnabled,
+        message: welcomeText.trim()
+      })
+      if (res.success) showToast('Welcome message settings updated')
+      else showToast('Failed to update welcome message', 'error')
+    } catch (err) {
+      showToast('Error saving welcome settings', 'error')
+    }
     setSaving(false)
   }
 
@@ -1381,6 +1401,48 @@ function SettingsTab({ user, showToast }) {
             <p className="text-xs mt-2" style={{ color: 'var(--text-muted)' }}>
               Get a group invite link from WhatsApp: Group Info → Invite via Link
             </p>
+          </div>
+
+          {/* Welcome Message Settings */}
+          <div className="card">
+            <h4 className="font-semibold mb-4 flex items-center gap-2">
+              <span className="text-xl">👋</span> Welcome Message Settings
+            </h4>
+            <p className="text-sm mb-4" style={{ color: 'var(--text-muted)' }}>
+              Configure the welcome message shown to all users on the dashboard.
+            </p>
+            <div className="space-y-4">
+              <div className="flex items-center gap-3 p-3 rounded-xl" style={{ background: 'var(--bg-input)' }}>
+                <input
+                  type="checkbox"
+                  id="welcome_enabled"
+                  checked={welcomeEnabled}
+                  onChange={e => setWelcomeEnabled(e.target.checked)}
+                  className="w-4 h-4 cursor-pointer"
+                />
+                <label htmlFor="welcome_enabled" className="text-sm font-semibold cursor-pointer flex-1">
+                  Enable Welcome Message
+                </label>
+              </div>
+              <div>
+                <label className="text-xs font-semibold mb-1 block" style={{ color: 'var(--text-muted)' }}>Message Text</label>
+                <textarea
+                  className="w-full text-sm px-3 py-2 rounded-xl border outline-none resize-none"
+                  style={{ background: 'var(--bg-input)', borderColor: 'var(--border)', color: 'var(--text-primary)' }}
+                  placeholder="Enter welcome message..."
+                  rows={4}
+                  value={welcomeText}
+                  onChange={e => setWelcomeText(e.target.value)}
+                />
+              </div>
+              <button
+                onClick={handleSaveWelcome}
+                disabled={saving || !welcomeText.trim()}
+                className="btn-primary w-full"
+              >
+                {saving ? 'Saving...' : 'Save Welcome Settings'}
+              </button>
+            </div>
           </div>
 
           {/* STK Push Toggle */}
