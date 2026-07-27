@@ -106,7 +106,7 @@ export default function LiveActivityFeed({ enabled }) {
   const timeoutRef = useRef(null)
   const countRef = useRef(0)
   const cycleIndexRef = useRef(0)
-  const MAX_PER_HOUR = 12
+  const MAX_PER_SESSION = 10
 
   const generateEntry = useCallback(() => {
     // Cycle through notification types one at a time
@@ -127,12 +127,10 @@ export default function LiveActivityFeed({ enabled }) {
   const scheduleNext = useCallback(() => {
     if (timeoutRef.current) clearTimeout(timeoutRef.current)
 
-    // Rate limiting: max 12 per hour
-    if (countRef.current >= MAX_PER_HOUR) {
-      timeoutRef.current = setTimeout(() => {
-        countRef.current = 0
-        scheduleNext()
-      }, 8 * 60 * 1000)
+    // Hard stop after 10 notifications per session
+    if (countRef.current >= MAX_PER_SESSION) {
+      // Completely stop — no more notifications this session
+      if (timeoutRef.current) clearTimeout(timeoutRef.current)
       return
     }
 
