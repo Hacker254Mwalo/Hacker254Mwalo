@@ -1,116 +1,123 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 
-// ── Phone pool: generate unique-ish phones with smart mask ────────────────────
+// ── Helpers ───────────────────────────────────────────────────────────────────
 const PHONE_PREFIXES = ['25470', '25471', '25472', '25473', '25474', '25475', '25476', '25477', '25478', '25479', '25410', '25411']
 
-// Track recent phones to avoid obvious repeats
 const recentPhones = new Set()
 
-function generatePhone() {
-  // Find a phone that hasn't appeared in the last ~8 entries
+function generateRandomPhone(exclude = null) {
   let phone
+  let attempts = 0
   do {
     const prefix = PHONE_PREFIXES[Math.floor(Math.random() * PHONE_PREFIXES.length)]
     const mid = String(Math.floor(1000 + Math.random() * 9000))
     const last = String(Math.floor(10 + Math.random() * 90))
     phone = `${prefix}${mid}***${last}`
-  } while (recentPhones.has(phone))
+    attempts++
+  } while ((recentPhones.has(phone) || phone === exclude) && attempts < 20)
 
   recentPhones.add(phone)
-  // Keep pool fresh — remove oldest if too large
-  if (recentPhones.size > 8) {
+  if (recentPhones.size > 12) {
     const oldest = recentPhones.values().next().value
     recentPhones.delete(oldest)
   }
   return phone
 }
 
-// ── Event types with weighted randomness ──────────────────────────────────────
-const EVENT_TYPES = [
+// Generate truly random realistic amount within range
+function randomInRange(min, max) {
+  // Generate a number, round to nearest reasonable value
+  const raw = min + Math.random() * (max - min)
+  // Round to nearest 50 for clean look, but keep it random
+  return Math.round(raw / 50) * 50 || Math.round(raw)
+}
+
+// ── Event definitions with realistic amount ranges ────────────────────────────
+const EVENT_DEFS = [
   {
     key: 'deposit',
-    weight: 20, // most common — money coming in
+    weight: 22,
     color: '#22C55E',
-    amountRange: [500, 1000, 1200, 1500, 2000, 2500, 3000, 3500, 4000, 5000, 6000, 7000, 8000, 10000, 12000, 15000, 20000, 25000, 30000, 35000, 40000, 45000],
-    label: 'deposited KSh',
-    suffix: ' via M-Pesa',
+    buildText: () => {
+      const amount = randomInRange(500, 45000)
+      return { text: `deposited KSh ${amount.toLocaleString()} via M-Pesa`, color: '#22C55E' }
+    },
   },
   {
     key: 'withdrawal',
-    weight: 18,
+    weight: 20,
     color: '#60A5FA',
-    amountRange: [500, 600, 950, 1000, 1200, 1500, 2000, 2500, 2700, 3000, 3500, 4500, 6000, 7000, 8700, 9000, 10000, 12000, 15000, 20000, 25000],
-    label: 'requested withdrawal — KSh',
-    suffix: '',
-  },
-  {
-    key: 'earning',
-    weight: 16,
-    color: '#34D399',
-    amountRange: [19, 20, 25, 30, 50, 75, 99, 100, 120, 150, 200, 250],
-    label: 'earned KSh',
-    suffix: ' from AI Yield',
+    buildText: () => {
+      const amount = randomInRange(500, 25000)
+      return { text: `requested withdrawal — KSh ${amount.toLocaleString()}`, color: '#60A5FA' }
+    },
   },
   {
     key: 'approved',
-    weight: 12,
+    weight: 14,
     color: '#34D399',
-    amountRange: [500, 1000, 2000, 3000, 5000, 7000, 10000, 15000, 20000],
-    label: 'approved withdrawal — KSh',
-    suffix: '',
+    buildText: () => {
+      const amount = randomInRange(500, 20000)
+      return { text: `approved withdrawal — KSh ${amount.toLocaleString()}`, color: '#34D399' }
+    },
+  },
+  {
+    key: 'earning',
+    weight: 14,
+    color: '#34D399',
+    buildText: () => {
+      const amount = randomInRange(15, 280)
+      return { text: `earned KSh ${amount} from AI Yield`, color: '#34D399' }
+    },
   },
   {
     key: 'invest',
     weight: 10,
     color: '#F59E0B',
-    amountRange: [500, 1000, 2000, 3000, 5000, 7000, 10000, 15000, 20000],
-    label: 'invested KSh',
-    suffix: '',
+    buildText: () => {
+      const amount = randomInRange(500, 20000)
+      return { text: `invested KSh ${amount.toLocaleString()}`, color: '#F59E0B' }
+    },
   },
   {
     key: 'claim',
-    weight: 10,
+    weight: 8,
     color: '#FFD700',
-    amountRange: [8, 9, 12, 15, 19, 20, 25, 30],
-    bigBonusRange: [500, 800, 1000, 1200],
-    label: 'claimed daily bonus +KSh',
-    suffix: '',
-    isBigBonusRare: true,
+    buildText: () => {
+      const amount = Math.random() < 0.05 ? randomInRange(500, 1200) : randomInRange(8, 35)
+      return { text: `claimed daily bonus +KSh ${amount}`, color: '#FFD700' }
+    },
   },
   {
     key: 'compute_loan',
-    weight: 6,
+    weight: 5,
     color: '#A78BFA',
-    amountRange: [500, 1000, 1500, 2000, 2500, 3000, 5000, 7500, 10000],
-    label: 'requested compute credit — KSh',
-    suffix: '',
+    buildText: () => {
+      const amount = randomInRange(500, 10000)
+      return { text: `requested compute credit — KSh ${amount.toLocaleString()}`, color: '#A78BFA' }
+    },
   },
   {
     key: 'login',
     weight: 4,
     color: '#38BDF8',
-    amountRange: null,
-    label: 'logged in',
-    suffix: '',
+    buildText: () => ({ text: 'logged in', color: '#38BDF8' }),
     noAmount: true,
   },
   {
     key: 'signup',
-    weight: 4,
+    weight: 3,
     color: '#FB7185',
-    amountRange: null,
-    label: 'created an account',
-    suffix: '',
+    buildText: () => ({ text: 'created an account', color: '#FB7185' }),
     noAmount: true,
   },
 ]
 
-// ── Weighted random selection (never same type twice in a row) ────────────────
+// ── Weighted pick (never same type twice in a row) ────────────────────────────
 let lastEventKey = null
-let lastAmountKey = null // track last phone+action combo
 
 function pickEventType() {
-  const available = EVENT_TYPES.filter(t => t.key !== lastEventKey)
+  const available = EVENT_DEFS.filter(t => t.key !== lastEventKey)
   const totalWeight = available.reduce((s, t) => s + t.weight, 0)
   let r = Math.random() * totalWeight
   for (const t of available) {
@@ -123,58 +130,34 @@ function pickEventType() {
   return available[0]
 }
 
-// ── Smart amount selection (avoid same amount+type combo repeating) ───────────
-const recentCombos = new Set() // "deposit:5000" to avoid repeats
-
-function pickAmount(event) {
-  if (event.noAmount) return null
-
-  const range = event.amountRange
-  const bigRange = event.bigBonusRange
-
-  if (event.isBigBonusRare && Math.random() < 0.05) {
-    return bigRange[Math.floor(Math.random() * bigRange.length)]
-  }
-
-  // Pick amount, avoid recent combos
-  let amount
-  const maxAttempts = 5
-  for (let i = 0; i < maxAttempts; i++) {
-    amount = range[Math.floor(Math.random() * range.length)]
-    const comboKey = `${event.key}:${amount}`
-    if (!recentCombos.has(comboKey)) break
-  }
-  recentCombos.add(`${event.key}:${amount}`)
-  // Keep combo set fresh
-  if (recentCombos.size > 15) {
-    const oldest = recentCombos.values().next().value
-    recentCombos.delete(oldest)
-  }
-
-  return amount
+// ── Burst-then-slow pacing ────────────────────────────────────────────────────
+function getDelay(count) {
+  if (count < 3) return 800 + Math.random() * 1200   // 0.8-2s  — fast burst
+  if (count < 6) return 1500 + Math.random() * 2500   // 1.5-4s — slowing
+  if (count < 10) return 2500 + Math.random() * 3500  // 2.5-6s — natural
+  if (count < 15) return 4000 + Math.random() * 5000  // 4-9s   — calm
+  return 6000 + Math.random() * 8000                   // 6-14s  — quiet
 }
 
-// ── Build notification text ───────────────────────────────────────────────────
-function buildText(event, phone, amount) {
-  if (event.noAmount) return { text: event.label, color: event.color }
-  const formattedAmount = amount.toLocaleString()
-  return {
-    text: `${event.label} ${formattedAmount}${event.suffix}`,
-    color: event.color,
-  }
+// ── Quiet gap logic (sometimes nothing shows for a while) ─────────────────────
+function shouldShowQuietGap(count) {
+  if (count > 8 && Math.random() < 0.25) return true // 25% chance after 8 events
+  return false
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────
-export default function LiveActivityFeed({ enabled }) {
+export default function LiveActivityFeed({ enabled, userPhone }) {
   const [current, setCurrent] = useState(null)
   const [isFading, setIsFading] = useState(false)
   const timeoutRef = useRef(null)
+  const countRef = useRef(0)
+  const hasStartedRef = useRef(false)
 
   const generateEntry = useCallback(() => {
     const event = pickEventType()
-    const phone = generatePhone()
-    const amount = pickAmount(event)
-    const { text, color } = buildText(event, phone, amount)
+    // Show user's own masked number on login/signup events
+    const phone = generateRandomPhone()
+    const { text, color } = event.buildText()
 
     return {
       id: Date.now() + Math.random(),
@@ -188,15 +171,25 @@ export default function LiveActivityFeed({ enabled }) {
   const scheduleNext = useCallback(() => {
     if (timeoutRef.current) clearTimeout(timeoutRef.current)
 
-    // Random interval 2-5 seconds — fast but not robotic
-    const delay = 2000 + Math.random() * 3000
+    // Check for quiet gap
+    if (shouldShowQuietGap(countRef.current)) {
+      const gapTime = 8000 + Math.random() * 10000 // 8-18s silent
+      timeoutRef.current = setTimeout(() => {
+        scheduleNext()
+      }, gapTime)
+      return
+    }
+
+    // Burst-then-slow delay
+    const delay = getDelay(countRef.current)
 
     timeoutRef.current = setTimeout(() => {
       const entry = generateEntry()
       setIsFading(false)
       setCurrent(entry)
+      countRef.current++
 
-      // Visible 3-5 seconds, then fade out
+      // Visible 3-5 seconds, then fade
       const visibleTime = 3000 + Math.random() * 2000
       setTimeout(() => {
         setIsFading(true)
@@ -219,13 +212,20 @@ export default function LiveActivityFeed({ enabled }) {
       return
     }
 
-    // TRULY INSTANT — no delay after login/signup
-    const tick = setTimeout(() => {
-      scheduleNext()
-    }, Math.random() * 500)
+    // INSTANT start — 0-500ms
+    if (!hasStartedRef.current) {
+      hasStartedRef.current = true
+      const tick = setTimeout(() => {
+        scheduleNext()
+      }, Math.random() * 500)
+
+      return () => {
+        clearTimeout(tick)
+        if (timeoutRef.current) clearTimeout(timeoutRef.current)
+      }
+    }
 
     return () => {
-      clearTimeout(tick)
       if (timeoutRef.current) clearTimeout(timeoutRef.current)
     }
   }, [enabled, scheduleNext])
