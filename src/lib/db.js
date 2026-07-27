@@ -1151,7 +1151,7 @@ export async function updateWelcomeMessageSettings(userPhone, { enabled, message
   
   const { error } = await supabase
     .rpc('update_app_setting', {
-      p_key: 'welcome_message_enabled',
+      p_key: 'welcome_message_enabled', p_value_key: 'setting_key', p_value_col: 'setting_value',
       p_value: enabled ? 'true' : 'false',
       p_user_phone: userPhone
     })
@@ -1159,7 +1159,7 @@ export async function updateWelcomeMessageSettings(userPhone, { enabled, message
   
   const { error: err2 } = await supabase
     .rpc('update_app_setting', {
-      p_key: 'welcome_message_text',
+      p_key: 'welcome_message_text', p_value_key: 'setting_key', p_value_col: 'setting_value',
       p_value: message,
       p_user_phone: userPhone
     })
