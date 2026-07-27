@@ -7,10 +7,6 @@ export default function WelcomeBanner() {
   const [dismissed, setDismissed] = useState(false)
 
   useEffect(() => {
-    // Check if user has dismissed the banner in this session
-    const isDismissed = sessionStorage.getItem('dumiropay_welcome_dismissed') === 'true'
-    setDismissed(isDismissed)
-
     // Fetch welcome message settings from app_settings
     getWhatsAppSettings()
       .then(settings => {
@@ -26,13 +22,13 @@ export default function WelcomeBanner() {
     if (enabled && message && !dismissed) {
       const timer = setTimeout(() => {
         handleDismiss()
-      }, 3000) // Auto-dismiss after 3 seconds
+      }, 15000) // Auto-dismiss after 15 seconds
       return () => clearTimeout(timer)
     }
   }, [enabled, message, dismissed])
 
   const handleDismiss = () => {
-    sessionStorage.setItem('dumiropay_welcome_dismissed', 'true')
+    // We remove the session storage check to ensure it shows on every login/refresh as requested
     setDismissed(true)
   }
 
@@ -85,7 +81,7 @@ export default function WelcomeBanner() {
           to { width: 0%; }
         }
         .animate-slideDown { animation: slideDown 0.5s cubic-bezier(0.16, 1, 0.3, 1); }
-        .animate-shrinkWidth { animation: shrinkWidth 3s linear forwards; }
+        .animate-shrinkWidth { animation: shrinkWidth 15s linear forwards; }
       `}} />
     </div>
   )
