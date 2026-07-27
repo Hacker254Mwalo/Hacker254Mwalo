@@ -1144,3 +1144,26 @@ export async function executeComputeCycle(investmentId, userPhone) {
   if (error) throw error
   return data
 }
+
+// ── Welcome Message Settings ──────────────────────────────────────────────────
+export async function updateWelcomeMessageSettings(userPhone, { enabled, message }) {
+  if (!isSupabaseConfigured) return { success: true }
+  
+  const { error } = await supabase
+    .rpc('update_app_setting', {
+      p_key: 'welcome_message_enabled',
+      p_value: enabled ? 'true' : 'false',
+      p_user_phone: userPhone
+    })
+  if (error) throw error
+  
+  const { error: err2 } = await supabase
+    .rpc('update_app_setting', {
+      p_key: 'welcome_message_text',
+      p_value: message,
+      p_user_phone: userPhone
+    })
+  if (err2) throw err2
+  
+  return { success: true }
+}

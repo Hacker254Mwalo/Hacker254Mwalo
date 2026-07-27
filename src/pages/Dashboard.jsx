@@ -17,6 +17,7 @@ import {
 } from '../lib/db'
 import EarningsPanel from '../components/EarningsPanel'
 import LiveActivityFeed from '../components/LiveActivityFeed'
+import WelcomeBanner from '../components/WelcomeBanner'
 
 const SPIN_DAYS = [1, 5] // Monday=1, Friday=5
 
@@ -512,6 +513,7 @@ export default function Dashboard() {
 
   return (
     <div className="pt-4 md:pt-20 pb-24 md:pb-8 px-4 max-w-2xl mx-auto">
+      <WelcomeBanner />
       <Toast msg={toast.msg} type={toast.type} />
 
       {showInvestFirst && (
