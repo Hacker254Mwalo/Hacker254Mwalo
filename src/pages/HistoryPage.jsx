@@ -115,7 +115,6 @@ export default function HistoryPage() {
   const combinedLedger = [
     ...deposits.map(d => ({ ...d, type: 'deposit' })),
     ...withdrawals.map(w => ({ ...w, type: 'withdrawal' })),
-    ...loans.map(l => ({ ...l, type: 'loan' })),
   ].sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
 
   const tabs = [
