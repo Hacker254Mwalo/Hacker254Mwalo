@@ -24,15 +24,28 @@ function generateRandomPhone(exclude = null) {
   return phone
 }
 
-// Generate truly random realistic amount within range
+// Generate truly random realistic amount
 function randomInRange(min, max) {
-  // Generate a number, round to nearest reasonable value
   const raw = min + Math.random() * (max - min)
-  // Round to nearest 50 for clean look, but keep it random
   return Math.round(raw / 50) * 50 || Math.round(raw)
 }
 
-// ── Event definitions with realistic amount ranges ────────────────────────────
+// ── Investment plans with matching amounts ────────────────────────────────────
+const INVESTMENT_PLANS = [
+  { name: 'Starter', min: 500, max: 1000 },
+  { name: 'Silver', min: 1500, max: 3000 },
+  { name: 'Emerald', min: 4000, max: 7000 },
+  { name: 'Gold', min: 8000, max: 15000 },
+  { name: 'Platinum', min: 15000, max: 25000 },
+]
+
+function pickInvestmentPlan() {
+  const plan = INVESTMENT_PLANS[Math.floor(Math.random() * INVESTMENT_PLANS.length)]
+  const amount = randomInRange(plan.min, plan.max)
+  return { name: plan.name, amount }
+}
+
+// ── Event definitions ─────────────────────────────────────────────────────────
 const EVENT_DEFS = [
   {
     key: 'deposit',
@@ -75,8 +88,8 @@ const EVENT_DEFS = [
     weight: 10,
     color: '#F59E0B',
     buildText: () => {
-      const amount = randomInRange(500, 20000)
-      return { text: `invested KSh ${amount.toLocaleString()}`, color: '#F59E0B' }
+      const plan = pickInvestmentPlan()
+      return { text: `invested KSh ${plan.amount.toLocaleString()} in ${plan.name} Plan`, color: '#F59E0B' }
     },
   },
   {
@@ -139,9 +152,9 @@ function getDelay(count) {
   return 6000 + Math.random() * 8000                   // 6-14s  — quiet
 }
 
-// ── Quiet gap logic (sometimes nothing shows for a while) ─────────────────────
+// ── Quiet gap: truly silent — no notification, just blank space ───────────────
 function shouldShowQuietGap(count) {
-  if (count > 8 && Math.random() < 0.25) return true // 25% chance after 8 events
+  if (count > 6 && Math.random() < 0.3) return true
   return false
 }
 
@@ -155,7 +168,6 @@ export default function LiveActivityFeed({ enabled, userPhone }) {
 
   const generateEntry = useCallback(() => {
     const event = pickEventType()
-    // Show user's own masked number on login/signup events
     const phone = generateRandomPhone()
     const { text, color } = event.buildText()
 
@@ -171,16 +183,15 @@ export default function LiveActivityFeed({ enabled, userPhone }) {
   const scheduleNext = useCallback(() => {
     if (timeoutRef.current) clearTimeout(timeoutRef.current)
 
-    // Check for quiet gap
+    // Quiet gap: truly no notification — just wait silently then continue
     if (shouldShowQuietGap(countRef.current)) {
-      const gapTime = 8000 + Math.random() * 10000 // 8-18s silent
+      const gapTime = 10000 + Math.random() * 12000 // 10-22s complete silence
       timeoutRef.current = setTimeout(() => {
         scheduleNext()
       }, gapTime)
       return
     }
 
-    // Burst-then-slow delay
     const delay = getDelay(countRef.current)
 
     timeoutRef.current = setTimeout(() => {
@@ -189,7 +200,7 @@ export default function LiveActivityFeed({ enabled, userPhone }) {
       setCurrent(entry)
       countRef.current++
 
-      // Visible 3-5 seconds, then fade
+      // Visible 3-5 seconds, then fade out
       const visibleTime = 3000 + Math.random() * 2000
       setTimeout(() => {
         setIsFading(true)
@@ -212,7 +223,7 @@ export default function LiveActivityFeed({ enabled, userPhone }) {
       return
     }
 
-    // INSTANT start — 0-500ms
+    // INSTANT start on login/signup — 0-500ms
     if (!hasStartedRef.current) {
       hasStartedRef.current = true
       const tick = setTimeout(() => {
@@ -228,6 +239,23 @@ export default function LiveActivityFeed({ enabled, userPhone }) {
     return () => {
       if (timeoutRef.current) clearTimeout(timeoutRef.current)
     }
+  }, [enabled, scheduleNext])
+
+  // Reset on page visibility change (reconnect/refresh) — burst again
+  useEffect(() => {
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible' && enabled) {
+        countRef.current = 0
+        hasStartedRef.current = true
+        // Clear any pending and restart burst
+        if (timeoutRef.current) clearTimeout(timeoutRef.current)
+        const tick = setTimeout(() => {
+          scheduleNext()
+        }, Math.random() * 500)
+      }
+    }
+    document.addEventListener('visibilitychange', handleVisibility)
+    return () => document.removeEventListener('visibilitychange', handleVisibility)
   }, [enabled, scheduleNext])
 
   if (!enabled || !current) return null
