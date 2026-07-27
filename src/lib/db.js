@@ -79,6 +79,9 @@ export async function getUser(phone) {
 }
 
 export async function createUser(userData) {
+  if (isSupabaseConfigured && !userData.referredBy) {
+    throw new Error('A referral code is required to join Dumiropay.')
+  }
   if (!isSupabaseConfigured) {
     const pinHash = await hashPin(userData.pin)
     const row = { ...userData, pin: undefined, pin_hash: pinHash }
