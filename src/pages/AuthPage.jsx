@@ -514,12 +514,13 @@ export default function AuthPage() {
 
                 {tab === 'register' && (
                   <div>
-                    <label className="text-xs text-gray-400 mb-1 block">Referral Code (optional)</label>
+                    <label className="text-xs text-gray-400 mb-1 block">Referral Code (required)</label>
                     <input
                       className="input-field"
                       placeholder="e.g. DUM712345"
                       value={refCode}
-                      onChange={e => setRefCode(e.target.value)}
+                      onChange={e => setRefCode(e.target.value.toUpperCase())}
+                      required
                     />
                   </div>
                 )}
