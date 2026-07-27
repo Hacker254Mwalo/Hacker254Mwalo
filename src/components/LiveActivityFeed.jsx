@@ -134,8 +134,11 @@ export default function LiveActivityFeed({ enabled }) {
       return
     }
 
-    // Random interval 5-12 seconds
-    const delay = 5000 + Math.random() * 7000
+    // Natural random interval — faster early, slower later (cool & natural)
+    const progress = countRef.current / MAX_PER_SESSION
+    const minDelay = 3000 + progress * 4000  // 3s early → 7s late
+    const maxDelay = 6000 + progress * 8000  // 6s early → 14s late
+    const delay = minDelay + Math.random() * (maxDelay - minDelay)
 
     timeoutRef.current = setTimeout(() => {
       const entry = generateEntry()
@@ -167,10 +170,10 @@ export default function LiveActivityFeed({ enabled }) {
       return
     }
 
-    // Small initial delay
+    // Quick start after login — first notification in 1-3 seconds
     const initialDelay = setTimeout(() => {
       scheduleNext()
-    }, 3000 + Math.random() * 5000)
+    }, 1000 + Math.random() * 2000)
 
     return () => {
       clearTimeout(initialDelay)
