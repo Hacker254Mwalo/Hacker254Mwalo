@@ -43,7 +43,7 @@ export default function WelcomeBanner() {
         <div className="relative flex flex-col gap-4">
           <div className="flex items-start justify-between">
             <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center text-xl animate-bounce">
-              💰
+              🔔
             </div>
             <button 
               onClick={handleDismiss}
