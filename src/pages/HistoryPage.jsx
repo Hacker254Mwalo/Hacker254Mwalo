@@ -192,14 +192,13 @@ export default function HistoryPage() {
                 <div className="flex items-start gap-3 flex-1 min-w-0">
                   <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg flex-shrink-0 ${
                     item.type === 'deposit' ? 'bg-gradient-to-br from-green-600 to-emerald-600' :
-                    item.type === 'loan' ? 'bg-gradient-to-br from-blue-600 to-indigo-600' :
                     'bg-gradient-to-br from-orange-600 to-red-600'
                   }`}>
-                    {item.type === 'deposit' ? '💳' : item.type === 'loan' ? '💰' : '💸'}
+                    {item.type === 'deposit' ? '💳' : '💸'}
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="font-semibold text-sm">
-                      {item.type === 'deposit' ? 'M-Pesa Deposit' : item.type === 'loan' ? 'Loan Request' : 'Withdrawal'}
+                      {item.type === 'deposit' ? 'M-Pesa Deposit' : 'Withdrawal'}
                     </p>
                     <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>{fmt(item.created_at)}</p>
                     {item.type === 'withdrawal' && item.mpesa_phone && (
@@ -209,11 +208,9 @@ export default function HistoryPage() {
                 </div>
                 <div className="text-right flex-shrink-0 space-y-1">
                   <p className={`font-bold text-sm ${
-                    item.type === 'deposit' ? 'text-green-400' : 
-                    item.type === 'loan' ? 'text-blue-400' : 
-                    'text-red-400'
+                    item.type === 'deposit' ? 'text-green-400' : 'text-red-400'
                   }`}>
-                    {item.type === 'deposit' ? '+' : item.type === 'loan' ? '●' : '-'}KSh {Number(item.amount).toLocaleString()}
+                    {item.type === 'deposit' ? '+' : '-'}KSh {Number(item.amount).toLocaleString()}
                   </p>
                   <StatusBadge status={item.status} />
                   {item.type === 'withdrawal' && item.net_amount && (
