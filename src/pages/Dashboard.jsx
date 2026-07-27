@@ -15,6 +15,8 @@ import {
   getClaimedKeywords,
   executeComputeCycle,
 } from '../lib/db'
+import EarningsPanel from '../components/EarningsPanel'
+import LiveActivityFeed from '../components/LiveActivityFeed'
 
 const SPIN_DAYS = [1, 5] // Monday=1, Friday=5
 
@@ -268,6 +270,7 @@ export default function Dashboard() {
   const [claimedCodes, setClaimedCodes] = useState([])
   const [waPhone, setWaPhone] = useState('')
   const [waGroupLink, setWaGroupLink] = useState('')
+  const [activityEnabled, setActivityEnabled] = useState(true)
 
   function showToast(msg, type = 'success') {
     setToast({ msg, type })
@@ -289,6 +292,7 @@ export default function Dashboard() {
       setSpinClaimed(spinStatus)
       setWaPhone(waSettings.whatsapp_phone || '')
       setWaGroupLink(waSettings.whatsapp_group_link || '')
+      setActivityEnabled(waSettings.activity_enabled !== 'false')
       const claimed = await getClaimedKeywords(phone)
       setClaimedCodes((claimed || []).map(c => c.keyword_id))
     } catch { /* silent */ }
@@ -589,6 +593,14 @@ export default function Dashboard() {
         </div>
       </div>
 
+      {/* Earnings Panel — Left Animated Card */}
+      <EarningsPanel
+        user={user}
+        activeInvestments={activeInvestments}
+        hasActiveInvestment={hasActiveInvestment}
+        onToast={showToast}
+      />
+
       {/* No Investment Banner */}
       {!hasActiveInvestment && (
         <div className="rounded-2xl p-4 mb-5 border border-yellow-700/50 bg-yellow-900/20 flex items-center gap-3">
@@ -888,6 +900,9 @@ export default function Dashboard() {
           )}
         </div>
       )}
+
+      {/* Live Activity Notifications */}
+      <LiveActivityFeed enabled={activityEnabled} />
     </div>
   )
 }

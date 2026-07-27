@@ -1277,6 +1277,7 @@ function SettingsTab({ user, showToast }) {
   const [phone, setPhone] = useState('')
   const [groupLink, setGroupLink] = useState('')
   const [stkEnabled, setStkEnabled] = useState(true)
+  const [activityEnabled, setActivityEnabled] = useState(true)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const callerPhone = user?.phone || ''
@@ -1288,6 +1289,7 @@ function SettingsTab({ user, showToast }) {
       setPhone(s.whatsapp_phone || '')
       setGroupLink(s.whatsapp_group_link || '')
       setStkEnabled(s.stk_enabled !== 'false')
+      setActivityEnabled(s.activity_enabled !== 'false')
     } catch { }
     setLoading(false)
   }, [])
@@ -1428,6 +1430,57 @@ function SettingsTab({ user, showToast }) {
               </div>
               <span className={`text-[10px] px-2 py-1 rounded font-bold uppercase ${stkEnabled ? 'bg-green-900/40 text-green-300' : 'bg-red-900/40 text-red-300'}`}>
                 {stkEnabled ? 'Active' : 'Disabled'}
+              </span>
+            </div>
+          </div>
+
+          {/* Activity Feed Toggle */}
+          <div className="card">
+            <h4 className="font-semibold mb-4 flex items-center gap-2">
+              <span className="text-xl">📡</span> Live Activity Feed
+            </h4>
+            <p className="text-sm mb-4" style={{ color: 'var(--text-muted)' }}>
+              Show live activity notifications on the dashboard (withdrawals, earnings, bonus claims). When disabled, users won't see any activity popups.
+            </p>
+            <div className="flex items-center gap-4 p-4 rounded-xl" style={{ background: 'var(--bg-input)' }}>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={activityEnabled}
+                  onChange={async (e) => {
+                    const val = e.target.checked
+                    setSaving(true)
+                    try {
+                      const res = await updateAppSetting(callerPhone, 'activity_enabled', String(val))
+                      if (res && res.success) {
+                        setActivityEnabled(val)
+                        showToast(`Activity Feed ${val ? 'enabled' : 'disabled'}`)
+                      } else {
+                        setActivityEnabled(!val)
+                        showToast('Failed to update setting', 'error')
+                      }
+                    } catch {
+                      setActivityEnabled(!val)
+                      showToast('Failed to update setting', 'error')
+                    } finally {
+                      setSaving(false)
+                    }
+                  }}
+                  disabled={saving}
+                  className="sr-only peer"
+                />
+                <div className="w-14 h-7 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-green-600"></div>
+              </label>
+              <div className="flex-1">
+                <span className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
+                  {activityEnabled ? 'Activity Feed is ON' : 'Activity Feed is OFF'}
+                </span>
+                <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>
+                  {activityEnabled ? 'Live notifications showing on dashboard — realistic, randomized activity.' : 'No activity notifications will appear on dashboard.'}
+                </p>
+              </div>
+              <span className={`text-[10px] px-2 py-1 rounded font-bold uppercase ${activityEnabled ? 'bg-green-900/40 text-green-300' : 'bg-red-900/40 text-red-300'}`}>
+                {activityEnabled ? 'Active' : 'Disabled'}
               </span>
             </div>
           </div>
