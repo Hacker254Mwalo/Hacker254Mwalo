@@ -124,15 +124,17 @@ export default function AuthPage() {
         if (existing) { setError('Account already exists. Please login.'); setLoading(false); return }
 
         if (!refCode.trim()) {
-          setError('A referral code is required to join Dumiropay.')
+          setError('Please enter a valid referral code to create your account.')
           setLoading(false)
+          setFocusedField('ref')
           return
         }
 
         const referrer = await findUserByReferralCode(refCode.trim().toUpperCase())
         if (!referrer) {
-          setError('Invalid referral code. You must be referred by an existing member.')
+          setError('Invalid referral code. Please check the code and try again.')
           setLoading(false)
+          setFocusedField('ref')
           return
         }
 
