@@ -919,40 +919,48 @@ export async function deleteTransaction(id) {
     return
   }
 
-  const createdAt = tx.created_at ? new Date(tx.created_at).toISOString() : '1970-01-01T00:00:00'
-  const tenMinAfter = new Date(new Date(createdAt).getTime() + 10 * 60000).toISOString()
+  const createdAtDate = tx.created_at ? new Date(tx.created_at) : new Date()
+  const fiveMinBefore = new Date(createdAtDate.getTime() - 5 * 60000).toISOString()
+  const fiveMinAfter = new Date(createdAtDate.getTime() + 5 * 60000).toISOString()
   const absAmount = Math.abs(Number(tx.amount))
 
-  // Delete matching deposit record (by phone + amount + time window)
-  const { error: depErr } = await supabase.from('deposits').delete()
+  // 1. Delete from deposits
+  await supabase.from('deposits').delete()
     .eq('user_phone', phone)
-    .gte('created_at', createdAt)
-    .lt('created_at', tenMinAfter)
+    .gte('amount', absAmount - 1)
+    .lte('amount', absAmount + 1)
+    .gte('created_at', fiveMinBefore)
+    .lte('created_at', fiveMinAfter)
 
-  // Delete matching withdrawal record (by phone + amount + time window)
-  const { error: withErr } = await supabase.from('withdrawals').delete()
+  // 2. Delete from withdrawals
+  await supabase.from('withdrawals').delete()
     .eq('user_phone', phone)
-    .gte('created_at', createdAt)
-    .lt('created_at', tenMinAfter)
+    .gte('amount', absAmount - 1)
+    .lte('amount', absAmount + 1)
+    .gte('created_at', fiveMinBefore)
+    .lte('created_at', fiveMinAfter)
+
+  // 3. Delete from investments
+  await supabase.from('investments').delete()
+    .eq('user_phone', phone)
+    .gte('amount', absAmount - 1)
+    .lte('amount', absAmount + 1)
+    .gte('created_at', fiveMinBefore)
+    .lte('created_at', fiveMinAfter)
+
+  // 4. Delete from loans
+  await supabase.from('loans').delete()
+    .eq('user_phone', phone)
+    .gte('amount', absAmount - 1)
+    .lte('amount', absAmount + 1)
+    .gte('created_at', fiveMinBefore)
+    .lte('created_at', fiveMinAfter)
 
   // Also try matching by reference if available
   if (tx.reference) {
-    await supabase.from('deposits').delete()
-      .eq('mpesa_receipt', tx.reference)
-      .eq('user_phone', phone)
+    await supabase.from('deposits').delete().eq('user_phone', phone).eq('mpesa_receipt', tx.reference)
+    await supabase.from('withdrawals').delete().eq('user_phone', phone).eq('id', tx.reference)
   }
-
-  // Also delete matching investment records (by phone + amount + time window)
-  await supabase.from('investments').delete()
-    .eq('user_phone', phone)
-    .gte('created_at', createdAt)
-    .lt('created_at', tenMinAfter)
-
-  // Also delete matching loan records (by phone + amount + time window)
-  await supabase.from('loans').delete()
-    .eq('user_phone', phone)
-    .gte('created_at', createdAt)
-    .lt('created_at', tenMinAfter)
 
   // Delete the transaction itself
   const { error: txError } = await supabase.from('transactions').delete().eq('id', id)
