@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useAuth } from '../context/AuthContext'
-import { getInvestments, getDeposits, getWithdrawals } from '../lib/db'
+import { getInvestments, getDeposits, getWithdrawals, getUserLoans } from '../lib/db'
 import { PLANS } from '../lib/plans'
 
 const PLAN_NAME_MAP = {
@@ -47,6 +47,7 @@ export default function HistoryPage() {
   const [investments, setInvestments] = useState([])
   const [deposits, setDeposits] = useState([])
   const [withdrawals, setWithdrawals] = useState([])
+  const [loans, setLoans] = useState([])
   const [tab, setTab] = useState('ledger')
   const [toast, setToast] = useState(null)
   const prevDepositStatuses = useRef({})
@@ -64,15 +65,21 @@ export default function HistoryPage() {
     getInvestments(phone).then(setInvestments).catch(() => {})
     getDeposits(phone).then(setDeposits).catch(() => {})
     getWithdrawals(phone).then(setWithdrawals).catch(() => {})
+    getUserLoans(phone).then(setLoans).catch(() => {})
   }, [user, phone])
 
   useEffect(() => {
     if (!user) return
     const interval = setInterval(async () => {
       try {
-        const [deps, withs] = await Promise.all([getDeposits(phone), getWithdrawals(phone)])
+        const [deps, withs, lns] = await Promise.all([
+          getDeposits(phone), 
+          getWithdrawals(phone),
+          getUserLoans(phone)
+        ])
         setDeposits(deps)
         setWithdrawals(withs)
+        setLoans(lns)
       } catch { }
     }, 10000)
     return () => clearInterval(interval)
@@ -108,6 +115,7 @@ export default function HistoryPage() {
   const combinedLedger = [
     ...deposits.map(d => ({ ...d, type: 'deposit' })),
     ...withdrawals.map(w => ({ ...w, type: 'withdrawal' })),
+    ...loans.map(l => ({ ...l, type: 'loan' })),
   ].sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
 
   const tabs = [
@@ -115,6 +123,7 @@ export default function HistoryPage() {
     { id: 'investments', label: 'Investments', count: investments.length },
     { id: 'deposits', label: 'Deposits', count: deposits.length },
     { id: 'withdrawals', label: 'Withdrawals', count: withdrawals.length },
+    { id: 'loans', label: 'Loans', count: loans.length },
   ]
 
   function fmt(dateStr) {
@@ -184,13 +193,14 @@ export default function HistoryPage() {
                 <div className="flex items-start gap-3 flex-1 min-w-0">
                   <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg flex-shrink-0 ${
                     item.type === 'deposit' ? 'bg-gradient-to-br from-green-600 to-emerald-600' :
+                    item.type === 'loan' ? 'bg-gradient-to-br from-blue-600 to-indigo-600' :
                     'bg-gradient-to-br from-orange-600 to-red-600'
                   }`}>
-                    {item.type === 'deposit' ? '💳' : '💸'}
+                    {item.type === 'deposit' ? '💳' : item.type === 'loan' ? '💰' : '💸'}
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="font-semibold text-sm">
-                      {item.type === 'deposit' ? 'M-Pesa Deposit' : 'Withdrawal'}
+                      {item.type === 'deposit' ? 'M-Pesa Deposit' : item.type === 'loan' ? 'Loan Request' : 'Withdrawal'}
                     </p>
                     <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>{fmt(item.created_at)}</p>
                     {item.type === 'withdrawal' && item.mpesa_phone && (
@@ -199,8 +209,12 @@ export default function HistoryPage() {
                   </div>
                 </div>
                 <div className="text-right flex-shrink-0 space-y-1">
-                  <p className={`font-bold text-sm ${item.type === 'deposit' ? 'text-green-400' : 'text-red-400'}`}>
-                    {item.type === 'deposit' ? '+' : '-'}KSh {Number(item.amount).toLocaleString()}
+                  <p className={`font-bold text-sm ${
+                    item.type === 'deposit' ? 'text-green-400' : 
+                    item.type === 'loan' ? 'text-blue-400' : 
+                    'text-red-400'
+                  }`}>
+                    {item.type === 'deposit' ? '+' : item.type === 'loan' ? '●' : '-'}KSh {Number(item.amount).toLocaleString()}
                   </p>
                   <StatusBadge status={item.status} />
                   {item.type === 'withdrawal' && item.net_amount && (
@@ -285,6 +299,34 @@ export default function HistoryPage() {
               )
               })}
             </>
+          )}
+        </div>
+      )}
+
+      {/* Loans Tab */}
+      {tab === 'loans' && (
+        <div className="space-y-3 animate-fadeIn">
+          {loans.length === 0 ? (
+            <EmptyState icon="💰" title="No loans yet" subtitle="Request a loan to see it here" />
+          ) : (
+            loans.map(loan => (
+              <div key={loan.id} className="card flex items-start justify-between gap-4 hover:border-gray-600 transition-colors">
+                <div className="flex items-start gap-3 flex-1 min-w-0">
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center text-lg flex-shrink-0">💰</div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-sm">Loan Request</p>
+                    <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>{fmt(loan.created_at)}</p>
+                    {loan.purpose && (
+                      <p className="text-xs mt-0.5 italic" style={{ color: 'var(--text-secondary)' }}>"{loan.purpose}"</p>
+                    )}
+                  </div>
+                </div>
+                <div className="text-right flex-shrink-0 space-y-1">
+                  <p className="font-bold text-sm text-blue-400">KSh {Number(loan.amount).toLocaleString()}</p>
+                  <StatusBadge status={loan.status} />
+                </div>
+              </div>
+            ))
           )}
         </div>
       )}
