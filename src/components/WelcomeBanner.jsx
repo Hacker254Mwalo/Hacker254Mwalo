@@ -22,8 +22,16 @@ export default function WelcomeBanner() {
       .catch(err => console.error('Error fetching welcome message:', err))
   }, [])
 
+  useEffect(() => {
+    if (enabled && message && !dismissed) {
+      const timer = setTimeout(() => {
+        handleDismiss()
+      }, 3000) // Auto-dismiss after 3 seconds
+      return () => clearTimeout(timer)
+    }
+  }, [enabled, message, dismissed])
+
   const handleDismiss = () => {
-    // Dismiss for current session (re-appears on new login/tab)
     sessionStorage.setItem('dumiropay_welcome_dismissed', 'true')
     setDismissed(true)
   }
@@ -31,24 +39,54 @@ export default function WelcomeBanner() {
   if (dismissed || !enabled || !message) return null
 
   return (
-    <div className="fixed top-0 left-0 right-0 z-40 bg-gradient-to-r from-blue-900 to-purple-900 text-white p-4 shadow-lg">
-      <div className="max-w-4xl mx-auto flex items-center justify-between gap-4">
-        <p className="flex-1 text-sm md:text-base font-medium leading-relaxed">{message}</p>
-        <div className="flex items-center gap-2 flex-shrink-0">
-          <button
-            onClick={handleDismiss}
-            className="px-4 py-2 bg-white text-blue-900 font-semibold rounded-lg hover:bg-gray-100 transition-all active:scale-95 text-sm"
-          >
-            OK
-          </button>
-          <button
-            onClick={handleDismiss}
-            className="px-3 py-2 text-white hover:bg-white/20 rounded-lg transition-all text-lg font-bold"
-          >
-            ✕
-          </button>
+    <div className="fixed inset-x-0 top-0 z-[100] p-4 animate-slideDown">
+      <div className="max-w-lg mx-auto bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 text-white p-5 rounded-2xl shadow-2xl border border-white/20 backdrop-blur-md relative overflow-hidden group">
+        {/* Animated background pulse */}
+        <div className="absolute inset-0 bg-white/10 animate-pulse pointer-events-none" />
+        
+        <div className="relative flex flex-col gap-4">
+          <div className="flex items-start justify-between">
+            <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center text-xl animate-bounce">
+              💰
+            </div>
+            <button 
+              onClick={handleDismiss}
+              className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/20 transition-colors text-white/80 hover:text-white"
+            >
+              ✕
+            </button>
+          </div>
+          
+          <p className="text-sm md:text-base font-bold leading-snug drop-shadow-md">
+            {message}
+          </p>
+          
+          <div className="flex items-center justify-end gap-3 mt-1">
+            <button
+              onClick={handleDismiss}
+              className="px-6 py-2 bg-white text-indigo-600 font-black rounded-xl hover:bg-indigo-50 transition-all active:scale-95 text-xs uppercase tracking-wider shadow-lg"
+            >
+              Got it!
+            </button>
+          </div>
         </div>
+        
+        {/* Progress bar for 3s timer */}
+        <div className="absolute bottom-0 left-0 h-1 bg-white/40 animate-shrinkWidth" style={{ width: '100%' }} />
       </div>
+      
+      <style dangerouslySetInnerHTML={{ __html: `
+        @keyframes slideDown {
+          from { transform: translateY(-100%); opacity: 0; }
+          to { transform: translateY(0); opacity: 1; }
+        }
+        @keyframes shrinkWidth {
+          from { width: 100%; }
+          to { width: 0%; }
+        }
+        .animate-slideDown { animation: slideDown 0.5s cubic-bezier(0.16, 1, 0.3, 1); }
+        .animate-shrinkWidth { animation: shrinkWidth 3s linear forwards; }
+      `}} />
     </div>
   )
 }
