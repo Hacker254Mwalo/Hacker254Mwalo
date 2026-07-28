@@ -3,6 +3,10 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { getInvestments, addInvestment, getUser } from '../lib/db'
 import { PLANS, getDailyReturn, getTotalReturn } from '../lib/plans'
+import PlanCertifications from '../components/PlanCertifications'
+import PlanStats from '../components/PlanStats'
+import DataCenterInfo from '../components/DataCenterInfo'
+import EarningsHistory from '../components/EarningsHistory'
 
 const PLAN_IMAGES = {
   starter: '/icons/starter.webp',
@@ -76,6 +80,12 @@ function PlanCard({ plan, onInvest, alreadyUsed }) {
       <p className="text-xs leading-relaxed px-1" style={{ color: 'var(--text-secondary)' }}>
         {plan.description}
       </p>
+
+      {/* Plan Stats */}
+      <PlanStats planName={plan.name} />
+
+      {/* Earnings History */}
+      <EarningsHistory planName={plan.name} />
 
       {/* Action button */}
       {alreadyUsed ? (
@@ -241,12 +251,22 @@ export default function PlansPage() {
         <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>Invest in GPU compute infrastructure and earn 24h yields daily</p>
       </div>
 
+      {/* Certifications */}
+      <PlanCertifications />
+
+      {/* Global Data Center Status */}
+      <DataCenterInfo />
+
       <div className="balance-gradient rounded-xl px-5 py-4 mb-6 flex items-center justify-between">
         <div>
           <p className="text-gray-400 text-xs">Available Balance</p>
           <p className="text-2xl font-black">KSh {(user?.balance || 0).toLocaleString()}</p>
         </div>
         <span className="text-3xl">💰</span>
+      </div>
+
+      <div className="mb-4 text-xs text-gray-400 text-center">
+        <p>All plans run on enterprise-grade infrastructure with 24/7 monitoring</p>
       </div>
 
       <div className="grid gap-4">
