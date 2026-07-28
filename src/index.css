@@ -518,18 +518,31 @@
 
   /* Console Upgrade Styles */
   .console-card {
-    background: rgba(30, 41, 59, 0.6);
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(59, 130, 246, 0.2);
+    background: linear-gradient(135deg, rgba(30, 41, 59, 0.7) 0%, rgba(20, 30, 48, 0.8) 100%);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(59, 130, 246, 0.25);
     border-radius: 16px;
     padding: 20px;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-    transition: all 0.3s ease;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(59, 130, 246, 0.1);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .console-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(59, 130, 246, 0.3), transparent);
   }
 
   .console-card:hover {
-    border-color: rgba(59, 130, 246, 0.4);
-    box-shadow: 0 8px 32px rgba(59, 130, 246, 0.1);
+    border-color: rgba(59, 130, 246, 0.5);
+    box-shadow: 0 12px 48px rgba(59, 130, 246, 0.15), inset 0 1px 0 rgba(59, 130, 246, 0.2);
+    transform: translateY(-2px);
   }
 
   .glow-accent {
@@ -537,31 +550,47 @@
   }
 
   .console-label {
-    font-size: 12px;
-    font-weight: 600;
-    letter-spacing: 0.05em;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
     text-transform: uppercase;
-    color: rgba(255, 255, 255, 0.6);
+    color: rgba(255, 255, 255, 0.5);
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .console-label::before {
+    content: '';
+    width: 4px;
+    height: 4px;
+    background: rgba(59, 130, 246, 0.6);
+    border-radius: 50%;
   }
 
   .console-value {
-    font-size: 24px;
-    font-weight: 700;
+    font-size: 28px;
+    font-weight: 800;
     color: #fff;
     font-family: 'Monaco', 'Courier New', monospace;
+    letter-spacing: -0.02em;
+    text-shadow: 0 0 20px rgba(59, 130, 246, 0.2);
   }
 
   .performance-gauge-bg {
-    height: 8px;
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 4px;
+    height: 6px;
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 3px;
     overflow: hidden;
     position: relative;
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.3);
   }
 
   .performance-gauge-fill {
     height: 100%;
     transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 0 8px currentColor;
   }
 
   .gauge-optimal { background: linear-gradient(90deg, #10b981, #34d399); }
@@ -575,6 +604,8 @@
 
   .transaction-item {
     animation: transactionSlide 0.3s ease forwards;
+    border-left: 3px solid rgba(59, 130, 246, 0.3);
+    background: linear-gradient(90deg, rgba(59, 130, 246, 0.05) 0%, transparent 100%);
   }
 
   @keyframes workloadPulse {
@@ -584,6 +615,10 @@
 
   .workload-badge {
     animation: workloadPulse 2s infinite;
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.2) 0%, rgba(59, 130, 246, 0.05) 100%);
+    border: 1px solid rgba(59, 130, 246, 0.3);
+    padding: 8px 12px;
+    border-radius: 8px;
   }
 
   @keyframes scoreGlow {

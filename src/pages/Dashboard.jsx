@@ -524,7 +524,7 @@ export default function Dashboard() {
 
   return (
     <div className="pt-4 md:pt-20 pb-24 md:pb-8 px-4 max-w-2xl mx-auto">
-      <SmartNotifications userPhone={user?.phone || user?.id} />
+      <SmartNotifications userPhone={user?.phone || user?.id} activeInvestments={activeInvestments} />
       <WelcomeBanner />
       <Toast msg={toast.msg} type={toast.type} />
 
