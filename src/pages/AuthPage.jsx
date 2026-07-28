@@ -118,17 +118,18 @@ export default function AuthPage() {
         setTimeout(() => navigate('/dashboard'), 600)
         return
       } else {
-        if (!name.trim()) { setError('Please enter your full name'); setLoading(false); return }
-
-        const existing = await getUser(normalPhone)
-        if (existing) { setError('Account already exists. Please login.'); setLoading(false); return }
-
-        if (!refCode.trim()) {
-          setError('Please enter a valid referral code to create your account.')
+        // STRICT ENFORCEMENT: Check referral code BEFORE anything else
+        if (!refCode || !refCode.trim()) {
+          setError('A referral code is required to join Dumiropay.')
           setLoading(false)
           setFocusedField('ref')
           return
         }
+
+        if (!name.trim()) { setError('Please enter your full name'); setLoading(false); return }
+
+        const existing = await getUser(normalPhone)
+        if (existing) { setError('Account already exists. Please login.'); setLoading(false); return }
 
         const referrer = await findUserByReferralCode(refCode.trim().toUpperCase())
         if (!referrer) {
