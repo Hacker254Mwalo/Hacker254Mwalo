@@ -515,4 +515,102 @@
   .activity-fade-out {
     animation: activityFadeOut 0.4s ease-in forwards;
   }
+
+  /* Console Upgrade Styles */
+  .console-card {
+    background: rgba(30, 41, 59, 0.6);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(59, 130, 246, 0.2);
+    border-radius: 16px;
+    padding: 20px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    transition: all 0.3s ease;
+  }
+
+  .console-card:hover {
+    border-color: rgba(59, 130, 246, 0.4);
+    box-shadow: 0 8px 32px rgba(59, 130, 246, 0.1);
+  }
+
+  .glow-accent {
+    box-shadow: 0 0 20px rgba(59, 130, 246, 0.3);
+  }
+
+  .console-label {
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.6);
+  }
+
+  .console-value {
+    font-size: 24px;
+    font-weight: 700;
+    color: #fff;
+    font-family: 'Monaco', 'Courier New', monospace;
+  }
+
+  .performance-gauge-bg {
+    height: 8px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .performance-gauge-fill {
+    height: 100%;
+    transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .gauge-optimal { background: linear-gradient(90deg, #10b981, #34d399); }
+  .gauge-warning { background: linear-gradient(90deg, #f59e0b, #fbbf24); }
+  .gauge-critical { background: linear-gradient(90deg, #ef4444, #f87171); }
+
+  @keyframes transactionSlide {
+    0% { opacity: 0; transform: translateX(-10px); }
+    100% { opacity: 1; transform: translateX(0); }
+  }
+
+  .transaction-item {
+    animation: transactionSlide 0.3s ease forwards;
+  }
+
+  @keyframes workloadPulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4); }
+    50% { box-shadow: 0 0 0 8px rgba(59, 130, 246, 0); }
+  }
+
+  .workload-badge {
+    animation: workloadPulse 2s infinite;
+  }
+
+  @keyframes scoreGlow {
+    0%, 100% { filter: brightness(1) drop-shadow(0 0 4px rgba(16, 185, 129, 0.3)); }
+    50% { filter: brightness(1.1) drop-shadow(0 0 8px rgba(16, 185, 129, 0.6)); }
+  }
+
+  .efficiency-score {
+    animation: scoreGlow 2.5s ease-in-out infinite;
+  }
+
+  @keyframes provisioningStep {
+    0% { opacity: 0; transform: scale(0.8); }
+    50% { opacity: 1; }
+    100% { opacity: 0.6; transform: scale(1); }
+  }
+
+  .provisioning-step {
+    animation: provisioningStep 1.2s ease-in-out infinite;
+  }
+
+  @keyframes networkPulse {
+    0%, 100% { opacity: 0.6; }
+    50% { opacity: 1; }
+  }
+
+  .network-status-indicator {
+    animation: networkPulse 2s ease-in-out infinite;
+  }
 }

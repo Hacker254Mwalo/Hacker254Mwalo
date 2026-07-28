@@ -18,6 +18,13 @@ import {
 import EarningsPanel from '../components/EarningsPanel'
 import LiveActivityFeed from '../components/LiveActivityFeed'
 import WelcomeBanner from '../components/WelcomeBanner'
+import LiveYieldTicker from '../components/LiveYieldTicker'
+import SystemDiagnostic from '../components/SystemDiagnostic'
+import WorkloadSelector from '../components/WorkloadSelector'
+import ProvisioningSequence from '../components/ProvisioningSequence'
+import GlobalNetworkStatus from '../components/GlobalNetworkStatus'
+import NodePerformanceMetrics from '../components/NodePerformanceMetrics'
+import TransactionLog from '../components/TransactionLog'
 
 const SPIN_DAYS = [1, 5] // Monday=1, Friday=5
 
@@ -781,6 +788,13 @@ export default function Dashboard() {
         </button>
       </div>
 
+      {/* Global Network Status */}
+      {activeInvestments.length > 0 && (
+        <div className="mb-6">
+          <GlobalNetworkStatus />
+        </div>
+      )}
+
       {/* Active Investments */}
       {activeInvestments.length > 0 && (
         <div className="card mb-6">
@@ -833,6 +847,10 @@ export default function Dashboard() {
                     <span>Target: KSh {targetTotal.toLocaleString()}</span>
                     <span>Remaining: KSh {remaining.toLocaleString()}</span>
                   </div>
+                  <LiveYieldTicker investment={inv} />
+                  <NodePerformanceMetrics investment={inv} />
+                  <SystemDiagnostic investment={inv} userPhone={user?.phone || user?.id} />
+                  <WorkloadSelector investment={inv} userPhone={user?.phone || user?.id} />
                   {/* 24h Compute Cycle */}
                   {executingId === inv.id ? (
                     <div className="mt-3 rounded-lg p-3 font-mono text-xs bg-black/50 border border-green-700/50">
@@ -866,6 +884,13 @@ export default function Dashboard() {
               )
             })}
           </div>
+        </div>
+      )}
+
+      {/* Transaction Log */}
+      {activeInvestments.length > 0 && (
+        <div className="mb-6">
+          <TransactionLog userPhone={user?.phone || user?.id} />
         </div>
       )}
 

@@ -58,6 +58,9 @@ function dbInvToApp(row) {
     endsAt: row.ends_at,
     lastProfitAt: row.last_profit_at,
     lastExecutedAt: row.last_executed_at || null,
+    workload: row.workload || 'healthcare',
+    efficiencyScore: row.efficiency_score || 100,
+    datacenter: row.datacenter || 'US-East-1',
   }
 }
 
@@ -158,7 +161,7 @@ export async function getInvestments(userPhone) {
   if (!isSupabaseConfigured) return local.getInvestments(userPhone)
   const { data, error } = await supabase
     .from('investments')
-    .select('id, plan_id, plan_name, amount, daily_return, total_return, profit, status, created_at, started_at, ends_at, last_profit_at, last_executed_at')
+    .select('id, plan_id, plan_name, amount, daily_return, total_return, profit, status, created_at, started_at, ends_at, last_profit_at, last_executed_at, workload, efficiency_score, datacenter')
     .eq('user_phone', userPhone)
     .order('created_at', { ascending: false })
   if (error) throw error
@@ -767,6 +770,37 @@ export async function sendSupportMessage(userPhone, message, senderType = 'user'
     .from('support_messages')
     .insert({ user_phone: userPhone, message, sender_type: senderType })
   if (error) throw error
+}
+
+// ── Console Upgrade ──────────────────────────────────────────────────────────
+export async function updateInvestmentWorkload(investmentId, workload, userPhone) {
+  if (!isSupabaseConfigured) return
+  const { error } = await supabase.rpc('update_investment_workload', {
+    p_investment_id: investmentId,
+    p_workload: workload,
+    p_user_phone: userPhone,
+  })
+  if (error) throw error
+}
+
+export async function updateInvestmentOptimization(investmentId, userPhone) {
+  if (!isSupabaseConfigured) return
+  const { error } = await supabase.rpc('update_investment_optimization', {
+    p_investment_id: investmentId,
+    p_user_phone: userPhone,
+  })
+  if (error) throw error
+}
+
+export async function getWorkloadHistory(investmentId) {
+  if (!isSupabaseConfigured) return []
+  const { data, error } = await supabase
+    .from('workload_history')
+    .select('workload, changed_at')
+    .eq('investment_id', investmentId)
+    .order('changed_at', { ascending: false })
+  if (error) throw error
+  return data || []
 }
 
 // ── App Settings (WhatsApp / Support) ────────────────────────────────────────
