@@ -30,6 +30,7 @@ import SmartNotifications from '../components/SmartNotifications'
 import ApiRateLimiter from '../components/ApiRateLimiter'
 import EarningsForecast from '../components/EarningsForecast'
 import EarnMoreModal from '../components/EarnMoreModal'
+import DeploymentCertificate from '../components/DeploymentCertificate'
 
 const SPIN_DAYS = [1, 5] // Monday=1, Friday=5
 
@@ -273,6 +274,7 @@ export default function Dashboard() {
   const [showLoan, setShowLoan] = useState(false)
   const [showContactAdmin, setShowContactAdmin] = useState(false)
   const [showInvestFirst, setShowInvestFirst] = useState(false)
+  const [showCertificate, setShowCertificate] = useState(null)
   const [bonusClaimed, setBonusClaimed] = useState(false)
   const [spinClaimed, setSpinClaimed] = useState(false)
   const [spinning, setSpinning] = useState(false)
@@ -540,6 +542,7 @@ export default function Dashboard() {
       {showPromo && <PromoModal onClose={() => setShowPromo(false)} onClaim={handlePromo} />}
       {showLoan && <LoanModal onClose={() => setShowLoan(false)} onSubmit={handleLoan} />}
       {showContactAdmin && <SupportModal user={user} onClose={() => setShowContactAdmin(false)} />}
+      {showCertificate && <DeploymentCertificate inv={showCertificate} onClose={() => setShowCertificate(null)} />}
       <EarnMoreModal />
 
       {/* Header */}
@@ -597,8 +600,8 @@ export default function Dashboard() {
 
         {/* Content (above animations) */}
         <div className="relative z-10">
-          <p className="text-gray-400 text-sm mb-1">Total Balance</p>
-          <p className="text-4xl font-black balance-text-glow">KSh {(user?.balance || 0).toLocaleString()}</p>
+          <p className="text-gray-400 text-sm mb-1">Available Balance</p>
+          <p className="text-3xl font-black balance-text-glow">KSh {(user?.balance || 0).toLocaleString()}</p>
           {(user?.bonusBalance || 0) > 0 && (
             <p className="text-yellow-400 text-sm mt-1">+ KSh {(user.bonusBalance || 0).toLocaleString()} bonus</p>
           )}
@@ -608,6 +611,49 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
+
+      {/* Feature 2: Active Investments Summary (Money at Work) */}
+      {hasActiveInvestment && (
+        <div className="mb-5">
+          <div className="rounded-xl p-4 relative overflow-hidden" style={{ background: 'linear-gradient(135deg, rgba(16,185,129,0.06) 0%, rgba(6,182,212,0.04) 100%)', border: '1px solid rgba(16,185,129,0.15)' }}>
+            <div className="flex items-center gap-3 mb-3">
+              <span className="w-3 h-3 rounded-full bg-green-500 animate-pulse" />
+              <p className="text-sm font-bold" style={{ color: '#34D399' }}>Your Money is Working</p>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <p className="text-[10px]" style={{ color: 'var(--text-muted)' }}>Total Deployed</p>
+                <p className="text-lg font-black text-white">KSh {activeInvestments.reduce((s, i) => s + Number(i.amount || 0), 0).toLocaleString()}</p>
+              </div>
+              <div>
+                <p className="text-[10px]" style={{ color: 'var(--text-muted)' }}>Daily Earning</p>
+                <p className="text-lg font-black" style={{ color: '#34D399' }}>KSh {activeInvestments.reduce((s, i) => s + Number(i.dailyReturn || 0), 0).toLocaleString()}</p>
+              </div>
+              <div>
+                <p className="text-[10px]" style={{ color: 'var(--text-muted)' }}>Total Earned So Far</p>
+                <p className="text-lg font-black" style={{ color: '#FFD700' }}>KSh {activeInvestments.reduce((s, i) => s + Number(i.profit || 0), 0).toLocaleString()}</p>
+              </div>
+              <div>
+                <p className="text-[10px]" style={{ color: 'var(--text-muted)' }}>60-Day Target</p>
+                <p className="text-lg font-black" style={{ color: '#60A5FA' }}>KSh {activeInvestments.reduce((s, i) => s + Number(i.totalReturn || 0), 0).toLocaleString()}</p>
+              </div>
+            </div>
+            {/* Overall progress */}
+            <div className="mt-3">
+              <div className="flex justify-between text-[10px] mb-1" style={{ color: 'var(--text-muted)' }}>
+                <span>Overall Progress</span>
+                <span>{Math.round((activeInvestments.reduce((s, i) => s + Number(i.profit || 0), 0) / Math.max(1, activeInvestments.reduce((s, i) => s + Number(i.totalReturn || 0), 0))) * 100)}%</span>
+              </div>
+              <div className="w-full bg-gray-700 rounded-full h-2">
+                <div className="h-2 rounded-full transition-all" style={{
+                  width: `${Math.min(100, Math.round((activeInvestments.reduce((s, i) => s + Number(i.profit || 0), 0) / Math.max(1, activeInvestments.reduce((s, i) => s + Number(i.totalReturn || 0), 0))) * 100))}%`,
+                  background: 'linear-gradient(90deg, #22c55e, #FFD700)',
+                }} />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Earnings Panel — Left Animated Card */}
       <EarningsPanel
@@ -812,7 +858,7 @@ export default function Dashboard() {
           <div className="space-y-3">
             {activeInvestments.slice(0, 3).map(inv => {
               const startDate = inv.startedAt ? new Date(inv.startedAt) : new Date(inv.date)
-              const endDate = inv.endsAt ? new Date(inv.endsAt) : new Date(startDate.getTime() + 90 * 86400000)
+              const endDate = inv.endsAt ? new Date(inv.endsAt) : new Date(startDate.getTime() + 60 * 86400000)
               const now = new Date()
               const totalDays = Math.max(1, Math.ceil((endDate - startDate) / 86400000))
               // Calculate days passed since investment started
@@ -833,7 +879,7 @@ export default function Dashboard() {
                       <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>{startDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
                     </div>
                     <div className="text-right">
-                      <p className="text-red-400 text-sm font-semibold">-KSh {Number(inv.amount).toLocaleString()}</p>
+                      <p className="text-sm font-semibold" style={{ color: '#34D399' }}>KSh {Number(inv.amount).toLocaleString()} deployed</p>
                       <p className="text-green-400 text-xs">+KSh {dailyReturn.toLocaleString()}/day</p>
                     </div>
                   </div>
@@ -854,6 +900,15 @@ export default function Dashboard() {
                     <span>Target: KSh {targetTotal.toLocaleString()}</span>
                     <span>Remaining: KSh {remaining.toLocaleString()}</span>
                   </div>
+                  {/* Feature 4: Node Health Indicator */}
+                  <div className="flex items-center gap-2 mt-2 mb-2 px-2 py-1.5 rounded-lg" style={{ background: 'rgba(16,185,129,0.05)', border: '1px solid rgba(16,185,129,0.1)' }}>
+                    <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                    <p className="text-[10px] font-semibold" style={{ color: '#34D399' }}>Node Running — Earning KSh {dailyReturn.toLocaleString()}/day</p>
+                    {daysPassed > 0 && daysPassed < totalDays && (
+                      <span className="text-[10px] ml-auto" style={{ color: 'var(--text-muted)' }}>Day {daysPassed}/{totalDays}</span>
+                    )}
+                  </div>
+
                   <LiveYieldTicker investment={inv} />
                   <EarningsForecast investment={inv} />
                   <NodePerformanceMetrics investment={inv} />
@@ -888,6 +943,17 @@ export default function Dashboard() {
                       </div>
                     )
                   })()}
+
+                  {/* Feature 5: View Certificate button */}
+                  <div className="mt-3 text-center">
+                    <button
+                      onClick={() => setShowCertificate(inv)}
+                      className="text-[10px] px-3 py-1.5 rounded-lg font-semibold transition-all"
+                      style={{ background: 'rgba(255,215,0,0.08)', border: '1px solid rgba(255,215,0,0.2)', color: '#FFD700' }}
+                    >
+                      📄 View Node Certificate
+                    </button>
+                  </div>
                 </div>
               )
             })}
