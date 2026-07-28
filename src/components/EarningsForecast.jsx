@@ -1,45 +1,42 @@
-import { useEffect, useState } from 'react'
+import { useMemo } from 'react'
+import { WORKLOAD_MULTIPLIERS, getWorkloadYield } from '../lib/plans'
 
 export default function EarningsForecast({ investment }) {
-  const [forecast, setForecast] = useState({
-    daily: 0,
-    weekly: 0,
-    monthly: 0
-  })
-  
-  useEffect(() => {
-    if (!investment) return
-    
-    const daily = Number(investment.dailyReturn || 0)
-    const multiplier = investment.workload === 'finance' ? 1.25 : investment.workload === 'autonomous' ? 1.15 : 1.0
-    const adjustedDaily = daily * multiplier
-    
-    setForecast({
-      daily: adjustedDaily,
-      weekly: adjustedDaily * 7,
-      monthly: adjustedDaily * 30
-    })
-  }, [investment])
-  
+  const workload = investment?.workload || 'healthcare'
+  const w = WORKLOAD_MULTIPLIERS[workload] || WORKLOAD_MULTIPLIERS.healthcare
+
+  const daily = getWorkloadYield(Number(investment.amount || 0), workload)
+  const weekly = daily * 7
+  const monthly = daily * 30
+  const totalReturn = daily * 90
+
   return (
-    <div className="console-card mt-3">
-      <div className="console-label mb-3">Earnings Forecast</div>
+    <div className="rounded-xl p-3 mt-3" style={{ background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(52,211,153,0.1)' }}>
+      <div className="flex items-center justify-between mb-3">
+        <span className="text-[10px] uppercase tracking-widest font-semibold" style={{ color: '#34d399' }}>
+          Earnings Forecast
+        </span>
+        <span className="text-[9px] px-2 py-0.5 rounded-full" style={{ background: 'rgba(0,180,255,0.1)', color: '#00B4FF', border: '1px solid rgba(0,180,255,0.2)' }}>
+          {w.icon} {w.name}
+        </span>
+      </div>
       <div className="grid grid-cols-3 gap-2">
         <div className="text-center">
-          <div className="text-[10px] text-gray-500 uppercase">24H</div>
-          <div className="text-sm font-bold text-green-400">KSh {Math.round(forecast.daily).toLocaleString()}</div>
+          <div className="text-[9px] uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>24H</div>
+          <div className="text-sm font-bold text-green-400">KSh {daily.toLocaleString()}</div>
         </div>
-        <div className="text-center border-x border-gray-700">
-          <div className="text-[10px] text-gray-500 uppercase">7D</div>
-          <div className="text-sm font-bold text-green-400">KSh {Math.round(forecast.weekly).toLocaleString()}</div>
+        <div className="text-center" style={{ borderLeft: '1px solid rgba(255,255,255,0.06)', borderRight: '1px solid rgba(255,255,255,0.06)' }}>
+          <div className="text-[9px] uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>7D</div>
+          <div className="text-sm font-bold text-green-400">KSh {weekly.toLocaleString()}</div>
         </div>
         <div className="text-center">
-          <div className="text-[10px] text-gray-500 uppercase">30D</div>
-          <div className="text-sm font-bold text-green-400">KSh {Math.round(forecast.monthly).toLocaleString()}</div>
+          <div className="text-[9px] uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>30D</div>
+          <div className="text-sm font-bold text-green-400">KSh {monthly.toLocaleString()}</div>
         </div>
       </div>
-      <div className="text-[10px] text-gray-500 mt-2 text-center italic">
-        * Based on current {investment?.workload || 'healthcare'} workload
+      <div className="flex items-center justify-between mt-3 pt-2" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+        <span className="text-[9px]" style={{ color: 'var(--text-muted)' }}>90-Day Total</span>
+        <span className="text-xs font-bold text-yellow-400">KSh {totalReturn.toLocaleString()}</span>
       </div>
     </div>
   )

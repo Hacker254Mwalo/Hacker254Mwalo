@@ -1,5 +1,64 @@
-export const DAILY_RATE = 0.03 // 3% daily
+export const DAILY_RATE = 0.03 // 3% daily base rate
 export const DURATION_DAYS = 90
+
+// ── Workload Multipliers (Realistic AI Compute Yields) ──────────────────
+export const WORKLOAD_MULTIPLIERS = {
+  healthcare: {
+    id: 'healthcare',
+    name: 'Healthcare AI',
+    description: 'Medical imaging & drug discovery',
+    multiplier: 0.7, // ~2.1% daily (stable, predictable)
+    icon: '🏥',
+    status: 'Processing MRI Scan Data',
+    tempRange: [80, 92],
+    powerRange: [85, 95],
+    networkRange: [2, 5],
+  },
+  finance: {
+    id: 'finance',
+    name: 'Finance AI',
+    description: 'High-frequency trading models',
+    multiplier: 1.25, // ~3.75% daily (high risk/reward)
+    icon: '📊',
+    status: 'Executing Trading Algorithm',
+    tempRange: [55, 70],
+    powerRange: [70, 85],
+    networkRange: [8, 10],
+  },
+  autonomous: {
+    id: 'autonomous',
+    name: 'Autonomous AI',
+    description: 'Real-time LIDAR & self-driving',
+    multiplier: 0.95, // ~2.85% daily (high throughput)
+    icon: '🚗',
+    status: 'Processing LIDAR Point Cloud',
+    tempRange: [65, 80],
+    powerRange: [80, 90],
+    networkRange: [5, 8],
+  },
+}
+
+// ── Global Compute Demand (for realism) ──────────────────────────────────
+export const GLOBAL_DEMAND_TIERS = [
+  { min: 90, label: 'Critical', color: 'text-red-400' },
+  { min: 75, label: 'High', color: 'text-yellow-400' },
+  { min: 50, label: 'Moderate', color: 'text-green-400' },
+  { min: 0, label: 'Low', color: 'text-blue-400' },
+]
+
+export function getDemandTier(percentage) {
+  return GLOBAL_DEMAND_TIERS.find(t => percentage >= t.min) || GLOBAL_DEMAND_TIERS[GLOBAL_DEMAND_TIERS.length - 1]
+}
+
+export function getWorkloadYield(amount, workloadId) {
+  const w = WORKLOAD_MULTIPLIERS[workloadId] || { multiplier: 1 }
+  return Math.floor(amount * DAILY_RATE * w.multiplier)
+}
+
+export function getWorkloadTotalReturn(amount, workloadId) {
+  const w = WORKLOAD_MULTIPLIERS[workloadId] || { multiplier: 1 }
+  return Math.floor(amount * DAILY_RATE * w.multiplier * DURATION_DAYS)
+}
 export const LOGIN_BONUS = 50
 export const WITHDRAWAL_FEE = 0.08
 export const REF_L1 = 0.10
