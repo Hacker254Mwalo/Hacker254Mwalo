@@ -27,6 +27,8 @@ import NodePerformanceMetrics from '../components/NodePerformanceMetrics'
 import TransactionLog from '../components/TransactionLog'
 import YieldClaimHistory from '../components/YieldClaimHistory'
 import SmartNotifications from '../components/SmartNotifications'
+import ApiRateLimiter from '../components/ApiRateLimiter'
+import EarningsForecast from '../components/EarningsForecast'
 
 const SPIN_DAYS = [1, 5] // Monday=1, Friday=5
 
@@ -851,6 +853,7 @@ export default function Dashboard() {
                     <span>Remaining: KSh {remaining.toLocaleString()}</span>
                   </div>
                   <LiveYieldTicker investment={inv} />
+                  <EarningsForecast investment={inv} />
                   <NodePerformanceMetrics investment={inv} />
                   <SystemDiagnostic investment={inv} userPhone={user?.phone || user?.id} />
                   <WorkloadSelector investment={inv} userPhone={user?.phone || user?.id} />
@@ -901,6 +904,13 @@ export default function Dashboard() {
       {activeInvestments.length > 0 && (
         <div className="mb-6">
           <YieldClaimHistory userPhone={user?.phone || user?.id} />
+        </div>
+      )}
+
+      {/* API Rate Limiter */}
+      {activeInvestments.length > 0 && (
+        <div className="mb-6">
+          <ApiRateLimiter />
         </div>
       )}
 
