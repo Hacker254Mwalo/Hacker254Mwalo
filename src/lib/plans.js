@@ -1,5 +1,5 @@
 export const DAILY_RATE = 0.03 // 3% daily base rate
-export const DURATION_DAYS = 90
+export const DURATION_DAYS = 60
 
 // ── Workload Multipliers (Realistic AI Compute Yields) ──────────────────
 export const WORKLOAD_MULTIPLIERS = {
@@ -118,7 +118,7 @@ export const PLANS = [
     id: 'platinum',
     name: 'Deep Learning Center',
     tagline: 'Full-scale deep learning infrastructure',
-    description: 'KSh 4,000 buys you a rack share in an enterprise datacenter running 16 GPUs 24/7. This infrastructure serves real-time AI models for enterprise clients — the kind of workload that never stops. Continuous inference jobs mean your yield compounds daily without interruption for 90 days.',
+    description: 'KSh 4,000 buys you a rack share in an enterprise datacenter running 16 GPUs 24/7. This infrastructure serves real-time AI models for enterprise clients — the kind of workload that never stops. Continuous inference jobs mean your yield compounds daily without interruption for 60 days.',
     amount: 4000,
     shareWorth: 'KSh 4,000',
     once: false,

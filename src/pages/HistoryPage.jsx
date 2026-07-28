@@ -242,7 +242,7 @@ export default function HistoryPage() {
               </div>
               {investments.map(inv => {
                 const startDate = inv.startedAt ? new Date(inv.startedAt) : new Date(inv.date)
-                const endDate = inv.endsAt ? new Date(inv.endsAt) : new Date(startDate.getTime() + 90 * 86400000)
+                const endDate = inv.endsAt ? new Date(inv.endsAt) : new Date(startDate.getTime() + 60 * 86400000)
                 const now = new Date()
                 const totalDays = Math.max(1, Math.ceil((endDate - startDate) / 86400000))
                 const daysPassed = inv.status === 'active'

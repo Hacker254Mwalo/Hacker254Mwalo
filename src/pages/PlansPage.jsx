@@ -155,7 +155,7 @@ function PlanCard({ plan, onInvest, alreadyUsed, initialWorkload, onWorkloadChan
         </div>
         <div className="rounded-xl p-3 text-center" style={{ background: 'var(--bg-elevated)' }}>
           <p className="text-yellow-400 font-bold text-base">KSh {total.toLocaleString()}</p>
-          <p className="text-[9px] mt-0.5" style={{ color: 'var(--text-secondary)' }}>90-Day Total</p>
+          <p className="text-[9px] mt-0.5" style={{ color: 'var(--text-secondary)' }}>60-Day Total</p>
         </div>
         <div className="rounded-xl p-3 text-center" style={{ background: 'var(--bg-elevated)' }}>
           <p className="text-cyan-400 font-bold text-base">{roi}%</p>
@@ -212,7 +212,7 @@ function ConfirmModal({ plan, workload, balance, onConfirm, onClose, confirming,
             ['Multiplier', `${w.multiplier >= 1 ? '+' : ''}${Math.round((w.multiplier - 1) * 100)}%`, w.multiplier >= 1 ? 'text-green-400' : 'text-yellow-400'],
             ['Share Worth', `KSh ${plan.amount.toLocaleString()}`, 'text-red-400'],
             ['24h Compute Yield', `KSh ${daily.toLocaleString()}`, 'text-green-400'],
-            ['90-Day Total Yield', `KSh ${total.toLocaleString()}`, 'text-yellow-400'],
+            ['60-Day Total Yield', `KSh ${total.toLocaleString()}`, 'text-yellow-400'],
             ['ROI', `${roi}%`, 'text-cyan-400'],
           ].map(([label, value, cls]) => (
             <div key={label} className="flex justify-between text-sm">

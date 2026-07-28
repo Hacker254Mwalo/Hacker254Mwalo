@@ -786,7 +786,7 @@ export default function Dashboard() {
       <div className="card mb-6 flex items-center justify-between bg-gradient-to-r from-gray-900 to-gray-800 border-red-900/40 hover:border-red-700/60 transition-colors">
         <div>
           <p className="font-bold">Start Computing</p>
-          <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>3% 24h Compute Yield • 90 days</p>
+          <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>3% 24h Compute Yield • 60 days</p>
         </div>
         <button onClick={() => navigate('/plans')} className="btn-primary text-sm py-2 px-5 whitespace-nowrap">
           Deploy Node →

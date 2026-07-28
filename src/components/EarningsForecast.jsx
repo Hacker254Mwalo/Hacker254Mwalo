@@ -8,7 +8,7 @@ export default function EarningsForecast({ investment }) {
   const daily = getWorkloadYield(Number(investment.amount || 0), workload)
   const weekly = daily * 7
   const monthly = daily * 30
-  const totalReturn = daily * 90
+  const totalReturn = daily * 60
 
   return (
     <div className="rounded-xl p-3 mt-3" style={{ background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(52,211,153,0.1)' }}>
@@ -35,7 +35,7 @@ export default function EarningsForecast({ investment }) {
         </div>
       </div>
       <div className="flex items-center justify-between mt-3 pt-2" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
-        <span className="text-[9px]" style={{ color: 'var(--text-muted)' }}>90-Day Total</span>
+        <span className="text-[9px]" style={{ color: 'var(--text-muted)' }}>60-Day Total</span>
         <span className="text-xs font-bold text-yellow-400">KSh {totalReturn.toLocaleString()}</span>
       </div>
     </div>
