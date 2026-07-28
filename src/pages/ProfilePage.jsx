@@ -1,10 +1,95 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { getReferrals, generateReferralCode, addDeposit, addWithdrawal, changePassword, getUser, withdrawBonus, transferBonusToMain } from '../lib/db'
 import { canChangePassword, recordPasswordChangeAttempt } from '../lib/storage'
 import { MPESA_PAYBILL, WITHDRAWAL_FEE } from '../lib/plans'
 
+// ── International Payment Methods ─────────────────────────────────────────────
+const PAYMENT_METHODS = [
+  {
+    id: 'mpesa',
+    name: 'M-Pesa',
+    icon: '💚',
+    color: '#10b981',
+    currencies: ['KES'],
+    minAmount: 100,
+    description: 'Mobile Money',
+    real: true,
+  },
+  {
+    id: 'bank_transfer',
+    name: 'Bank Transfer',
+    icon: '🏦',
+    color: '#3b82f6',
+    currencies: ['USD', 'EUR', 'GBP', 'KES', 'UGX', 'TZS'],
+    minAmount: 10, // USD equivalent
+    description: 'Wire / ACH / SEPA',
+    real: false,
+  },
+  {
+    id: 'card',
+    name: 'Credit Card',
+    icon: '💳',
+    color: '#f59e0b',
+    currencies: ['USD', 'EUR', 'GBP', 'KES'],
+    minAmount: 5,
+    description: 'Visa / Mastercard',
+    real: false,
+  },
+  {
+    id: 'crypto',
+    name: 'Crypto',
+    icon: '₿',
+    color: '#f97316',
+    currencies: ['USD', 'EUR', 'GBP'],
+    minAmount: 10,
+    description: 'BTC / ETH / USDT',
+    real: false,
+  },
+  {
+    id: 'paypal',
+    name: 'PayPal',
+    icon: '🅿️',
+    color: '#0070ba',
+    currencies: ['USD', 'EUR', 'GBP'],
+    minAmount: 10,
+    description: 'PayPal Transfer',
+    real: false,
+  },
+]
+
+// ── Currency Exchange Rates (hardcoded, approximate) ──────────────────────────
+const EXCHANGE_RATES = {
+  USD: { rate: 0.0077, symbol: '$', min: 1 },
+  EUR: { rate: 0.0072, symbol: '€', min: 1 },
+  GBP: { rate: 0.0061, symbol: '£', min: 1 },
+  KES: { rate: 1, symbol: 'KSh ', min: 100 },
+  UGX: { rate: 28.5, symbol: 'USh ', min: 3000 },
+  TZS: { rate: 19.5, symbol: 'TSh ', min: 2000 },
+}
+
+function convertFromKES(kesAmount, currency) {
+  const info = EXCHANGE_RATES[currency]
+  if (!info) return kesAmount
+  if (currency === 'KES') return kesAmount
+  return Math.max(info.min, Math.round(kesAmount * info.rate))
+}
+
+function convertToKES(amount, currency) {
+  const info = EXCHANGE_RATES[currency]
+  if (!info || currency === 'KES') return amount
+  return Math.round(amount / info.rate)
+}
+
+function getCurrencySymbol(currency) {
+  return EXCHANGE_RATES[currency]?.symbol || ''
+}
+
+// ── DepositModal (renamed to Top Up) ──────────────────────────────────────────
 function DepositModal({ user, onClose, onPending }) {
+  const [step, setStep] = useState(0) // 0=select method, 1=enter amount, 2=mpesa
+  const [method, setMethod] = useState(null)
+  const [currency, setCurrency] = useState('KES')
   const [amount, setAmount] = useState('')
   const [loading, setLoading] = useState(false)
   const [sent, setSent] = useState(false)
@@ -12,22 +97,42 @@ function DepositModal({ user, onClose, onPending }) {
   const [txCode, setTxCode] = useState('')
   const [txLoading, setTxLoading] = useState(false)
   const [txError, setTxError] = useState('')
-  const [paymentMethod, setPaymentMethod] = useState(null) // 'mpesa' | 'airtel' | null
+
+  const currentMin = method ? method.minAmount : 100
+
+  function handleMethodSelect(m) {
+    setMethod(m)
+    // Default to KES for M-Pesa, first supported currency for others
+    if (m.id === 'mpesa') {
+      setCurrency('KES')
+    } else {
+      setCurrency(m.currencies[0])
+    }
+    setAmount('')
+    setStep(1)
+  }
+
+  function handleContinueToPay() {
+    if (method.id === 'mpesa') {
+      setStep(2)
+    } else {
+      // Show recommendation to use M-Pesa
+      setStep(3)
+    }
+  }
 
   async function initiateStkPush() {
-    const amt = parseInt(amount)
-    if (!amt || amt < 100) return
+    const kAmount = convertToKES(parseInt(amount) || 0, currency)
+    if (!kAmount || kAmount < 100) return
     setLoading(true)
     try {
       const res = await fetch('/api/stk-push', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone: user.phone, amount: amt, userPhone: user.phone }),
+        body: JSON.stringify({ phone: user.phone, amount: kAmount, userPhone: user.phone }),
       })
       const data = await res.json()
       if (data.success || data.checkoutRequestId) {
-        // Server already persisted a PENDING deposit via insert_deposit RPC.
-        // Do NOT call addDeposit() again — that would create a duplicate row.
         setSent(true)
         onPending()
       } else {
@@ -42,11 +147,11 @@ function DepositModal({ user, onClose, onPending }) {
   async function submitManualCode() {
     const code = txCode.trim()
     if (!code) { setTxError('Please enter your M-Pesa transaction code.'); return }
-    const amt = parseInt(amount)
+    const kAmount = convertToKES(parseInt(amount) || 0, currency)
     setTxLoading(true)
     setTxError('')
     try {
-      await addDeposit(user.phone, { amount: amt, mpesaCode: code })
+      await addDeposit(user.phone, { amount: kAmount, mpesaCode: code })
       setSent(true)
       onPending()
     } catch {
@@ -55,15 +160,119 @@ function DepositModal({ user, onClose, onPending }) {
     setTxLoading(false)
   }
 
+  const sym = getCurrencySymbol(currency)
+
   return (
     <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4" onClick={onClose}>
       <div className="card max-w-sm w-full" onClick={e => e.stopPropagation()}>
-        <h3 className="text-xl font-bold mb-2">📱 Deposit via M-Pesa</h3>
+        {/* Step 0: Select Payment Method */}
+        {step === 0 && (
+          <>
+            <h3 className="text-xl font-bold mb-1">💰 Top Up</h3>
+            <p className="text-[11px] mb-4" style={{ color: 'var(--text-secondary)' }}>Select your preferred payment method</p>
 
-        {!sent ? (
+            <div className="space-y-2 mb-4">
+              {PAYMENT_METHODS.map(m => (
+                <button
+                  key={m.id}
+                  onClick={() => handleMethodSelect(m)}
+                  className="w-full flex items-center gap-3 p-3 rounded-xl border-2 transition-all text-left"
+                  style={{
+                    borderColor: 'var(--border)',
+                    background: 'var(--bg-input)',
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.borderColor = m.color }}
+                  onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)' }}
+                >
+                  <span className="text-xl">{m.icon}</span>
+                  <div className="flex-1">
+                    <p className="font-semibold text-sm">{m.name}</p>
+                    <p className="text-[10px]" style={{ color: 'var(--text-muted)' }}>{m.description}</p>
+                  </div>
+                  <div className="flex gap-1">
+                    {m.currencies.slice(0, 3).map(c => (
+                      <span key={c} className="text-[9px] px-1.5 py-0.5 rounded bg-gray-800" style={{ color: 'var(--text-muted)' }}>{c}</span>
+                    ))}
+                  </div>
+                  <span className="text-xs" style={{ color: m.color }}>→</span>
+                </button>
+              ))}
+            </div>
+
+            <button onClick={onClose} className="btn-secondary w-full text-sm">Cancel</button>
+          </>
+        )}
+
+        {/* Step 1: Enter Amount + Currency */}
+        {step === 1 && (
+          <>
+            <div className="flex items-center gap-2 mb-1">
+              <button onClick={() => setStep(0)} className="text-gray-400 text-sm">← Back</button>
+            </div>
+            <h3 className="text-xl font-bold mb-1">💰 Top Up — {method.icon} {method.name}</h3>
+            <p className="text-[11px] mb-4" style={{ color: 'var(--text-secondary)' }}>
+              {method.description} · Minimum {sym}{convertFromKES(currentMin, currency)}
+            </p>
+
+            <div className="mb-3">
+              <label className="text-xs mb-1 block" style={{ color: 'var(--text-secondary)' }}>Currency</label>
+              <div className="flex gap-1.5 flex-wrap">
+                {method.currencies.map(c => (
+                  <button
+                    key={c}
+                    onClick={() => { setCurrency(c); setAmount('') }}
+                    className={`text-[10px] px-2.5 py-1.5 rounded-lg font-semibold transition-all ${currency === c ? '' : ''}`}
+                    style={{
+                      background: currency === c ? method.color : 'var(--bg-elevated)',
+                      color: currency === c ? '#fff' : 'var(--text-muted)',
+                      border: currency === c ? `2px solid ${method.color}` : '1px solid var(--border)',
+                    }}
+                  >
+                    {c}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="mb-4">
+              <label className="text-xs mb-1 block" style={{ color: 'var(--text-secondary)' }}>
+                Amount ({sym}, min {sym}{convertFromKES(currentMin, currency)})
+              </label>
+              <input
+                className="input-field"
+                placeholder={`${sym}Min ${convertFromKES(currentMin, currency)}`}
+                type="number"
+                min={convertFromKES(currentMin, currency)}
+                value={amount}
+                onChange={e => setAmount(e.target.value)}
+              />
+              {amount && parseInt(amount) > 0 && (
+                <p className="text-[10px] mt-1" style={{ color: 'var(--text-muted)' }}>
+                  ≈ KSh {convertToKES(parseInt(amount), currency).toLocaleString()}
+                </p>
+              )}
+            </div>
+
+            <div className="flex gap-3">
+              <button onClick={onClose} className="btn-secondary flex-1">Cancel</button>
+              <button
+                onClick={handleContinueToPay}
+                disabled={!amount || parseInt(amount) < convertFromKES(currentMin, currency)}
+                className="btn-primary flex-1"
+                style={{ background: method.color, borderColor: method.color }}
+              >
+                Continue →
+              </button>
+            </div>
+          </>
+        )}
+
+        {/* Step 2: M-Pesa STK Push / Paybill */}
+        {step === 2 && !sent && (
           <>
             {!manualMode ? (
               <>
+                <h3 className="text-xl font-bold mb-2">📱 M-Pesa Top Up</h3>
                 <p className="text-sm mb-4" style={{ color: 'var(--text-secondary)' }}>
                   Enter the amount and we'll send an M-Pesa prompt to{' '}
                   <span className="font-semibold" style={{ color: 'var(--text-primary)' }}>{user.phone}</span>
@@ -76,73 +285,24 @@ function DepositModal({ user, onClose, onPending }) {
                     placeholder="Min KSh 100"
                     type="number"
                     min="100"
-                    value={amount}
-                    onChange={e => setAmount(e.target.value)}
+                    value={amount || (currency !== 'KES' ? String(convertToKES(parseInt(amount) || 0, currency)) : amount)}
+                    onChange={e => {
+                      const kAmount = parseInt(e.target.value)
+                      setAmount(String(convertFromKES(kAmount, currency)))
+                    }}
                   />
+                  {currency !== 'KES' && (
+                    <p className="text-[10px] mt-1" style={{ color: 'var(--text-muted)' }}>
+                      You entered {sym}{amount} ≈ KSh {convertToKES(parseInt(amount) || 0, currency).toLocaleString()}
+                    </p>
+                  )}
                 </div>
-
-                {/* Payment Method Selection */}
-                {!paymentMethod ? (
-                  <div className="mb-4">
-                    <label className="text-xs mb-2 block font-semibold" style={{ color: 'var(--text-secondary)' }}>Select Payment Method</label>
-                    <div className="flex gap-3">
-                      <button
-                        type="button"
-                        onClick={() => setPaymentMethod('mpesa')}
-                        className="flex-1 py-3 rounded-xl border-2 transition-all flex items-center justify-center gap-2"
-                        style={{
-                          borderColor: 'var(--border)',
-                          background: 'var(--bg-input)',
-                          color: 'var(--text-primary)',
-                        }}
-                        onMouseEnter={e => e.target.style.borderColor = '#10b981'}
-                        onMouseLeave={e => e.target.style.borderColor = 'var(--border)'}>
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <circle cx="12" cy="12" r="10" />
-                          <path d="M8 12h8M12 8v8" />
-                        </svg>
-                        <span className="font-semibold text-sm">M-Pesa</span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setPaymentMethod('airtel')}
-                        className="flex-1 py-3 rounded-xl border-2 transition-all flex items-center justify-center gap-2"
-                        style={{
-                          borderColor: 'var(--border)',
-                          background: 'var(--bg-input)',
-                          color: 'var(--text-primary)',
-                        }}
-                        onMouseEnter={e => e.target.style.borderColor = '#ef4444'}
-                        onMouseLeave={e => e.target.style.borderColor = 'var(--border)'}>
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8z" />
-                          <circle cx="12" cy="12" r="3" />
-                        </svg>
-                        <span className="font-semibold text-sm">Airtel Money</span>
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="mb-4 flex items-center justify-between p-3 rounded-xl" style={{ background: 'var(--bg-elevated)' }}>
-                    <span className="text-xs font-semibold" style={{ color: 'var(--text-secondary)' }}>
-                      {paymentMethod === 'mpesa' ? '💚 M-Pesa Selected' : '❤️ Airtel Money Selected'}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => setPaymentMethod(null)}
-                      className="text-xs px-2 py-1 rounded transition-colors"
-                      style={{ background: 'var(--border)', color: 'var(--text-secondary)' }}
-                    >
-                      Change
-                    </button>
-                  </div>
-                )}
 
                 <div className="flex gap-3">
                   <button onClick={onClose} className="btn-secondary flex-1">Cancel</button>
                   <button
                     onClick={initiateStkPush}
-                    disabled={loading || !amount || parseInt(amount) < 100 || !paymentMethod}
+                    disabled={loading || !amount || parseInt(amount) < 100}
                     className="btn-primary flex-1"
                   >
                     {loading ? 'Sending...' : 'Pay Now'}
@@ -155,45 +315,32 @@ function DepositModal({ user, onClose, onPending }) {
                   <p className="font-bold mb-2 flex items-center gap-2">
                     <span className="text-lg">⚠️</span> STK Prompt Unavailable
                   </p>
-                  <p className="mb-3 opacity-90">Please complete your deposit manually by sending <span className="font-bold text-white">KSh {Number(amount).toLocaleString()}</span> to the Paybill below:</p>
-                  
+                  <p className="mb-3 opacity-90">Please complete your top up manually by sending <span className="font-bold text-white">KSh {Number(convertToKES(parseInt(amount) || 0, currency)).toLocaleString()}</span> to the Paybill below:</p>
                   <div className="space-y-2 mb-2">
-                    <div className="flex items-center justify-between bg-black/40 p-2.5 rounded-lg border border-yellow-700/30">
-                      <div>
-                        <p className="text-[10px] uppercase opacity-60">Paybill Number</p>
-                        <p className="font-mono font-bold text-white tracking-wider">{MPESA_PAYBILL}</p>
-                      </div>
-                      <button 
-                        onClick={() => { navigator.clipboard.writeText(MPESA_PAYBILL); showToast('Paybill copied!') }}
-                        className="text-[10px] bg-yellow-700/50 hover:bg-yellow-700 text-white px-2 py-1 rounded font-bold transition-colors"
-                      >COPY</button>
+                    <div className="flex justify-between py-2 px-3 rounded-lg bg-black/20">
+                      <span className="opacity-70">Paybill Number</span>
+                      <span className="font-bold">{MPESA_PAYBILL}</span>
                     </div>
-                    
-                    <div className="flex items-center justify-between bg-black/40 p-2.5 rounded-lg border border-yellow-700/30">
-                      <div>
-                        <p className="text-[10px] uppercase opacity-60">Account Number</p>
-                        <p className="font-mono font-bold text-white tracking-wider">21210</p>
-                      </div>
-                      <button 
-                        onClick={() => { navigator.clipboard.writeText('21210'); showToast('Account copied!') }}
-                        className="text-[10px] bg-yellow-700/50 hover:bg-yellow-700 text-white px-2 py-1 rounded font-bold transition-colors"
-                      >COPY</button>
+                    <div className="flex justify-between py-2 px-3 rounded-lg bg-black/20">
+                      <span className="opacity-70">Account Number</span>
+                      <span className="font-bold">{user.phone}</span>
+                    </div>
+                    <div className="flex justify-between py-2 px-3 rounded-lg bg-black/20">
+                      <span className="opacity-70">Amount</span>
+                      <span className="font-bold">KSh {Number(convertToKES(parseInt(amount) || 0, currency)).toLocaleString()}</span>
                     </div>
                   </div>
+                  <p className="text-xs opacity-70">After sending, enter your M-Pesa transaction code below.</p>
                 </div>
 
                 <div className="mb-4">
-                  <label className="text-xs mb-1 block font-semibold" style={{ color: 'var(--text-primary)' }}>
-                    Enter M-Pesa Transaction Code
-                  </label>
-                  <p className="text-[10px] mb-2" style={{ color: 'var(--text-secondary)' }}>Paste the code from your M-Pesa SMS (e.g., SGR7ABCDEF)</p>
+                  <label className="text-xs mb-1 block" style={{ color: 'var(--text-secondary)' }}>M-Pesa Transaction Code</label>
                   <input
-                    className="input-field font-mono tracking-widest uppercase text-center text-lg py-3 border-2 border-red-900/30 focus:border-red-600"
-                    placeholder="QRL7ABCDEF"
-                    type="text"
-                    maxLength={12}
+                    className="input-field"
+                    placeholder="e.g. QWE7H3J5K"
                     value={txCode}
                     onChange={e => { setTxCode(e.target.value.toUpperCase()); setTxError('') }}
+                    maxLength={12}
                   />
                 </div>
 
@@ -214,20 +361,57 @@ function DepositModal({ user, onClose, onPending }) {
               </>
             )}
           </>
-        ) : (
+        )}
+
+        {/* Step 3: Non-M-Pesa method — recommend M-Pesa */}
+        {step === 3 && (
           <>
-            <div className="text-center py-6">
-              <p className="text-5xl mb-3">{manualMode ? '✅' : '📲'}</p>
-              <p className="text-green-400 font-bold text-lg mb-2">{manualMode ? 'Code Submitted!' : 'M-Pesa Prompt Sent!'}</p>
-              <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-                {manualMode
-                  ? 'Your transaction code has been saved for admin review.'
-                  : 'Check your phone and enter your M-Pesa PIN to complete the deposit.'}
+            <h3 className="text-xl font-bold mb-1">💰 {method.icon} {method.name}</h3>
+            <p className="text-[11px] mb-4" style={{ color: 'var(--text-muted)' }}>
+              {sym}{amount} · ≈ KSh {convertToKES(parseInt(amount) || 0, currency).toLocaleString()}
+            </p>
+
+            <div className="rounded-xl p-5 mb-4 text-center" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}>
+              <p className="text-3xl mb-3">🔜</p>
+              <h4 className="font-bold text-sm mb-2" style={{ color: '#60A5FA' }}>Coming Soon</h4>
+              <p className="text-xs mb-4" style={{ color: 'var(--text-secondary)' }}>
+                {method.name} support is being integrated into the platform. We're working with enterprise payment partners to bring you seamless international deposits.
               </p>
-              <p className="text-yellow-400 text-xs mt-3">⏳ Your deposit will appear as <strong>Pending</strong> until admin approves it.</p>
             </div>
-            <button onClick={onClose} className="btn-primary w-full">Done</button>
+
+            <div className="rounded-xl p-4 mb-4" style={{ background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.2)' }}>
+              <p className="text-sm font-semibold mb-2" style={{ color: '#34D399' }}>💡 Available Now: M-Pesa</p>
+              <p className="text-xs mb-3" style={{ color: 'var(--text-secondary)' }}>
+                For instant top up, M-Pesa is the fastest and most reliable option. Your funds are credited within seconds after confirmation.
+              </p>
+              <button
+                onClick={() => setStep(2)}
+                className="w-full py-2.5 rounded-xl font-semibold text-sm bg-green-600 hover:bg-green-500 text-white transition-colors"
+              >
+                💚 Top Up via M-Pesa →
+              </button>
+            </div>
+
+            <div className="flex gap-3">
+              <button onClick={() => setStep(0)} className="btn-secondary flex-1 text-xs">Change Method</button>
+              <button onClick={onClose} className="btn-primary flex-1 text-xs">Close</button>
+            </div>
           </>
+        )}
+
+        {/* Success */}
+        {sent && (
+          <div className="text-center py-6">
+            <p className="text-5xl mb-3">{manualMode ? '✅' : '📲'}</p>
+            <p className="text-green-400 font-bold text-lg mb-2">{manualMode ? 'Code Submitted!' : 'M-Pesa Prompt Sent!'}</p>
+            <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+              {manualMode
+                ? 'Your transaction code has been saved for admin review.'
+                : 'Check your phone and enter your M-Pesa PIN to complete the top up.'}
+            </p>
+            <p className="text-yellow-400 text-xs mt-3">⏳ Your top up will appear as <strong>Pending</strong> until admin approves it.</p>
+            <button onClick={onClose} className="btn-primary w-full mt-4">Done</button>
+          </div>
         )}
       </div>
     </div>
@@ -235,6 +419,8 @@ function DepositModal({ user, onClose, onPending }) {
 }
 
 function WithdrawModal({ balance, userPhone, onClose, onWithdraw }) {
+  const [step, setStep] = useState(0)
+  const [method, setMethod] = useState(null)
   const [amount, setAmount] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -259,62 +445,179 @@ function WithdrawModal({ balance, userPhone, onClose, onWithdraw }) {
   return (
     <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4" onClick={onClose}>
       <div className="card max-w-sm w-full" onClick={e => e.stopPropagation()}>
-        <h3 className="text-xl font-bold mb-4">💸 Withdraw</h3>
+        {/* Step 0: Select Method */}
+        {step === 0 && (
+          <>
+            <h3 className="text-xl font-bold mb-1">💸 Withdraw</h3>
+            <p className="text-[11px] mb-4" style={{ color: 'var(--text-secondary)' }}>Select withdrawal method</p>
 
-        <div className="space-y-4 mb-4">
-          <div>
-            <label className="text-xs mb-1 block" style={{ color: 'var(--text-secondary)' }}>Withdrawal Amount (KSh)</label>
-            <input
-              className="input-field"
-              placeholder={`Min KSh ${MIN_WITHDRAW}`}
-              type="number"
-              min={MIN_WITHDRAW}
-              max={balance}
-              value={amount}
-              onChange={e => { setAmount(e.target.value); setError('') }}
-            />
-          </div>
-          <div>
-            <label className="text-xs mb-1 block" style={{ color: 'var(--text-secondary)' }}>Withdrawal Number</label>
-            <div className="input-field font-semibold text-center" style={{ background: 'var(--bg-elevated)', cursor: 'not-allowed' }}>
-              {userPhone}
+            <div className="space-y-2 mb-4">
+              {PAYMENT_METHODS.map(m => (
+                <button
+                  key={m.id}
+                  onClick={() => { setMethod(m); setStep(1) }}
+                  className="w-full flex items-center gap-3 p-3 rounded-xl border-2 transition-all text-left"
+                  style={{
+                    borderColor: 'var(--border)',
+                    background: 'var(--bg-input)',
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.borderColor = m.color }}
+                  onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)' }}
+                >
+                  <span className="text-xl">{m.icon}</span>
+                  <div className="flex-1">
+                    <p className="font-semibold text-sm">{m.name}</p>
+                    <p className="text-[10px]" style={{ color: 'var(--text-muted)' }}>{m.description}</p>
+                  </div>
+                  <span className="text-xs" style={{ color: m.color }}>→</span>
+                </button>
+              ))}
             </div>
-            <p className="text-[10px] mt-1" style={{ color: 'var(--text-muted)' }}>Withdrawals can only be sent to your registered number</p>
-          </div>
-        </div>
 
-        {amount && parseInt(amount) > 0 && (
-          <div className="rounded-xl p-4 mb-4 space-y-2 text-sm" style={{ background: 'var(--bg-elevated)' }}>
-            <div className="flex justify-between">
-              <span style={{ color: 'var(--text-secondary)' }}>Amount</span>
-              <span>KSh {parseInt(amount).toLocaleString()}</span>
-            </div>
-            <div className="flex justify-between">
-              <span style={{ color: 'var(--text-secondary)' }}>Processing Fee ({Math.round(WITHDRAWAL_FEE * 100)}%)</span>
-              <span className="text-red-400">-KSh {fee.toLocaleString()}</span>
-            </div>
-            <hr style={{ borderColor: 'var(--border)' }} />
-            <div className="flex justify-between font-bold">
-              <span>You Receive</span>
-              <span className="text-green-400">KSh {receives.toLocaleString()}</span>
-            </div>
-          </div>
+            <button onClick={onClose} className="btn-secondary w-full text-sm">Cancel</button>
+          </>
         )}
 
-        {parseInt(amount) > balance && (
-          <p className="text-red-400 text-xs mb-4">Amount exceeds available balance (KSh {balance.toLocaleString()})</p>
-        )}
+        {/* Step 1: Enter amount */}
+        {step === 1 && (
+          <>
+            <div className="flex items-center gap-2 mb-1">
+              <button onClick={() => setStep(0)} className="text-gray-400 text-sm">← Back</button>
+            </div>
+            <h3 className="text-xl font-bold mb-1">💸 Withdraw — {method.icon} {method.name}</h3>
 
-        {error && (
-          <div className="bg-red-900/40 border border-red-700 text-red-300 text-sm rounded-lg px-4 py-3 mb-4">{error}</div>
-        )}
+            {method.id === 'mpesa' ? (
+              <>
+                <div className="space-y-4 mb-4">
+                  <div>
+                    <label className="text-xs mb-1 block" style={{ color: 'var(--text-secondary)' }}>Withdrawal Amount (KSh)</label>
+                    <input
+                      className="input-field"
+                      placeholder={`Min KSh ${MIN_WITHDRAW}`}
+                      type="number"
+                      min={MIN_WITHDRAW}
+                      max={balance}
+                      value={amount}
+                      onChange={e => { setAmount(e.target.value); setError('') }}
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs mb-1 block" style={{ color: 'var(--text-secondary)' }}>Withdrawal Number</label>
+                    <div className="input-field font-semibold text-center" style={{ background: 'var(--bg-elevated)', cursor: 'not-allowed' }}>
+                      {userPhone}
+                    </div>
+                    <p className="text-[10px] mt-1" style={{ color: 'var(--text-muted)' }}>Withdrawals can only be sent to your registered number</p>
+                  </div>
+                </div>
 
-        <div className="flex gap-3">
-          <button onClick={onClose} className="btn-secondary flex-1">Cancel</button>
-          <button onClick={confirm} disabled={!canWithdraw || loading} className="btn-primary flex-1">
-            {loading ? 'Processing...' : 'Withdraw'}
-          </button>
-        </div>
+                {amount && parseInt(amount) > 0 && (
+                  <div className="rounded-xl p-4 mb-4 space-y-2 text-sm" style={{ background: 'var(--bg-elevated)' }}>
+                    <div className="flex justify-between">
+                      <span style={{ color: 'var(--text-secondary)' }}>Amount</span>
+                      <span>KSh {parseInt(amount).toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span style={{ color: 'var(--text-secondary)' }}>Processing Fee ({Math.round(WITHDRAWAL_FEE * 100)}%)</span>
+                      <span className="text-red-400">-KSh {fee.toLocaleString()}</span>
+                    </div>
+                    <hr style={{ borderColor: 'var(--border)' }} />
+                    <div className="flex justify-between font-bold">
+                      <span>You Receive</span>
+                      <span className="text-green-400">KSh {receives.toLocaleString()}</span>
+                    </div>
+                  </div>
+                )}
+
+                {parseInt(amount) > balance && (
+                  <p className="text-red-400 text-xs mb-4">Amount exceeds available balance (KSh {balance.toLocaleString()})</p>
+                )}
+
+                {error && (
+                  <div className="bg-red-900/40 border border-red-700 text-red-300 text-sm rounded-lg px-4 py-3 mb-4">{error}</div>
+                )}
+
+                <div className="flex gap-3">
+                  <button onClick={onClose} className="btn-secondary flex-1">Cancel</button>
+                  <button onClick={confirm} disabled={!canWithdraw || loading} className="btn-primary flex-1">
+                    {loading ? 'Processing...' : 'Withdraw'}
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="space-y-4 mb-4">
+                  <div>
+                    <label className="text-xs mb-1 block" style={{ color: 'var(--text-secondary)' }}>Withdrawal Amount (KSh)</label>
+                    <input
+                      className="input-field"
+                      placeholder={`Min KSh ${MIN_WITHDRAW}`}
+                      type="number"
+                      min={MIN_WITHDRAW}
+                      max={balance}
+                      value={amount}
+                      onChange={e => { setAmount(e.target.value); setError('') }}
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs mb-1 block" style={{ color: 'var(--text-secondary)' }}>Withdrawal Number</label>
+                    <div className="input-field font-semibold text-center" style={{ background: 'var(--bg-elevated)', cursor: 'not-allowed' }}>
+                      {userPhone}
+                    </div>
+                    <p className="text-[10px] mt-1" style={{ color: 'var(--text-muted)' }}>Withdrawals can only be sent to your registered number</p>
+                  </div>
+                </div>
+
+                {amount && parseInt(amount) > 0 && (
+                  <div className="rounded-xl p-4 mb-4 space-y-2 text-sm" style={{ background: 'var(--bg-elevated)' }}>
+                    <div className="flex justify-between">
+                      <span style={{ color: 'var(--text-secondary)' }}>Amount</span>
+                      <span>KSh {parseInt(amount).toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span style={{ color: 'var(--text-secondary)' }}>Processing Fee ({Math.round(WITHDRAWAL_FEE * 100)}%)</span>
+                      <span className="text-red-400">-KSh {fee.toLocaleString()}</span>
+                    </div>
+                    <hr style={{ borderColor: 'var(--border)' }} />
+                    <div className="flex justify-between font-bold">
+                      <span>You Receive</span>
+                      <span className="text-green-400">KSh {receives.toLocaleString()}</span>
+                    </div>
+                  </div>
+                )}
+
+                <div className="rounded-xl p-4 mb-4 text-center" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}>
+                  <p className="text-2xl mb-2">🔜</p>
+                  <h4 className="font-bold text-sm mb-1" style={{ color: '#60A5FA' }}>Coming Soon</h4>
+                  <p className="text-[11px]" style={{ color: 'var(--text-muted)' }}>
+                    {method.name} withdrawals are being integrated.
+                  </p>
+                </div>
+
+                <div className="rounded-xl p-4 mb-4" style={{ background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.2)' }}>
+                  <p className="text-sm font-semibold mb-2" style={{ color: '#34D399' }}>💡 Available Now: M-Pesa</p>
+                  <p className="text-xs mb-3" style={{ color: 'var(--text-secondary)' }}>
+                    For instant withdrawals, M-Pesa is the fastest option. Funds arrive in your M-Pesa account instantly.
+                  </p>
+                  <button
+                    onClick={() => setMethod(PAYMENT_METHODS[0])}
+                    className="w-full py-2.5 rounded-xl font-semibold text-sm bg-green-600 hover:bg-green-500 text-white transition-colors"
+                  >
+                    💚 Withdraw via M-Pesa →
+                  </button>
+                </div>
+
+                {error && (
+                  <div className="bg-red-900/40 border border-red-700 text-red-300 text-sm rounded-lg px-4 py-3 mb-4">{error}</div>
+                )}
+
+                <div className="flex gap-3">
+                  <button onClick={() => setStep(0)} className="btn-secondary flex-1 text-xs">Change Method</button>
+                  <button onClick={onClose} className="btn-primary flex-1 text-xs">Close</button>
+                </div>
+              </>
+            )}
+          </>
+        )}
       </div>
     </div>
   )
@@ -411,10 +714,10 @@ function BonusTransferModal({ bonusBalance, onClose, onTransfer }) {
   const [amount, setAmount] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+
   const fee = Math.floor(parseInt(amount || 0) * 0.08)
-  const net = Math.max(0, parseInt(amount || 0) - fee)
-  const MIN_TRANSFER = 100
-  const canTransfer = parseInt(amount) >= MIN_TRANSFER && parseInt(amount) <= bonusBalance
+  const receives = Math.max(0, parseInt(amount || 0) - fee)
+  const canTransfer = parseInt(amount) > 0 && parseInt(amount) <= bonusBalance
 
   async function confirm() {
     setLoading(true)
@@ -431,48 +734,42 @@ function BonusTransferModal({ bonusBalance, onClose, onTransfer }) {
   return (
     <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4" onClick={onClose}>
       <div className="card max-w-sm w-full" onClick={e => e.stopPropagation()}>
-        <h3 className="text-xl font-bold mb-1">🔄 Transfer Bonus to Balance</h3>
-        <p className="text-xs mb-4" style={{ color: 'var(--text-secondary)' }}>Minimum KSh 100 · 8% tax applies on transfer</p>
+        <h3 className="text-xl font-bold mb-1">⚡ Transfer Bonus</h3>
+        <p className="text-xs mb-4" style={{ color: 'var(--text-secondary)' }}>Move bonus to main balance · 8% network fee</p>
 
-        <div className="space-y-4 mb-4">
-          <div>
-            <label className="text-xs mb-1 block" style={{ color: 'var(--text-secondary)' }}>Amount (KSh)</label>
-            <input
-              className="input-field"
-              placeholder={`Min KSh ${MIN_TRANSFER} · Max KSh ${bonusBalance.toLocaleString()}`}
-              type="number"
-              min={MIN_TRANSFER}
-              max={bonusBalance}
-              value={amount}
-              onChange={e => { setAmount(e.target.value); setError('') }}
-            />
-          </div>
+        <div className="mb-4">
+          <label className="text-xs mb-1 block" style={{ color: 'var(--text-secondary)' }}>Amount (KSh)</label>
+          <input
+            className="input-field"
+            placeholder="Enter amount"
+            type="number"
+            min={1}
+            max={bonusBalance}
+            value={amount}
+            onChange={e => { setAmount(e.target.value); setError('') }}
+          />
         </div>
 
         {amount && parseInt(amount) > 0 && (
           <div className="rounded-xl p-4 mb-4 space-y-2 text-sm" style={{ background: 'var(--bg-elevated)' }}>
             <div className="flex justify-between">
-              <span style={{ color: 'var(--text-secondary)' }}>Transfer Amount</span>
+              <span style={{ color: 'var(--text-secondary)' }}>Amount</span>
               <span>KSh {parseInt(amount).toLocaleString()}</span>
             </div>
             <div className="flex justify-between">
-              <span style={{ color: 'var(--text-secondary)' }}>Tax (8%)</span>
+              <span style={{ color: 'var(--text-secondary)' }}>Network Fee (8%)</span>
               <span className="text-red-400">-KSh {fee.toLocaleString()}</span>
             </div>
             <hr style={{ borderColor: 'var(--border)' }} />
             <div className="flex justify-between font-bold">
               <span>Added to Balance</span>
-              <span className="text-green-400">KSh {net.toLocaleString()}</span>
+              <span className="text-green-400">KSh {receives.toLocaleString()}</span>
             </div>
           </div>
         )}
-        <div className="rounded-xl p-3 mb-4 text-sm text-center" style={{ background: 'var(--bg-elevated)' }}>
-          <p style={{ color: 'var(--text-secondary)' }}>Available Bonus</p>
-          <p className="text-xl font-black text-yellow-400">KSh {bonusBalance.toLocaleString()}</p>
-        </div>
 
         {parseInt(amount) > bonusBalance && (
-          <p className="text-red-400 text-xs mb-4">Amount exceeds bonus balance</p>
+          <p className="text-red-400 text-xs mb-4">Amount exceeds bonus balance (KSh {bonusBalance.toLocaleString()})</p>
         )}
 
         {error && (
@@ -482,7 +779,7 @@ function BonusTransferModal({ bonusBalance, onClose, onTransfer }) {
         <div className="flex gap-3">
           <button onClick={onClose} className="btn-secondary flex-1">Cancel</button>
           <button onClick={confirm} disabled={!canTransfer || loading} className="btn-primary flex-1">
-            {loading ? 'Transferring...' : 'Transfer'}
+            {loading ? 'Processing...' : 'Transfer'}
           </button>
         </div>
       </div>
@@ -491,375 +788,416 @@ function BonusTransferModal({ bonusBalance, onClose, onTransfer }) {
 }
 
 export default function ProfilePage() {
-  const { user, updateUser, logout } = useAuth()
+  const { user, updateUser } = useAuth()
+  const [toast, setToast] = useState({ msg: '', type: 'success' })
   const [showDeposit, setShowDeposit] = useState(false)
   const [showWithdraw, setShowWithdraw] = useState(false)
   const [showBonusWithdraw, setShowBonusWithdraw] = useState(false)
   const [showBonusTransfer, setShowBonusTransfer] = useState(false)
-  const [toast, setToast] = useState({ msg: '', type: 'success' })
-  const [copied, setCopied] = useState(false)
+  const [showReferral, setShowReferral] = useState(false)
+  const [showChangePassword, setShowChangePassword] = useState(false)
   const [referrals, setReferrals] = useState([])
-  const [showPwForm, setShowPwForm] = useState(false)
-  const [loading, setLoading] = useState(false)
-  const [currentPw, setCurrentPw] = useState('')
-  const [newPw, setNewPw] = useState('')
-  const [confirmPw, setConfirmPw] = useState('')
-  const [pwError, setPwError] = useState('')
-  const [pwLoading, setPwLoading] = useState(false)
+  const [passwordError, setPasswordError] = useState('')
+  const [passwordSuccess, setPasswordSuccess] = useState('')
+
+  const params = new URLSearchParams(window.location.search)
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search)
     if (params.get('deposit') === '1') {
       setShowDeposit(true)
-      window.history.replaceState({}, '', window.location.pathname)
     }
   }, [])
 
-  const refCode = user ? (user.referralCode || generateReferralCode(user.phone)) : ''
-  const baseUrl = 'https://dumiropay.space'
-  const link = `${baseUrl}/r/${refCode}`
-  const totalL1 = referrals.filter(r => r.level === 1).reduce((s, r) => s + Number(r.commission || 0), 0)
-  const totalL2 = referrals.filter(r => r.level === 2).reduce((s, r) => s + Number(r.commission || 0), 0)
-  const mustChangePw = user?.must_change_password
-
-  const isAdmin = user?.isAdmin === true
-
-  useEffect(() => {
-    if (!user) return
-    getReferrals(user.phone || user.id).then(setReferrals).catch(() => {})
-  }, [user])
-
   function showToast(msg, type = 'success') {
     setToast({ msg, type })
-    setTimeout(() => setToast({ msg: '', type: 'success' }), 3000)
+    setTimeout(() => setToast({ msg: '', type: 'success' }), 3500)
   }
 
-  function copyLink() {
-    navigator.clipboard.writeText(link).then(() => {
-      setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
-    })
-  }
-
-  async function handleChangePassword(e) {
-    e.preventDefault()
-    setPwError('')
-    if (!currentPw || !newPw || !confirmPw) { setPwError('All fields are required'); return }
-    if (newPw !== confirmPw) { setPwError('New passwords do not match'); return }
-    if (newPw.length < 4) { setPwError('PIN must be at least 4 digits'); return }
-    if (newPw === currentPw) { setPwError('New PIN must be different from current'); return }
-
-    const rate = canChangePassword(user.phone || user.id)
-    if (!rate.allowed) { setPwError('Too many attempts. Please try again later.'); return }
-
-    setPwLoading(true)
-    recordPasswordChangeAttempt(user.phone || user.id)
+  async function handleDepositComplete() {
     try {
-      await changePassword(user.phone || user.id, currentPw, newPw)
-      updateUser({ must_change_password: false })
-      setCurrentPw(''); setNewPw(''); setConfirmPw('')
-      setShowPwForm(false)
-      showToast('✅ Password updated successfully!')
-    } catch (err) {
-      setPwError(err.message || 'Failed to update password')
-    }
-    setPwLoading(false)
+      const fresh = await getUser(user.phone)
+      if (fresh) updateUser({ balance: fresh.balance })
+    } catch { /* silent */ }
   }
 
-  async function handleBonusWithdraw(amount, mpesaPhone) {
-    setLoading(true)
-    try {
-      const result = await withdrawBonus(user.phone || user.id, amount, mpesaPhone)
-      if (result?.new_bonus_balance !== undefined) {
-        updateUser({ bonusBalance: result.new_bonus_balance })
-      }
-      const fresh = await getUser(user.phone || user.id)
-      if (fresh) updateUser({ balance: fresh.balance, bonusBalance: fresh.bonus_balance || 0 })
-      showToast(`✅ Bonus withdrawal of KSh ${amount.toLocaleString()} initiated! (Fee: 5% = KSh ${Math.floor(amount * 0.05).toLocaleString()}, You receive: KSh ${Math.floor(amount * 0.95).toLocaleString()})`)
-    } catch (err) {
-      showToast(err.message || 'Bonus withdrawal failed', 'error')
-    }
-    setLoading(false)
+  async function handleWithdraw(amount, phone) {
+    const result = await addWithdrawal(phone, { amount })
+    const fresh = await getUser(phone)
+    if (fresh) updateUser({ balance: fresh.balance })
+    showToast(`✅ Withdrawal of KSh ${amount.toLocaleString()} initiated to ${phone}`)
+    return result
+  }
+
+  async function handleBonusWithdraw(amount, phone) {
+    const result = await withdrawBonus(phone, { amount })
+    const fresh = await getUser(phone)
+    if (fresh) updateUser({ balance: fresh.balance, bonusBalance: fresh.bonusBalance })
+    showToast(`✅ Bonus withdrawal of KSh ${amount.toLocaleString()} initiated`)
+    return result
   }
 
   async function handleBonusTransfer(amount) {
-    setLoading(true)
-    try {
-      const result = await transferBonusToMain(user.phone || user.id, amount)
-      if (result?.new_balance !== undefined) {
-        updateUser({ balance: result.new_balance, bonusBalance: result.new_bonus_balance })
-      }
-      const tax = Math.floor(amount * 0.08)
-      showToast(`✅ KSh ${(amount - tax).toLocaleString()} added to balance! (Tax: KSh ${tax.toLocaleString()})`)
-    } catch (err) {
-      showToast(err.message || 'Transfer failed', 'error')
-    }
-    setLoading(false)
+    const result = await transferBonusToMain(user.phone, { amount })
+    const fresh = await getUser(user.phone)
+    if (fresh) updateUser({ balance: fresh.balance, bonusBalance: fresh.bonusBalance })
+    showToast(`✅ KSh ${amount.toLocaleString()} bonus transferred to balance`)
+    return result
   }
 
-  // Atomic withdrawal — balance deducted inside DB function
-  async function handleWithdraw(amount, mpesaPhone) {
-    const fee = Math.floor(amount * WITHDRAWAL_FEE)
-    const netAmount = amount - fee
-    const result = await addWithdrawal(user.phone || user.id, { amount, fee, netAmount, mpesaPhone })
-    // Refresh balance from DB result or fetch fresh
-    if (result?.new_balance !== undefined) {
-      updateUser({ balance: result.new_balance })
-    } else {
-      const fresh = await getUser(user.phone || user.id)
-      if (fresh) updateUser({ balance: fresh.balance })
+  async function handleChangePassword(currentPin, newPin) {
+    setPasswordError('')
+    setPasswordSuccess('')
+    try {
+      await changePassword(user.phone, { currentPin, newPin })
+      setPasswordSuccess('Password changed successfully!')
+      setTimeout(() => { setShowChangePassword(false); setPasswordSuccess('') }, 2000)
+    } catch (err) {
+      setPasswordError(err.message || 'Failed to change password.')
     }
-    showToast(`✅ Withdrawal of KSh ${netAmount.toLocaleString()} initiated! (Fee: KSh ${fee})`)
   }
+
+  useEffect(() => {
+    if (user?.phone) {
+      getReferrals(user.phone).then(setReferrals).catch(() => {})
+    }
+  }, [user?.phone])
 
   return (
-    <div className="pt-4 md:pt-20 pb-24 md:pb-8 px-4 max-w-2xl mx-auto">
-      {toast.msg && (
-        <div className={`fixed top-4 left-1/2 -translate-x-1/2 z-50 px-6 py-3 rounded-xl shadow-lg text-sm font-medium border ${
-          toast.type === 'error'
-            ? 'bg-red-900 border-red-700 text-red-100'
-            : 'bg-green-800 border-green-600 text-white'
-        }`}>
-          {toast.msg}
-        </div>
-      )}
-
-      {showDeposit && (
-        <DepositModal
-          user={user}
-          onClose={() => setShowDeposit(false)}
-          onPending={() => showToast('✅ Deposit pending admin approval!')}
-        />
-      )}
-      {showWithdraw && (
-        <WithdrawModal
-          balance={user?.balance || 0}
-          userPhone={user?.phone}
-          onClose={() => setShowWithdraw(false)}
-          onWithdraw={handleWithdraw}
-        />
-      )}
-      {showBonusWithdraw && (
-        <BonusWithdrawModal
-          bonusBalance={user?.bonusBalance || 0}
-          userPhone={user?.phone}
-          onClose={() => setShowBonusWithdraw(false)}
-          onWithdraw={handleBonusWithdraw}
-        />
-      )}
-      {showBonusTransfer && (
-        <BonusTransferModal
-          bonusBalance={user?.bonusBalance || 0}
-          onClose={() => setShowBonusTransfer(false)}
-          onTransfer={handleBonusTransfer}
-        />
-      )}
-
-      {/* Profile Header */}
-      <div className="card mb-6 flex items-center gap-4">
-        <div className="w-16 h-16 rounded-full bg-gradient-to-br from-red-600 to-pink-600 flex items-center justify-center text-2xl font-black flex-shrink-0">
-          {user?.name?.[0]?.toUpperCase() || 'U'}
-        </div>
-        <div className="flex-1 min-w-0">
-          <p className="font-bold text-lg truncate">{user?.name}</p>
-          <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>{user?.phone}</p>
-          <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>
-            Member since {user?.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'N/A'}
-          </p>
-        </div>
-        {isAdmin && (
-          <a href="/admin" className="text-xs bg-yellow-600 hover:bg-yellow-500 text-white px-3 py-1.5 rounded-lg font-semibold transition-colors">
-            ⚙️ Admin
-          </a>
-        )}
-      </div>
-
-      {/* Balance */}
-      <div className="balance-gradient rounded-2xl p-5 mb-6">
-        <p className="text-gray-400 text-sm mb-1">Available Balance</p>
-        <p className="text-3xl font-black">KSh {(user?.balance || 0).toLocaleString()}</p>
-        <div className="flex gap-3 mt-4">
-          <button onClick={() => setShowDeposit(true)} className="btn-primary flex-1 text-sm py-2.5">
-            + Deposit
-          </button>
-          <button onClick={() => setShowWithdraw(true)} className="btn-secondary flex-1 text-sm py-2.5">
-            Withdraw
-          </button>
-        </div>
-      </div>
-      {/* Bonus Balance */}
-      {(user?.bonusBalance || 0) > 0 && (
-        <div className="rounded-2xl p-5 mb-6" style={{ background: 'linear-gradient(135deg, #78350f 0%, #451a03 100%)', border: '1px solid rgba(234, 179, 8, 0.3)' }}>
-          <p className="text-yellow-400/80 text-sm mb-1">Bonus Balance</p>
-          <p className="text-3xl font-black text-yellow-400">KSh {(user.bonusBalance || 0).toLocaleString()}</p>
-          <div className="flex gap-3 mt-4">
-            <button
-              onClick={() => setShowBonusWithdraw(true)}
-              disabled={(user.bonusBalance || 0) < 500}
-              className="flex-1 text-sm py-2.5 rounded-xl font-semibold transition-colors"
-              style={{
-                background: (user.bonusBalance || 0) >= 500 ? '#eab308' : '#374151',
-                color: (user.bonusBalance || 0) >= 500 ? '#000' : '#6b7280',
-              }}
-            >
-              Withdraw Bonus
-            </button>
-            <button
-              onClick={() => setShowBonusTransfer(true)}
-              className="flex-1 text-sm py-2.5 rounded-xl font-semibold transition-colors"
-              style={{ background: 'rgba(234, 179, 8, 0.15)', color: '#eab308', border: '1px solid rgba(234, 179, 8, 0.3)' }}
-            >
-              Transfer to Balance
-            </button>
-          </div>
-          <p className="text-yellow-400/60 text-xs mt-2">
-            Min KSh 500 to withdraw bonus · Min KSh 100 to transfer to balance
-          </p>
-        </div>
-      )}
-      {/* Referral Section */}
-      <div className="card mb-6">
-        <h3 className="font-bold text-lg mb-1">🤝 Referral Program</h3>
-        <p className="text-xs mb-4" style={{ color: 'var(--text-secondary)' }}>
-          Earn 10% (Level 1) &amp; 4% (Level 2) on referred users' first investment
-        </p>
-
-        <div className="grid grid-cols-2 gap-3 mb-4">
-          <div className="rounded-xl p-3 text-center" style={{ background: 'var(--bg-elevated)' }}>
-            <p className="text-green-400 font-bold text-lg">KSh {totalL1.toLocaleString()}</p>
-            <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>Level 1 Earnings</p>
-          </div>
-          <div className="rounded-xl p-3 text-center" style={{ background: 'var(--bg-elevated)' }}>
-            <p className="text-blue-400 font-bold text-lg">KSh {totalL2.toLocaleString()}</p>
-            <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>Level 2 Earnings</p>
-          </div>
-        </div>
-
-        <div className="rounded-xl p-3 mb-3" style={{ background: 'var(--bg-elevated)' }}>
-          <p className="text-xs mb-1" style={{ color: 'var(--text-secondary)' }}>Your Referral Code</p>
-          <p className="text-xl font-black text-red-400 tracking-wider">{refCode}</p>
-        </div>
-
-        <div className="flex items-center gap-2 rounded-xl p-3 mb-3" style={{ background: 'var(--bg-elevated)' }}>
-          <p className="text-xs flex-1 truncate" style={{ color: 'var(--text-primary)' }}>{link}</p>
-          <button onClick={copyLink} className="text-xs bg-red-600 hover:bg-red-500 text-white px-3 py-1.5 rounded-lg flex-shrink-0 transition-colors">
-            {copied ? '✓ Copied' : 'Copy'}
-          </button>
-        </div>
-
-        {referrals.length > 0 ? (
-          <div className="space-y-2 mt-4">
-            <p className="text-sm font-semibold uppercase tracking-wider" style={{ color: 'var(--text-secondary)' }}>Referral History</p>
-            {referrals.map((r, i) => {
-              const maskedPhone = r.referredPhone
-                ? r.referredPhone.slice(0, 5) + '***'
-                : 'Unknown'
-              const hasInvested = r.isInvested
-              return (
-                <div key={i} className="flex items-center justify-between rounded-xl px-4 py-3" style={{ background: 'var(--bg-elevated)' }}>
-                  <div>
-                    <p className="text-sm font-medium">{r.referredName || maskedPhone}</p>
-                    <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{maskedPhone} • Level {r.level}</p>
-                    <div className="flex items-center gap-1.5 mt-1">
-                      <span className={`inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full font-bold ${
-                        hasInvested
-                          ? 'bg-green-900/50 text-green-300'
-                          : 'bg-yellow-900/50 text-yellow-300'
-                      }`}>
-                        <span className={`w-1.5 h-1.5 rounded-full ${hasInvested ? 'bg-green-400' : 'bg-yellow-400'}`}/>
-                        {hasInvested ? 'Active' : 'Pending Investment'}
-                      </span>
-                      {r.planName && <span className="text-[10px]" style={{ color: 'var(--text-muted)' }}>• {r.planName}</span>}
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    {r.commission > 0 ? (
-                      <>
-                        <p className="text-green-400 font-semibold text-sm">+KSh {r.commission.toLocaleString()}</p>
-                        <p className="text-[10px]" style={{ color: 'var(--text-muted)' }}>{new Date(r.date).toLocaleDateString()}</p>
-                      </>
-                    ) : (
-                      <p className="text-yellow-400 text-xs font-medium">Earns on 1st investment</p>
-                    )}
-                  </div>
-                </div>
-              )
-            })}
-          </div>
-        ) : (
-          <p className="text-center text-sm py-4" style={{ color: 'var(--text-muted)' }}>No referrals yet. Share your code to earn!</p>
-        )}
-      </div>
-
-      {/* Temporary password warning */}
-      {mustChangePw && (
-        <div className="card mb-6 border-yellow-700 bg-yellow-900/20">
-          <div className="flex items-center gap-2 mb-2">
-            <span className="text-2xl">⚠️</span>
-            <p className="font-bold text-yellow-400">Temporary Password</p>
-          </div>
-          <p className="text-sm mb-4" style={{ color: 'var(--text-secondary)' }}>
-            You are using a temporary password. Please change it immediately to secure your account.
-          </p>
-          <button onClick={() => setShowPwForm(true)} className="btn-primary w-full text-sm py-2.5">Change Password Now</button>
-        </div>
-      )}
-
-      {/* Security */}
-      <div className="card mb-6">
-        <div className="flex items-center justify-between mb-4">
+    <div className="min-h-screen" style={{ background: 'var(--bg-primary)' }}>
+      <div className="max-w-md mx-auto px-4 pt-6 pb-24">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-6">
           <div>
-            <h3 className="font-bold text-lg">🔒 Security</h3>
-            <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>Manage your PIN</p>
+            <h1 className="text-2xl font-black">Profile</h1>
+            <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>
+              {user?.phone || 'Loading...'}
+            </p>
           </div>
-          {!showPwForm && !mustChangePw && (
-            <button onClick={() => setShowPwForm(true)} className="text-xs px-3 py-1.5 rounded-lg transition-colors" style={{ background: 'var(--bg-elevated)', color: 'var(--text-primary)' }}>
-              Change PIN
+          {user?.isAdmin && (
+            <a href="/admin" className="text-xs bg-yellow-600 hover:bg-yellow-500 text-white px-3 py-1.5 rounded-lg font-semibold transition-colors">
+              ⚙️ Admin
+            </a>
+          )}
+        </div>
+
+        {/* Balance */}
+        <div className="balance-gradient rounded-2xl p-5 mb-6">
+          <p className="text-gray-400 text-sm mb-1">Available Balance</p>
+          <p className="text-3xl font-black">KSh {(user?.balance || 0).toLocaleString()}</p>
+          <div className="flex gap-3 mt-4">
+            <button onClick={() => setShowDeposit(true)} className="btn-primary flex-1 text-sm py-2.5">
+              + Top Up
+            </button>
+            <button onClick={() => setShowWithdraw(true)} className="btn-secondary flex-1 text-sm py-2.5">
+              Withdraw
+            </button>
+          </div>
+        </div>
+        {/* Bonus Balance */}
+        {(user?.bonusBalance || 0) > 0 && (
+          <div className="rounded-2xl p-5 mb-6" style={{ background: 'linear-gradient(135deg, #78350f 0%, #451a03 100%)', border: '1px solid rgba(234, 179, 8, 0.3)' }}>
+            <p className="text-yellow-400/80 text-sm mb-1">Bonus Balance</p>
+            <p className="text-3xl font-black text-yellow-400">KSh {(user.bonusBalance || 0).toLocaleString()}</p>
+            <div className="flex gap-3 mt-4">
+              <button
+                onClick={() => setShowBonusWithdraw(true)}
+                disabled={(user.bonusBalance || 0) < 500}
+                className="flex-1 text-sm py-2.5 rounded-xl font-semibold transition-colors"
+                style={{
+                  background: (user.bonusBalance || 0) >= 500 ? '#eab308' : '#374151',
+                  color: (user.bonusBalance || 0) >= 500 ? '#000' : '#6b7280',
+                }}
+              >
+                Withdraw Bonus
+              </button>
+              <button
+                onClick={() => setShowBonusTransfer(true)}
+                className="flex-1 text-sm py-2.5 rounded-xl font-semibold transition-colors"
+                style={{ background: 'rgba(234, 179, 8, 0.15)', color: '#eab308', border: '1px solid rgba(234, 179, 8, 0.3)' }}
+              >
+                ⚡ Transfer to Balance
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Quick Actions */}
+        <div className="grid grid-cols-2 gap-3 mb-6">
+          <button onClick={() => setShowReferral(true)} className="card p-4 text-center hover:border-yellow-700 transition-colors">
+            <span className="text-2xl">👥</span>
+            <p className="font-semibold text-sm mt-1">Refer & Earn</p>
+            <p className="text-[10px]" style={{ color: 'var(--text-muted)' }}>10% L1 · 4% L2</p>
+          </button>
+          <button onClick={() => setShowChangePassword(true)} className="card p-4 text-center hover:border-gray-600 transition-colors">
+            <span className="text-2xl">🔐</span>
+            <p className="font-semibold text-sm mt-1">Security</p>
+            <p className="text-[10px]" style={{ color: 'var(--text-muted)' }}>Change PIN</p>
+          </button>
+        </div>
+
+        {/* Info Cards */}
+        <div className="space-y-3">
+          <div className="card p-4">
+            <div className="flex items-start gap-3">
+              <span className="text-xl">ℹ️</span>
+              <div>
+                <p className="font-semibold text-sm mb-1">How it works</p>
+                <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
+                  Top up via M-Pesa to your balance. Invest in AI compute nodes to earn 3% daily yield.
+                  Withdraw anytime to your M-Pesa.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="card p-4">
+            <div className="flex items-start gap-3">
+              <span className="text-xl">⚠️</span>
+              <div>
+                <p className="font-semibold text-sm mb-1">Important</p>
+                <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
+                  Withdrawals can only be sent to your registered phone number.
+                  All transactions require admin approval and may take up to 24 hours.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Toast */}
+        {toast.msg && (
+          <div className={`fixed top-4 left-4 right-4 max-w-md mx-auto p-4 rounded-xl z-50 text-sm font-semibold ${
+            toast.type === 'error' ? 'bg-red-600 text-white' : 'bg-green-600 text-white'
+          }`} style={{ animation: 'slideIn 0.3s ease-out' }}>
+            {toast.msg}
+          </div>
+        )}
+
+        {showDeposit && (
+          <DepositModal
+            user={user}
+            onClose={() => setShowDeposit(false)}
+            onPending={handleDepositComplete}
+          />
+        )}
+        {showWithdraw && (
+          <WithdrawModal
+            balance={user?.balance || 0}
+            userPhone={user?.phone}
+            onClose={() => setShowWithdraw(false)}
+            onWithdraw={handleWithdraw}
+          />
+        )}
+        {showBonusWithdraw && (
+          <BonusWithdrawModal
+            bonusBalance={user?.bonusBalance || 0}
+            userPhone={user?.phone}
+            onClose={() => setShowBonusWithdraw(false)}
+            onWithdraw={handleBonusWithdraw}
+          />
+        )}
+        {showBonusTransfer && (
+          <BonusTransferModal
+            bonusBalance={user?.bonusBalance || 0}
+            onClose={() => setShowBonusTransfer(false)}
+            onTransfer={handleBonusTransfer}
+          />
+        )}
+        {showReferral && (
+          <ReferralModal user={user} referrals={referrals} onClose={() => setShowReferral(false)} showToast={showToast} />
+        )}
+        {showChangePassword && (
+          <ChangePasswordModal
+            onClose={() => { setShowChangePassword(false); setPasswordError(''); setPasswordSuccess('') }}
+            onSubmit={handleChangePassword}
+            error={passwordError}
+            success={passwordSuccess}
+          />
+        )}
+      </div>
+    </div>
+  )
+}
+
+function ReferralModal({ user, referrals, onClose, showToast }) {
+  const [code, setCode] = useState('')
+  const [copied, setCopied] = useState(false)
+
+  useEffect(() => {
+    if (!code && user?.referralCode) setCode(user.referralCode)
+  }, [user])
+
+  async function generateCode() {
+    try {
+      const newCode = await generateReferralCode(user.phone)
+      setCode(newCode)
+      showToast('Referral code generated!')
+    } catch {
+      showToast('Failed to generate code', 'error')
+    }
+  }
+
+  function copyCode() {
+    if (code) {
+      navigator.clipboard.writeText(code).then(() => {
+        setCopied(true)
+        setTimeout(() => setCopied(false), 2000)
+      })
+    }
+  }
+
+  const shareText = `Join Dumiropay and earn with AI compute! Use my code: ${code}\nhttps://dumiropay.com?ref=${code}`
+
+  return (
+    <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="card max-w-sm w-full" onClick={e => e.stopPropagation()}>
+        <h3 className="text-xl font-bold mb-4">👥 Refer & Earn</h3>
+
+        <div className="rounded-xl p-4 mb-4" style={{ background: 'var(--bg-elevated)' }}>
+          <p className="text-xs mb-2" style={{ color: 'var(--text-muted)' }}>Your Referral Code</p>
+          <div className="flex items-center gap-2">
+            <input
+              className="input-field flex-1 text-center font-mono text-lg"
+              value={code || 'Not generated'}
+              readOnly
+              style={{ background: 'var(--bg-primary)', cursor: 'not-allowed' }}
+            />
+            <button onClick={copyCode} disabled={!code} className="btn-primary px-3 text-xs">
+              {copied ? '✓' : 'Copy'}
+            </button>
+          </div>
+          {!code && (
+            <button onClick={generateCode} className="btn-primary w-full mt-3 text-xs">
+              Generate Code
             </button>
           )}
         </div>
 
-        {showPwForm && (
-          <form onSubmit={handleChangePassword} className="space-y-3">
-            {[
-              { label: 'Current PIN', value: currentPw, setter: setCurrentPw },
-              { label: 'New PIN (4–6 digits)', value: newPw, setter: setNewPw },
-              { label: 'Confirm New PIN', value: confirmPw, setter: setConfirmPw },
-            ].map(({ label, value, setter }) => (
-              <div key={label}>
-                <label className="text-xs mb-1 block" style={{ color: 'var(--text-secondary)' }}>{label}</label>
-                <input
-                  className="input-field"
-                  type="password"
-                  inputMode="numeric"
-                  maxLength={6}
-                  placeholder="••••"
-                  value={value}
-                  onChange={e => setter(e.target.value.replace(/\D/g, ''))}
-                />
-              </div>
-            ))}
+        <div className="rounded-xl p-4 mb-4 space-y-2 text-sm" style={{ background: 'var(--bg-elevated)' }}>
+          <p className="font-semibold text-center mb-2">Commission Structure</p>
+          <div className="flex justify-between">
+            <span style={{ color: 'var(--text-secondary)' }}>L1 (Direct Referral)</span>
+            <span className="text-green-400 font-semibold">10%</span>
+          </div>
+          <div className="flex justify-between">
+            <span style={{ color: 'var(--text-secondary)' }}>L2 (Referral's Referral)</span>
+            <span className="text-cyan-400 font-semibold">4%</span>
+          </div>
+        </div>
 
-            {pwError && (
-              <div className="bg-red-900/40 border border-red-700 text-red-300 text-sm rounded-lg px-4 py-3">{pwError}</div>
-            )}
-
-            <div className="flex gap-2">
-              <button type="button" onClick={() => { setShowPwForm(false); setPwError('') }} className="btn-secondary flex-1 text-sm py-2">Cancel</button>
-              <button type="submit" disabled={pwLoading} className="btn-primary flex-1 text-sm py-2">
-                {pwLoading ? 'Updating...' : 'Update PIN'}
-              </button>
+        {referrals.length > 0 && (
+          <div className="rounded-xl p-4 mb-4" style={{ background: 'var(--bg-elevated)' }}>
+            <p className="text-xs mb-2" style={{ color: 'var(--text-muted)' }}>Your Referrals ({referrals.length})</p>
+            <div className="space-y-1.5 max-h-32 overflow-y-auto">
+              {referrals.map(r => (
+                <div key={r.id} className="flex items-center justify-between text-xs py-1 px-2 rounded" style={{ background: 'var(--bg-primary)' }}>
+                  <span className="font-mono">{r.referred_phone}</span>
+                  <span className="text-green-400">+KSh {Number(r.commission || 0).toLocaleString()}</span>
+                </div>
+              ))}
             </div>
-          </form>
+          </div>
         )}
-      </div>
 
-      <button
-        onClick={logout}
-        className="w-full text-center py-3 text-red-400 hover:text-red-300 text-sm font-medium transition-colors border border-red-900/50 rounded-xl hover:bg-red-900/20"
-      >
-        Sign Out
-      </button>
+        <div className="flex gap-2 mb-4">
+          <a
+            href={`https://wa.me/?text=${encodeURIComponent(shareText)}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="btn-primary flex-1 text-xs"
+          >
+            Share on WhatsApp
+          </a>
+          <a
+            href={`sms:?body=${encodeURIComponent(shareText)}`}
+            className="btn-secondary flex-1 text-xs"
+          >
+            Share via SMS
+          </a>
+        </div>
+
+        <button onClick={onClose} className="btn-secondary w-full">Close</button>
+      </div>
+    </div>
+  )
+}
+
+function ChangePasswordModal({ onClose, onSubmit, error, success }) {
+  const [currentPin, setCurrentPin] = useState('')
+  const [newPin, setNewPin] = useState('')
+  const [confirmPin, setConfirmPin] = useState('')
+  const [submitError, setSubmitError] = useState('')
+
+  function handleSubmit() {
+    if (newPin.length < 4) {
+      setSubmitError('New PIN must be at least 4 digits.')
+      return
+    }
+    if (newPin !== confirmPin) {
+      setSubmitError('New PIN and confirmation do not match.')
+      return
+    }
+    onSubmit(currentPin, newPin)
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="card max-w-sm w-full" onClick={e => e.stopPropagation()}>
+        <h3 className="text-xl font-bold mb-4">🔐 Change PIN</h3>
+
+        <div className="space-y-3 mb-4">
+          <div>
+            <label className="text-xs mb-1 block" style={{ color: 'var(--text-secondary)' }}>Current PIN</label>
+            <input
+              className="input-field"
+              placeholder="Enter current PIN"
+              type="password"
+              maxLength={10}
+              value={currentPin}
+              onChange={e => setCurrentPin(e.target.value)}
+            />
+          </div>
+          <div>
+            <label className="text-xs mb-1 block" style={{ color: 'var(--text-secondary)' }}>New PIN</label>
+            <input
+              className="input-field"
+              placeholder="Min 4 digits"
+              type="password"
+              maxLength={10}
+              value={newPin}
+              onChange={e => setNewPin(e.target.value)}
+            />
+          </div>
+          <div>
+            <label className="text-xs mb-1 block" style={{ color: 'var(--text-secondary)' }}>Confirm New PIN</label>
+            <input
+              className="input-field"
+              placeholder="Re-enter new PIN"
+              type="password"
+              maxLength={10}
+              value={confirmPin}
+              onChange={e => setConfirmPin(e.target.value)}
+            />
+          </div>
+        </div>
+
+        {error && (
+          <div className="bg-red-900/40 border border-red-700 text-red-300 text-sm rounded-lg px-4 py-3 mb-4">{error}</div>
+        )}
+        {submitError && (
+          <div className="bg-red-900/40 border border-red-700 text-red-300 text-sm rounded-lg px-4 py-3 mb-4">{submitError}</div>
+        )}
+        {success && (
+          <div className="bg-green-900/40 border border-green-700 text-green-300 text-sm rounded-lg px-4 py-3 mb-4">{success}</div>
+        )}
+
+        <div className="flex gap-3">
+          <button onClick={onClose} className="btn-secondary flex-1">Cancel</button>
+          <button onClick={handleSubmit} disabled={!currentPin || !newPin || !confirmPin} className="btn-primary flex-1">
+            Change PIN
+          </button>
+        </div>
+      </div>
     </div>
   )
 }

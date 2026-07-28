@@ -62,7 +62,7 @@ function InvestFirstModal({ onClose, onGoInvest, onGoDeposit, hasBalance }) {
           This feature is only available to members with an active investment.
           {hasBalance
             ? ' You have balance — go invest now to unlock this!'
-            : ' Please deposit at least KSh 100, then invest to unlock this feature.'}
+            : ' Please top up at least KSh 100, then invest to unlock this feature.'}
         </p>
         <div className="space-y-3">
           {hasBalance ? (
@@ -72,10 +72,10 @@ function InvestFirstModal({ onClose, onGoInvest, onGoDeposit, hasBalance }) {
           ) : (
             <>
               <button onClick={onGoDeposit} className="btn-primary w-full">
-                📱 Deposit via M-Pesa
+                💰 Top Up via M-Pesa
               </button>
               <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
-                Minimum deposit: KSh 100 · Then invest to unlock all features
+                Minimum top up: KSh 100 · Then invest to unlock all features
               </p>
             </>
           )}
@@ -357,7 +357,7 @@ export default function Dashboard() {
     setExecStage(0)
   }
 
-  /** Redirect helper: first tell user to invest, then if no balance → deposit */
+  /** Redirect helper: first tell user to invest, then if no balance → top up */
   function requireInvestment(action) {
     if (!hasActiveInvestment) {
       setShowInvestFirst(true)

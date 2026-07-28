@@ -91,8 +91,8 @@ export default function HistoryPage() {
     deposits.forEach(d => { newDepStatuses[d.id] = d.status })
     deposits.forEach(d => {
       const prev = prevDepositStatuses.current[d.id]
-      if (prev === 'pending' && d.status === 'approved') showToast(`✅ Deposit of KSh ${Number(d.amount).toLocaleString()} approved!`, 'success')
-      if (prev === 'pending' && d.status === 'rejected') showToast(`❌ Deposit of KSh ${Number(d.amount).toLocaleString()} rejected.`, 'error')
+      if (prev === 'pending' && d.status === 'approved') showToast(`✅ Top up of KSh ${Number(d.amount).toLocaleString()} approved!`, 'success')
+      if (prev === 'pending' && d.status === 'rejected') showToast(`❌ Top up of KSh ${Number(d.amount).toLocaleString()} rejected.`, 'error')
     })
     prevDepositStatuses.current = newDepStatuses
 
@@ -120,7 +120,7 @@ export default function HistoryPage() {
   const tabs = [
     { id: 'ledger', label: 'Ledger', count: combinedLedger.length },
     { id: 'investments', label: 'Investments', count: investments.length },
-    { id: 'deposits', label: 'Deposits', count: deposits.length },
+    { id: 'deposits', label: 'Top Ups', count: deposits.length },
     { id: 'withdrawals', label: 'Withdrawals', count: withdrawals.length },
     { id: 'loans', label: 'Loans', count: loans.length },
   ]
@@ -198,7 +198,7 @@ export default function HistoryPage() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="font-semibold text-sm">
-                      {item.type === 'deposit' ? 'M-Pesa Deposit' : 'Withdrawal'}
+                      {item.type === 'deposit' ? 'M-Pesa Top Up' : 'Withdrawal'}
                     </p>
                     <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>{fmt(item.created_at)}</p>
                     {item.type === 'withdrawal' && item.mpesa_phone && (
@@ -327,18 +327,18 @@ export default function HistoryPage() {
         </div>
       )}
 
-      {/* Deposits Tab */}
+      {/* Top Ups Tab */}
       {tab === 'deposits' && (
         <div className="space-y-3 animate-fadeIn">
           {deposits.length === 0 ? (
-            <EmptyState icon="💳" title="No deposits yet" subtitle="Deposit via M-Pesa to get started" />
+            <EmptyState icon="💳" title="No top ups yet" subtitle="Top up via M-Pesa to get started" />
           ) : (
             deposits.map(dep => (
               <div key={dep.id} className="card flex items-start justify-between gap-4 hover:border-gray-600 transition-colors">
                 <div className="flex items-start gap-3 flex-1 min-w-0">
                   <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-green-600 to-emerald-600 flex items-center justify-center text-lg flex-shrink-0">💳</div>
                   <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-sm">M-Pesa Deposit</p>
+                    <p className="font-semibold text-sm">M-Pesa Top Up</p>
                     <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>{fmt(dep.created_at)}</p>
                     {dep.mpesa_receipt && (
                       <p className="text-xs mt-0.5 font-mono" style={{ color: 'var(--text-secondary)' }}>Ref: {dep.mpesa_receipt}</p>

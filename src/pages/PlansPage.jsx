@@ -237,12 +237,12 @@ function ConfirmModal({ plan, workload, balance, onConfirm, onClose, confirming,
         {!enough && (
           <div className="bg-red-900/40 border border-red-700 text-red-300 text-sm rounded-lg px-4 py-3 mb-4">
             <p className="font-semibold mb-2">Insufficient balance</p>
-            <p className="text-xs mb-3">You need KSh {(plan.amount - balance).toLocaleString()} more. Deposit via M-Pesa to continue.</p>
+            <p className="text-xs mb-3">You need KSh {(plan.amount - balance).toLocaleString()} more. Top up via M-Pesa to continue.</p>
             <button
               onClick={onDeposit}
               className="w-full bg-red-700 hover:bg-red-600 text-white text-xs font-semibold py-2 px-4 rounded-lg transition-colors"
             >
-              📱 Deposit Now (Min KSh 100)
+              💰 Top Up Now (Min KSh 100)
             </button>
           </div>
         )}
@@ -323,7 +323,7 @@ function QuickActions({ user, showToast }) {
     },
     {
       icon: '💰',
-      label: 'Deposit',
+      label: 'Top Up',
       onClick: () => navigate('/profile?deposit=1'),
       disabled: false,
       loading: false,
