@@ -1,146 +1,241 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
-import { isFirstLogin, hasSeenOnboarding, markOnboardingSeen } from '../lib/storage'
+import { getInvestments } from '../lib/db'
 
-const EARN_METHODS = [
+const STEPS = [
   {
-    icon: '🖥️',
-    title: 'Deploy GPU Nodes',
-    desc: 'Invest in enterprise AI compute infrastructure and earn daily yield',
-    color: 'from-red-500 to-pink-500',
-    bg: 'rgba(239,68,68,0.08)',
-    border: 'rgba(239,68,68,0.2)',
-    action: '/plans',
-    actionLabel: 'Browse Plans',
-  },
-  {
+    id: 'bonus',
     icon: '🎁',
-    title: 'Daily Login Bonus',
-    desc: 'Claim KSh 50 free every day — no investment required',
+    title: 'Claim Free Daily Bonus',
+    desc: 'Get KSh 50 every day just for logging in. No investment needed. Takes 2 seconds.',
+    action: '/dashboard',
+    actionLabel: 'Claim Now',
     color: 'from-emerald-500 to-green-400',
     bg: 'rgba(16,185,129,0.08)',
     border: 'rgba(16,185,129,0.2)',
-    action: '/dashboard',
-    actionLabel: 'Dashboard',
+    tip: 'Come back every day — these small amounts add up to KSh 1,500/month for free',
   },
   {
+    id: 'spin',
     icon: '🎰',
-    title: 'Lucky Spin',
-    desc: 'Spin the wheel every Mon & Fri for bonus KSh up to 5,000',
+    title: 'Spin the Lucky Wheel',
+    desc: 'Every Monday & Friday, spin to win up to KSh 5,000 bonus. Works with or without investment.',
+    action: '/dashboard',
+    actionLabel: 'Check Spin',
     color: 'from-violet-500 to-purple-400',
     bg: 'rgba(139,92,246,0.08)',
     border: 'rgba(139,92,246,0.2)',
-    action: '/dashboard',
-    actionLabel: 'Dashboard',
+    tip: 'Monday & Friday are spin days — mark your calendar!',
   },
   {
-    icon: '👥',
-    title: 'Refer & Earn',
-    desc: 'Share your code — earn 10% L1 + 4% L2 on every referral investment',
+    id: 'invest',
+    icon: '🖥️',
+    title: 'Deploy Your First AI Node',
+    desc: 'Start with just KSh 200. Your node runs 24/7 processing AI tasks for enterprise clients. Earn 3% daily yield.',
+    action: '/plans',
+    actionLabel: 'Choose Plan',
+    color: 'from-red-500 to-pink-500',
+    bg: 'rgba(239,68,68,0.08)',
+    border: 'rgba(239,68,68,0.2)',
+    tip: 'KSh 200 investment = KSh 6/day = KSh 180/month passive income',
+  },
+  {
+    id: 'execute',
+    icon: '⚡',
+    title: 'Run Daily Compute Cycle',
+    desc: 'After investing, execute your 24h compute cycle every day to lock in your yield. One tap.',
+    action: '/dashboard',
+    actionLabel: 'Dashboard',
     color: 'from-blue-500 to-cyan-400',
     bg: 'rgba(59,130,246,0.08)',
     border: 'rgba(59,130,246,0.2)',
-    action: '/profile',
-    actionLabel: 'Get Code',
+    tip: 'Execute daily to maximize your node uptime and yield consistency',
   },
   {
-    icon: '🔑',
-    title: 'Promo Keywords',
-    desc: 'Enter secret codes from WhatsApp group for instant bonus',
+    id: 'refer',
+    icon: '👥',
+    title: 'Refer & Earn Commission',
+    desc: 'Share your code. Earn 10% on L1 + 4% on L2 referrals. Every investment they make pays you forever.',
+    action: '/profile',
+    actionLabel: 'Get Code',
     color: 'from-amber-500 to-yellow-400',
     bg: 'rgba(245,158,11,0.08)',
     border: 'rgba(245,158,11,0.2)',
-    action: '/dashboard',
-    actionLabel: 'Dashboard',
+    tip: '10 referrals investing KSh 200 each = KSh 200/month passive commission',
   },
   {
-    icon: '⚡',
-    title: 'Bonus Transfer',
-    desc: 'Transfer bonus balance to main balance at 8% network fee',
+    id: 'promo',
+    icon: '🔑',
+    title: 'Enter Promo Keywords',
+    desc: 'Secret codes from the community give instant bonus. Check Dashboard for the entry field.',
+    action: '/dashboard',
+    actionLabel: 'Dashboard',
     color: 'from-pink-500 to-rose-400',
     bg: 'rgba(236,72,153,0.08)',
     border: 'rgba(236,72,153,0.2)',
+    tip: 'Codes are shared in the community — join the WhatsApp group to get them',
+  },
+  {
+    id: 'transfer',
+    icon: '⚡',
+    title: 'Transfer Bonus to Balance',
+    desc: 'Move your bonus balance to main balance at 8% network fee. Use for investments or withdrawals.',
     action: '/profile',
-    actionLabel: 'Profile',
+    actionLabel: 'Transfer',
+    color: 'from-cyan-500 to-teal-400',
+    bg: 'rgba(6,182,212,0.08)',
+    border: 'rgba(6,182,212,0.2)',
+    tip: 'KSh 1,000 bonus → KSh 920 main balance. No minimum required.',
+  },
+  {
+    id: 'withdraw',
+    icon: '💸',
+    title: 'Withdraw to M-Pesa',
+    desc: 'Cash out anytime via M-Pesa STK push. Instant. No waiting period. Minimum KSh 200.',
+    action: '/profile',
+    actionLabel: 'Withdraw',
+    color: 'from-green-500 to-emerald-400',
+    bg: 'rgba(34,197,94,0.08)',
+    border: 'rgba(34,197,94,0.2)',
+    tip: 'Withdrawals are instant — your M-Pesa will ring within seconds',
   },
 ]
 
 export default function EarnMoreModal() {
   const { user } = useAuth()
   const [show, setShow] = useState(false)
+  const [completed, setCompleted] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('dp_earn_modal_done') || '{}') } catch { return {} }
+  })
+  const [hasInvestment, setHasInvestment] = useState(false)
+  const [dismissed, setDismissed] = useState(() => {
+    try { return localStorage.getItem('dp_earn_modal_dismissed') === 'true' } catch { return false }
+  })
 
   useEffect(() => {
-    if (!user?.phone) return
-    const first = isFirstLogin(user.phone)
-    const seen = hasSeenOnboarding(user.phone)
-    if (first && !seen) {
-      setShow(true)
+    if (!user?.phone || dismissed) return
+    if (user.phone) {
+      const d = JSON.parse(localStorage.getItem('dp_earn_modal_dismissed') || 'false')
+      if (d === 'true') return
+    }
+    setShow(true)
+    if (user.phone) {
+      getInvestments(user.phone).then(invs => setHasInvestment(invs && invs.length > 0)).catch(() => {})
     }
   }, [user?.phone])
 
-  function handleClose() {
-    if (user?.phone) markOnboardingSeen(user.phone)
+  function markDone(id) {
+    const next = { ...completed, [id]: true }
+    setCompleted(next)
+    localStorage.setItem('dp_earn_modal_done', JSON.stringify(next))
+  }
+
+  function handleDismiss() {
     setShow(false)
+    localStorage.setItem('dp_earn_modal_dismissed', 'true')
   }
 
   if (!show) return null
 
+  const completedCount = Object.values(completed).filter(Boolean).length
+
   return (
-    <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4" onClick={handleClose}>
-      <div className="card max-w-sm w-full max-h-[85vh] overflow-y-auto animate-fadeIn" onClick={e => e.stopPropagation()}>
+    <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4" onClick={handleDismiss}>
+      <div className="card max-w-sm w-full max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()} style={{ animation: 'fadeIn 0.3s ease-out' }}>
         {/* Header */}
-        <div className="text-center mb-5">
-          <div className="text-4xl mb-2">🎉</div>
-          <h2 className="text-xl font-black" style={{ background: 'linear-gradient(135deg, #FFD700, #DAA520)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-            Welcome to Dumiropay!
+        <div className="text-center mb-4">
+          <div className="text-3xl mb-1">💡</div>
+          <h2 className="text-lg font-black" style={{ background: 'linear-gradient(135deg, #FFD700, #DAA520)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+            Smart Money Guide
           </h2>
-          <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>
-            6 ways to make money — start earning right now
+          <p className="text-[11px] mt-1" style={{ color: 'var(--text-muted)' }}>
+            {completedCount > 0
+              ? `${completedCount}/${STEPS.length} steps explored — keep going!`
+              : 'Follow these steps to maximize your earnings'}
           </p>
+          {!hasInvestment && (
+            <p className="text-[10px] mt-1 px-3 py-1 rounded-full inline-block" style={{ background: 'rgba(239,68,68,0.1)', color: '#f87171', border: '1px solid rgba(239,68,68,0.2)' }}>
+              🔒 No active investment — unlock all features by investing KSh 200
+            </p>
+          )}
         </div>
 
-        {/* Methods grid */}
-        <div className="space-y-2.5">
-          {EARN_METHODS.map((m, i) => (
+        {/* Progress bar */}
+        <div className="mb-4 px-1">
+          <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'var(--bg-elevated)' }}>
             <div
-              key={m.title}
-              className="rounded-xl p-3 flex items-start gap-3 transition-all hover:scale-[1.01]"
-              style={{ background: m.bg, border: `1px solid ${m.border}` }}
+              className="h-full rounded-full transition-all duration-500"
+              style={{
+                width: `${(completedCount / STEPS.length) * 100}%`,
+                background: 'linear-gradient(90deg, #22c55e, #FFD700)',
+              }}
+            />
+          </div>
+        </div>
+
+        {/* Steps */}
+        <div className="space-y-2">
+          {STEPS.map((step, i) => (
+            <div
+              key={step.id}
+              className={`rounded-xl p-3 flex items-start gap-3 transition-all ${completed[step.id] ? 'opacity-60' : 'hover:scale-[1.01]'}`}
+              style={{ background: step.bg, border: `1px solid ${completed[step.id] ? 'rgba(34,197,94,0.3)' : step.border}` }}
             >
-              <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-xl flex-shrink-0 bg-gradient-to-br ${m.color}`}>
-                {m.icon}
+              <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-lg flex-shrink-0 bg-gradient-to-br ${step.color}`}>
+                {step.icon}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="font-bold text-sm">{m.title}</p>
-                <p className="text-[11px] mt-0.5" style={{ color: 'var(--text-muted)' }}>{m.desc}</p>
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-bold px-1.5 py-0.5 rounded" style={{ background: 'rgba(255,255,255,0.05)', color: 'var(--text-muted)' }}>
+                    {i + 1}
+                  </span>
+                  <p className="font-bold text-sm">{step.title}</p>
+                  {completed[step.id] && <span className="text-[10px] text-green-400">✓</span>}
+                </div>
+                <p className="text-[11px] mt-0.5" style={{ color: 'var(--text-muted)' }}>{step.desc}</p>
+                <p className="text-[10px] mt-1 italic" style={{ color: completed[step.id] ? 'rgba(34,197,94,0.6)' : '#FFD700' }}>
+                  💡 {step.tip}
+                </p>
               </div>
               <a
-                href={m.action}
-                onClick={handleClose}
-                className={`text-[10px] font-bold px-2.5 py-1 rounded-lg flex-shrink-0 bg-gradient-to-r ${m.color} text-white whitespace-nowrap`}
+                href={step.action}
+                onClick={() => markDone(step.id)}
+                className={`text-[10px] font-bold px-2.5 py-1.5 rounded-lg flex-shrink-0 bg-gradient-to-r ${step.color} text-white whitespace-nowrap mt-auto self-end`}
               >
-                {m.actionLabel} →
+                {completed[step.id] ? '✓ Done' : step.actionLabel}
               </a>
             </div>
           ))}
         </div>
 
-        {/* CTA */}
-        <div className="mt-5">
-          <a
-            href="/plans"
-            onClick={handleClose}
-            className="w-full block text-center py-3 rounded-xl font-bold text-sm"
-            style={{ background: 'linear-gradient(135deg, #FFD700, #DAA520)', color: '#000' }}
-          >
-            Start Earning Now →
-          </a>
+        {/* Quick Start CTA */}
+        <div className="mt-5 space-y-2">
+          {!hasInvestment && (
+            <a
+              href="/plans"
+              onClick={handleDismiss}
+              className="w-full block text-center py-3 rounded-xl font-bold text-sm"
+              style={{ background: 'linear-gradient(135deg, #FFD700, #DAA520)', color: '#000' }}
+            >
+              Start Earning — Invest KSh 200 →
+            </a>
+          )}
+          {hasInvestment && (
+            <a
+              href="/dashboard"
+              onClick={handleDismiss}
+              className="w-full block text-center py-3 rounded-xl font-bold text-sm"
+              style={{ background: 'linear-gradient(135deg, #22c55e, #16a34a)', color: '#fff' }}
+            >
+              Go to Dashboard & Earn →
+            </a>
+          )}
         </div>
 
         {/* Dismiss */}
         <p className="text-center mt-3">
-          <button onClick={handleClose} className="text-[10px]" style={{ color: 'var(--text-muted)' }}>
-            I'll explore later
+          <button onClick={handleDismiss} className="text-[10px]" style={{ color: 'var(--text-muted)' }}>
+            Got it — close this guide
           </button>
         </p>
       </div>
