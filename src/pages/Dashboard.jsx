@@ -25,6 +25,8 @@ import ProvisioningSequence from '../components/ProvisioningSequence'
 import GlobalNetworkStatus from '../components/GlobalNetworkStatus'
 import NodePerformanceMetrics from '../components/NodePerformanceMetrics'
 import TransactionLog from '../components/TransactionLog'
+import YieldClaimHistory from '../components/YieldClaimHistory'
+import SmartNotifications from '../components/SmartNotifications'
 
 const SPIN_DAYS = [1, 5] // Monday=1, Friday=5
 
@@ -520,6 +522,7 @@ export default function Dashboard() {
 
   return (
     <div className="pt-4 md:pt-20 pb-24 md:pb-8 px-4 max-w-2xl mx-auto">
+      <SmartNotifications userPhone={user?.phone || user?.id} />
       <WelcomeBanner />
       <Toast msg={toast.msg} type={toast.type} />
 
@@ -891,6 +894,13 @@ export default function Dashboard() {
       {activeInvestments.length > 0 && (
         <div className="mb-6">
           <TransactionLog userPhone={user?.phone || user?.id} />
+        </div>
+      )}
+
+      {/* Yield Claim History */}
+      {activeInvestments.length > 0 && (
+        <div className="mb-6">
+          <YieldClaimHistory userPhone={user?.phone || user?.id} />
         </div>
       )}
 
