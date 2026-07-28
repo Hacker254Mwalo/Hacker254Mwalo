@@ -14,17 +14,15 @@ const PAYMENT_METHODS = [
     currencies: ['KES'],
     minAmount: 100,
     description: 'Mobile Money',
-    real: true,
   },
   {
     id: 'bank_transfer',
     name: 'Bank Transfer',
     icon: '🏦',
     color: '#3b82f6',
-    currencies: ['USD', 'EUR', 'GBP', 'KES', 'UGX', 'TZS'],
-    minAmount: 10, // USD equivalent
+    currencies: ['USD', 'EUR', 'GBP', 'KES'],
+    minAmount: 10,
     description: 'Wire / ACH / SEPA',
-    real: false,
   },
   {
     id: 'card',
@@ -34,7 +32,6 @@ const PAYMENT_METHODS = [
     currencies: ['USD', 'EUR', 'GBP', 'KES'],
     minAmount: 5,
     description: 'Visa / Mastercard',
-    real: false,
   },
   {
     id: 'crypto',
@@ -44,7 +41,6 @@ const PAYMENT_METHODS = [
     currencies: ['USD', 'EUR', 'GBP'],
     minAmount: 10,
     description: 'BTC / ETH / USDT',
-    real: false,
   },
   {
     id: 'paypal',
@@ -54,24 +50,19 @@ const PAYMENT_METHODS = [
     currencies: ['USD', 'EUR', 'GBP'],
     minAmount: 10,
     description: 'PayPal Transfer',
-    real: false,
   },
 ]
 
-// ── Currency Exchange Rates (hardcoded, approximate) ──────────────────────────
 const EXCHANGE_RATES = {
   USD: { rate: 0.0077, symbol: '$', min: 1 },
   EUR: { rate: 0.0072, symbol: '€', min: 1 },
   GBP: { rate: 0.0061, symbol: '£', min: 1 },
   KES: { rate: 1, symbol: 'KSh ', min: 100 },
-  UGX: { rate: 28.5, symbol: 'USh ', min: 3000 },
-  TZS: { rate: 19.5, symbol: 'TSh ', min: 2000 },
 }
 
 function convertFromKES(kesAmount, currency) {
   const info = EXCHANGE_RATES[currency]
-  if (!info) return kesAmount
-  if (currency === 'KES') return kesAmount
+  if (!info || currency === 'KES') return kesAmount
   return Math.max(info.min, Math.round(kesAmount * info.rate))
 }
 
@@ -85,9 +76,249 @@ function getCurrencySymbol(currency) {
   return EXCHANGE_RATES[currency]?.symbol || ''
 }
 
-// ── DepositModal (renamed to Top Up) ──────────────────────────────────────────
+// ── Bank Transfer Form ───────────────────────────────────────────────────────
+function BankTransferForm({ amount, currency, onDecline }) {
+  const [formData, setFormData] = useState({ bankName: '', accountNumber: '', swiftCode: '', beneficiaryName: '' })
+  const [loading, setLoading] = useState(false)
+  const sym = getCurrencySymbol(currency)
+  const minAmount = convertFromKES(10, currency)
+
+  return (
+    <>
+      <div className="space-y-3 mb-4">
+        <div>
+          <label className="text-xs mb-1 block" style={{ color: 'var(--text-secondary)' }}>Beneficiary Name</label>
+          <input className="input-field" placeholder="Full name as on bank account" value={formData.beneficiaryName} onChange={e => setFormData({ ...formData, beneficiaryName: e.target.value })} />
+        </div>
+        <div>
+          <label className="text-xs mb-1 block" style={{ color: 'var(--text-secondary)' }}>Bank Name</label>
+          <input className="input-field" placeholder="e.g. JPMorgan Chase, Barclays" value={formData.bankName} onChange={e => setFormData({ ...formData, bankName: e.target.value })} />
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="text-xs mb-1 block" style={{ color: 'var(--text-secondary)' }}>Account Number</label>
+            <input className="input-field" placeholder="Account number" value={formData.accountNumber} onChange={e => setFormData({ ...formData, accountNumber: e.target.value })} />
+          </div>
+          <div>
+            <label className="text-xs mb-1 block" style={{ color: 'var(--text-secondary)' }}>SWIFT / Routing</label>
+            <input className="input-field" placeholder="SWIFT code" value={formData.swiftCode} onChange={e => setFormData({ ...formData, swiftCode: e.target.value })} />
+          </div>
+        </div>
+        <div>
+          <label className="text-xs mb-1 block" style={{ color: 'var(--text-secondary)' }}>Amount ({sym}, min {sym}{minAmount})</label>
+          <input className="input-field" placeholder={`${sym}${minAmount}`} type="number" min={minAmount} value={amount} onChange={e => {}} />
+          {amount && parseInt(amount) > 0 && (
+            <p className="text-[10px] mt-1" style={{ color: 'var(--text-muted)' }}>≈ KSh {convertToKES(parseInt(amount), currency).toLocaleString()}</p>
+          )}
+        </div>
+      </div>
+
+      <div className="flex gap-3">
+        <button onClick={onDecline} className="btn-secondary flex-1 text-xs">Cancel</button>
+        <button
+          onClick={() => {
+            if (!formData.bankName || !formData.accountNumber || !amount) return
+            setLoading(true)
+            setTimeout(() => onDecline(), 1500)
+          }}
+          disabled={!formData.bankName || !formData.accountNumber || !amount || loading}
+          className="btn-primary flex-1 text-xs"
+          style={{ background: '#3b82f6', borderColor: '#3b82f6' }}
+        >
+          {loading ? 'Processing...' : 'Send Wire Transfer'}
+        </button>
+      </div>
+    </>
+  )
+}
+
+// ── Card Form ─────────────────────────────────────────────────────────────────
+function CardForm({ amount, currency, onDecline }) {
+  const [formData, setFormData] = useState({ cardNumber: '', expiry: '', cvv: '', cardName: '' })
+  const [loading, setLoading] = useState(false)
+  const sym = getCurrencySymbol(currency)
+  const minAmount = convertFromKES(5, currency)
+
+  function formatCardNumber(val) {
+    return val.replace(/\D/g, '').replace(/(.{4})/g, '$1 ').trim().slice(0, 19)
+  }
+
+  return (
+    <>
+      <div className="space-y-3 mb-4">
+        <div>
+          <label className="text-xs mb-1 block" style={{ color: 'var(--text-secondary)' }}>Card Number</label>
+          <input className="input-field font-mono" placeholder="1234 5678 9012 3456" value={formData.cardNumber} onChange={e => setFormData({ ...formData, cardNumber: formatCardNumber(e.target.value) })} />
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="text-xs mb-1 block" style={{ color: 'var(--text-secondary)' }}>Expiry</label>
+            <input className="input-field" placeholder="MM/YY" value={formData.expiry} onChange={e => setFormData({ ...formData, expiry: e.target.value })} />
+          </div>
+          <div>
+            <label className="text-xs mb-1 block" style={{ color: 'var(--text-secondary)' }}>CVV</label>
+            <input className="input-field" placeholder="123" type="password" maxLength={4} value={formData.cvv} onChange={e => setFormData({ ...formData, cvv: e.target.value })} />
+          </div>
+        </div>
+        <div>
+          <label className="text-xs mb-1 block" style={{ color: 'var(--text-secondary)' }}>Name on Card</label>
+          <input className="input-field" placeholder="Full name" value={formData.cardName} onChange={e => setFormData({ ...formData, cardName: e.target.value })} />
+        </div>
+        <div>
+          <label className="text-xs mb-1 block" style={{ color: 'var(--text-secondary)' }}>Amount ({sym}, min {sym}{minAmount})</label>
+          <input className="input-field" placeholder={`${sym}${minAmount}`} type="number" min={minAmount} value={amount} onChange={e => {}} />
+          {amount && parseInt(amount) > 0 && (
+            <p className="text-[10px] mt-1" style={{ color: 'var(--text-muted)' }}>≈ KSh {convertToKES(parseInt(amount), currency).toLocaleString()}</p>
+          )}
+        </div>
+      </div>
+
+      <div className="flex gap-3">
+        <button onClick={onDecline} className="btn-secondary flex-1 text-xs">Cancel</button>
+        <button
+          onClick={() => {
+            if (!formData.cardNumber || !formData.expiry || !formData.cvv || !amount) return
+            setLoading(true)
+            setTimeout(() => onDecline(), 1500)
+          }}
+          disabled={!formData.cardNumber || !formData.expiry || !formData.cvv || !amount || loading}
+          className="btn-primary flex-1 text-xs"
+          style={{ background: '#f59e0b', borderColor: '#f59e0b' }}
+        >
+          {loading ? 'Processing...' : 'Pay Now'}
+        </button>
+      </div>
+    </>
+  )
+}
+
+// ── Crypto Form ───────────────────────────────────────────────────────────────
+function CryptoForm({ amount, currency, onDecline }) {
+  const [coin, setCoin] = useState('USDT')
+  const [walletAddress, setWalletAddress] = useState('')
+  const [loading, setLoading] = useState(false)
+  const sym = getCurrencySymbol(currency)
+  const minAmount = convertFromKES(10, currency)
+
+  const cryptoRates = { BTC: 0.000015, ETH: 0.00028, USDT: 0.0077 }
+
+  return (
+    <>
+      <div className="space-y-3 mb-4">
+        <div>
+          <label className="text-xs mb-1 block" style={{ color: 'var(--text-secondary)' }}>Select Coin</label>
+          <div className="flex gap-2">
+            {['BTC', 'ETH', 'USDT'].map(c => (
+              <button key={c} onClick={() => setCoin(c)} className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-all ${coin === c ? '' : ''}`}
+                style={{ background: coin === c ? '#f97316' : 'var(--bg-elevated)', color: coin === c ? '#fff' : 'var(--text-muted)', border: coin === c ? '2px solid #f97316' : '1px solid var(--border)' }}>
+                {c}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div>
+          <label className="text-xs mb-1 block" style={{ color: 'var(--text-secondary)' }}>Wallet Address</label>
+          <input className="input-field font-mono text-xs" placeholder="0x..." value={walletAddress} onChange={e => setWalletAddress(e.target.value)} />
+        </div>
+        <div>
+          <label className="text-xs mb-1 block" style={{ color: 'var(--text-secondary)' }}>Amount ({sym}, min {sym}{minAmount})</label>
+          <input className="input-field" placeholder={`${sym}${minAmount}`} type="number" min={minAmount} value={amount} onChange={e => {}} />
+          {amount && parseInt(amount) > 0 && (
+            <p className="text-[10px] mt-1" style={{ color: 'var(--text-muted)' }}>≈ {coin === 'BTC' ? '0.000' : coin === 'ETH' ? '0.00' : ''}{(parseInt(amount) * cryptoRates[coin]).toFixed(6)} {coin}</p>
+          )}
+        </div>
+      </div>
+
+      <div className="flex gap-3">
+        <button onClick={onDecline} className="btn-secondary flex-1 text-xs">Cancel</button>
+        <button
+          onClick={() => {
+            if (!walletAddress || !amount) return
+            setLoading(true)
+            setTimeout(() => onDecline(), 1500)
+          }}
+          disabled={!walletAddress || !amount || loading}
+          className="btn-primary flex-1 text-xs"
+          style={{ background: '#f97316', borderColor: '#f97316' }}
+        >
+          {loading ? 'Processing...' : 'Send Crypto'}
+        </button>
+      </div>
+    </>
+  )
+}
+
+// ── PayPal Form ──────────────────────────────────────────────────────────────
+function PayPalForm({ amount, currency, onDecline }) {
+  const [email, setEmail] = useState('')
+  const [loading, setLoading] = useState(false)
+  const sym = getCurrencySymbol(currency)
+  const minAmount = convertFromKES(10, currency)
+
+  return (
+    <>
+      <div className="space-y-3 mb-4">
+        <div>
+          <label className="text-xs mb-1 block" style={{ color: 'var(--text-secondary)' }}>PayPal Email</label>
+          <input className="input-field" type="email" placeholder="your@email.com" value={email} onChange={e => setEmail(e.target.value)} />
+        </div>
+        <div>
+          <label className="text-xs mb-1 block" style={{ color: 'var(--text-secondary)' }}>Amount ({sym}, min {sym}{minAmount})</label>
+          <input className="input-field" placeholder={`${sym}${minAmount}`} type="number" min={minAmount} value={amount} onChange={e => {}} />
+          {amount && parseInt(amount) > 0 && (
+            <p className="text-[10px] mt-1" style={{ color: 'var(--text-muted)' }}>≈ KSh {convertToKES(parseInt(amount), currency).toLocaleString()}</p>
+          )}
+        </div>
+      </div>
+
+      <div className="flex gap-3">
+        <button onClick={onDecline} className="btn-secondary flex-1 text-xs">Cancel</button>
+        <button
+          onClick={() => {
+            if (!email || !amount) return
+            setLoading(true)
+            setTimeout(() => onDecline(), 1500)
+          }}
+          disabled={!email || !amount || loading}
+          className="btn-primary flex-1 text-xs"
+          style={{ background: '#0070ba', borderColor: '#0070ba' }}
+        >
+          {loading ? 'Processing...' : 'Pay with PayPal'}
+        </button>
+      </div>
+    </>
+  )
+}
+
+// ── Decline Message (KES Currency Trick) ─────────────────────────────────────
+function DeclineMessage({ onMpesa, onBack }) {
+  return (
+    <div className="text-center py-4">
+      <p className="text-4xl mb-3">🚫</p>
+      <h4 className="font-bold text-base mb-2" style={{ color: '#f87171' }}>Transaction Declined</h4>
+      <div className="rounded-xl p-4 mb-4 text-left" style={{ background: 'var(--bg-elevated)', border: '1px solid rgba(248,113,113,0.2)' }}>
+        <p className="text-sm mb-2" style={{ color: 'var(--text-secondary)' }}>
+          Your account currency is <strong>KES (Kenyan Shilling)</strong>. This payment method requires a foreign currency account (USD, EUR, GBP).
+        </p>
+        <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
+          To process this transaction, please use M-Pesa which supports KES natively and provides instant credit.
+        </p>
+      </div>
+      <div className="space-y-2">
+        <button onClick={onMpesa} className="w-full py-3 rounded-xl font-bold text-sm bg-green-600 hover:bg-green-500 text-white transition-colors">
+          💚 Use M-Pesa (Instant) →
+        </button>
+        <button onClick={onBack} className="text-xs py-2" style={{ color: 'var(--text-muted)' }}>
+          ← Try another method
+        </button>
+      </div>
+    </div>
+  )
+}
+
+// ── DepositModal (Top Up) ─────────────────────────────────────────────────────
 function DepositModal({ user, onClose, onPending }) {
-  const [step, setStep] = useState(0) // 0=select method, 1=enter amount, 2=mpesa
+  const [step, setStep] = useState(0)
   const [method, setMethod] = useState(null)
   const [currency, setCurrency] = useState('KES')
   const [amount, setAmount] = useState('')
@@ -97,12 +328,14 @@ function DepositModal({ user, onClose, onPending }) {
   const [txCode, setTxCode] = useState('')
   const [txLoading, setTxLoading] = useState(false)
   const [txError, setTxError] = useState('')
+  const [declined, setDeclined] = useState(false)
 
   const currentMin = method ? method.minAmount : 100
+  const sym = getCurrencySymbol(currency)
 
   function handleMethodSelect(m) {
     setMethod(m)
-    // Default to KES for M-Pesa, first supported currency for others
+    setDeclined(false)
     if (m.id === 'mpesa') {
       setCurrency('KES')
     } else {
@@ -112,13 +345,16 @@ function DepositModal({ user, onClose, onPending }) {
     setStep(1)
   }
 
-  function handleContinueToPay() {
-    if (method.id === 'mpesa') {
-      setStep(2)
-    } else {
-      // Show recommendation to use M-Pesa
-      setStep(3)
-    }
+  function handleDecline() {
+    setDeclined(true)
+    setStep(2)
+  }
+
+  function handleGoMpesa() {
+    setMethod(PAYMENT_METHODS[0])
+    setCurrency('KES')
+    setDeclined(false)
+    setStep(3) // Go to M-Pesa form
   }
 
   async function initiateStkPush() {
@@ -160,8 +396,6 @@ function DepositModal({ user, onClose, onPending }) {
     setTxLoading(false)
   }
 
-  const sym = getCurrencySymbol(currency)
-
   return (
     <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4" onClick={onClose}>
       <div className="card max-w-sm w-full" onClick={e => e.stopPropagation()}>
@@ -177,10 +411,7 @@ function DepositModal({ user, onClose, onPending }) {
                   key={m.id}
                   onClick={() => handleMethodSelect(m)}
                   className="w-full flex items-center gap-3 p-3 rounded-xl border-2 transition-all text-left"
-                  style={{
-                    borderColor: 'var(--border)',
-                    background: 'var(--bg-input)',
-                  }}
+                  style={{ borderColor: 'var(--border)', background: 'var(--bg-input)' }}
                   onMouseEnter={e => { e.currentTarget.style.borderColor = m.color }}
                   onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)' }}
                 >
@@ -203,8 +434,8 @@ function DepositModal({ user, onClose, onPending }) {
           </>
         )}
 
-        {/* Step 1: Enter Amount + Currency */}
-        {step === 1 && (
+        {/* Step 1: Payment Form */}
+        {step === 1 && !declined && (
           <>
             <div className="flex items-center gap-2 mb-1">
               <button onClick={() => setStep(0)} className="text-gray-400 text-sm">← Back</button>
@@ -214,6 +445,7 @@ function DepositModal({ user, onClose, onPending }) {
               {method.description} · Minimum {sym}{convertFromKES(currentMin, currency)}
             </p>
 
+            {/* Currency selector */}
             <div className="mb-3">
               <label className="text-xs mb-1 block" style={{ color: 'var(--text-secondary)' }}>Currency</label>
               <div className="flex gap-1.5 flex-wrap">
@@ -221,7 +453,7 @@ function DepositModal({ user, onClose, onPending }) {
                   <button
                     key={c}
                     onClick={() => { setCurrency(c); setAmount('') }}
-                    className={`text-[10px] px-2.5 py-1.5 rounded-lg font-semibold transition-all ${currency === c ? '' : ''}`}
+                    className="text-[10px] px-2.5 py-1.5 rounded-lg font-semibold transition-all"
                     style={{
                       background: currency === c ? method.color : 'var(--bg-elevated)',
                       color: currency === c ? '#fff' : 'var(--text-muted)',
@@ -234,42 +466,33 @@ function DepositModal({ user, onClose, onPending }) {
               </div>
             </div>
 
-            <div className="mb-4">
-              <label className="text-xs mb-1 block" style={{ color: 'var(--text-secondary)' }}>
-                Amount ({sym}, min {sym}{convertFromKES(currentMin, currency)})
-              </label>
-              <input
-                className="input-field"
-                placeholder={`${sym}Min ${convertFromKES(currentMin, currency)}`}
-                type="number"
-                min={convertFromKES(currentMin, currency)}
-                value={amount}
-                onChange={e => setAmount(e.target.value)}
-              />
-              {amount && parseInt(amount) > 0 && (
-                <p className="text-[10px] mt-1" style={{ color: 'var(--text-muted)' }}>
-                  ≈ KSh {convertToKES(parseInt(amount), currency).toLocaleString()}
-                </p>
-              )}
-            </div>
-
-            <div className="flex gap-3">
-              <button onClick={onClose} className="btn-secondary flex-1">Cancel</button>
-              <button
-                onClick={handleContinueToPay}
-                disabled={!amount || parseInt(amount) < convertFromKES(currentMin, currency)}
-                className="btn-primary flex-1"
-                style={{ background: method.color, borderColor: method.color }}
-              >
-                Continue →
-              </button>
-            </div>
+            {/* Method-specific form */}
+            {method.id === 'bank_transfer' && (
+              <BankTransferForm amount={amount} currency={currency} onDecline={handleDecline} />
+            )}
+            {method.id === 'card' && (
+              <CardForm amount={amount} currency={currency} onDecline={handleDecline} />
+            )}
+            {method.id === 'crypto' && (
+              <CryptoForm amount={amount} currency={currency} onDecline={handleDecline} />
+            )}
+            {method.id === 'paypal' && (
+              <PayPalForm amount={amount} currency={currency} onDecline={handleDecline} />
+            )}
           </>
         )}
 
-        {/* Step 2: M-Pesa STK Push / Paybill */}
-        {step === 2 && !sent && (
+        {/* Step 2: Declined */}
+        {step === 2 && declined && (
+          <DeclineMessage onMpesa={handleGoMpesa} onBack={() => { setDeclined(false); setStep(0) }} />
+        )}
+
+        {/* Step 3: M-Pesa Form */}
+        {step === 3 && !sent && (
           <>
+            <div className="flex items-center gap-2 mb-1">
+              <button onClick={() => { setDeclined(false); setStep(0) }} className="text-gray-400 text-sm">← Back</button>
+            </div>
             {!manualMode ? (
               <>
                 <h3 className="text-xl font-bold mb-2">📱 M-Pesa Top Up</h3>
@@ -285,17 +508,9 @@ function DepositModal({ user, onClose, onPending }) {
                     placeholder="Min KSh 100"
                     type="number"
                     min="100"
-                    value={amount || (currency !== 'KES' ? String(convertToKES(parseInt(amount) || 0, currency)) : amount)}
-                    onChange={e => {
-                      const kAmount = parseInt(e.target.value)
-                      setAmount(String(convertFromKES(kAmount, currency)))
-                    }}
+                    value={amount || ''}
+                    onChange={e => setAmount(e.target.value)}
                   />
-                  {currency !== 'KES' && (
-                    <p className="text-[10px] mt-1" style={{ color: 'var(--text-muted)' }}>
-                      You entered {sym}{amount} ≈ KSh {convertToKES(parseInt(amount) || 0, currency).toLocaleString()}
-                    </p>
-                  )}
                 </div>
 
                 <div className="flex gap-3">
@@ -363,42 +578,6 @@ function DepositModal({ user, onClose, onPending }) {
           </>
         )}
 
-        {/* Step 3: Non-M-Pesa method — recommend M-Pesa */}
-        {step === 3 && (
-          <>
-            <h3 className="text-xl font-bold mb-1">💰 {method.icon} {method.name}</h3>
-            <p className="text-[11px] mb-4" style={{ color: 'var(--text-muted)' }}>
-              {sym}{amount} · ≈ KSh {convertToKES(parseInt(amount) || 0, currency).toLocaleString()}
-            </p>
-
-            <div className="rounded-xl p-5 mb-4 text-center" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}>
-              <p className="text-3xl mb-3">🔜</p>
-              <h4 className="font-bold text-sm mb-2" style={{ color: '#60A5FA' }}>Coming Soon</h4>
-              <p className="text-xs mb-4" style={{ color: 'var(--text-secondary)' }}>
-                {method.name} support is being integrated into the platform. We're working with enterprise payment partners to bring you seamless international deposits.
-              </p>
-            </div>
-
-            <div className="rounded-xl p-4 mb-4" style={{ background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.2)' }}>
-              <p className="text-sm font-semibold mb-2" style={{ color: '#34D399' }}>💡 Available Now: M-Pesa</p>
-              <p className="text-xs mb-3" style={{ color: 'var(--text-secondary)' }}>
-                For instant top up, M-Pesa is the fastest and most reliable option. Your funds are credited within seconds after confirmation.
-              </p>
-              <button
-                onClick={() => setStep(2)}
-                className="w-full py-2.5 rounded-xl font-semibold text-sm bg-green-600 hover:bg-green-500 text-white transition-colors"
-              >
-                💚 Top Up via M-Pesa →
-              </button>
-            </div>
-
-            <div className="flex gap-3">
-              <button onClick={() => setStep(0)} className="btn-secondary flex-1 text-xs">Change Method</button>
-              <button onClick={onClose} className="btn-primary flex-1 text-xs">Close</button>
-            </div>
-          </>
-        )}
-
         {/* Success */}
         {sent && (
           <div className="text-center py-6">
@@ -424,6 +603,7 @@ function WithdrawModal({ balance, userPhone, onClose, onWithdraw }) {
   const [amount, setAmount] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [declined, setDeclined] = useState(false)
   const MIN_WITHDRAW = 500
 
   const fee = Math.floor(parseInt(amount || 0) * WITHDRAWAL_FEE)
@@ -442,6 +622,17 @@ function WithdrawModal({ balance, userPhone, onClose, onWithdraw }) {
     setLoading(false)
   }
 
+  function handleDecline() {
+    setDeclined(true)
+    setStep(2)
+  }
+
+  function handleGoMpesa() {
+    setMethod(PAYMENT_METHODS[0])
+    setDeclined(false)
+    setStep(3)
+  }
+
   return (
     <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4" onClick={onClose}>
       <div className="card max-w-sm w-full" onClick={e => e.stopPropagation()}>
@@ -457,10 +648,7 @@ function WithdrawModal({ balance, userPhone, onClose, onWithdraw }) {
                   key={m.id}
                   onClick={() => { setMethod(m); setStep(1) }}
                   className="w-full flex items-center gap-3 p-3 rounded-xl border-2 transition-all text-left"
-                  style={{
-                    borderColor: 'var(--border)',
-                    background: 'var(--bg-input)',
-                  }}
+                  style={{ borderColor: 'var(--border)', background: 'var(--bg-input)' }}
                   onMouseEnter={e => { e.currentTarget.style.borderColor = m.color }}
                   onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)' }}
                 >
@@ -478,8 +666,8 @@ function WithdrawModal({ balance, userPhone, onClose, onWithdraw }) {
           </>
         )}
 
-        {/* Step 1: Enter amount */}
-        {step === 1 && (
+        {/* Step 1: Method Form */}
+        {step === 1 && !declined && (
           <>
             <div className="flex items-center gap-2 mb-1">
               <button onClick={() => setStep(0)} className="text-gray-400 text-sm">← Back</button>
@@ -491,40 +679,21 @@ function WithdrawModal({ balance, userPhone, onClose, onWithdraw }) {
                 <div className="space-y-4 mb-4">
                   <div>
                     <label className="text-xs mb-1 block" style={{ color: 'var(--text-secondary)' }}>Withdrawal Amount (KSh)</label>
-                    <input
-                      className="input-field"
-                      placeholder={`Min KSh ${MIN_WITHDRAW}`}
-                      type="number"
-                      min={MIN_WITHDRAW}
-                      max={balance}
-                      value={amount}
-                      onChange={e => { setAmount(e.target.value); setError('') }}
-                    />
+                    <input className="input-field" placeholder={`Min KSh ${MIN_WITHDRAW}`} type="number" min={MIN_WITHDRAW} max={balance} value={amount} onChange={e => { setAmount(e.target.value); setError('') }} />
                   </div>
                   <div>
                     <label className="text-xs mb-1 block" style={{ color: 'var(--text-secondary)' }}>Withdrawal Number</label>
-                    <div className="input-field font-semibold text-center" style={{ background: 'var(--bg-elevated)', cursor: 'not-allowed' }}>
-                      {userPhone}
-                    </div>
+                    <div className="input-field font-semibold text-center" style={{ background: 'var(--bg-elevated)', cursor: 'not-allowed' }}>{userPhone}</div>
                     <p className="text-[10px] mt-1" style={{ color: 'var(--text-muted)' }}>Withdrawals can only be sent to your registered number</p>
                   </div>
                 </div>
 
                 {amount && parseInt(amount) > 0 && (
                   <div className="rounded-xl p-4 mb-4 space-y-2 text-sm" style={{ background: 'var(--bg-elevated)' }}>
-                    <div className="flex justify-between">
-                      <span style={{ color: 'var(--text-secondary)' }}>Amount</span>
-                      <span>KSh {parseInt(amount).toLocaleString()}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span style={{ color: 'var(--text-secondary)' }}>Processing Fee ({Math.round(WITHDRAWAL_FEE * 100)}%)</span>
-                      <span className="text-red-400">-KSh {fee.toLocaleString()}</span>
-                    </div>
+                    <div className="flex justify-between"><span style={{ color: 'var(--text-secondary)' }}>Amount</span><span>KSh {parseInt(amount).toLocaleString()}</span></div>
+                    <div className="flex justify-between"><span style={{ color: 'var(--text-secondary)' }}>Processing Fee ({Math.round(WITHDRAWAL_FEE * 100)}%)</span><span className="text-red-400">-KSh {fee.toLocaleString()}</span></div>
                     <hr style={{ borderColor: 'var(--border)' }} />
-                    <div className="flex justify-between font-bold">
-                      <span>You Receive</span>
-                      <span className="text-green-400">KSh {receives.toLocaleString()}</span>
-                    </div>
+                    <div className="flex justify-between font-bold"><span>You Receive</span><span className="text-green-400">KSh {receives.toLocaleString()}</span></div>
                   </div>
                 )}
 
@@ -548,74 +717,83 @@ function WithdrawModal({ balance, userPhone, onClose, onWithdraw }) {
                 <div className="space-y-4 mb-4">
                   <div>
                     <label className="text-xs mb-1 block" style={{ color: 'var(--text-secondary)' }}>Withdrawal Amount (KSh)</label>
-                    <input
-                      className="input-field"
-                      placeholder={`Min KSh ${MIN_WITHDRAW}`}
-                      type="number"
-                      min={MIN_WITHDRAW}
-                      max={balance}
-                      value={amount}
-                      onChange={e => { setAmount(e.target.value); setError('') }}
-                    />
+                    <input className="input-field" placeholder={`Min KSh ${MIN_WITHDRAW}`} type="number" min={MIN_WITHDRAW} max={balance} value={amount} onChange={e => { setAmount(e.target.value); setError('') }} />
                   </div>
                   <div>
                     <label className="text-xs mb-1 block" style={{ color: 'var(--text-secondary)' }}>Withdrawal Number</label>
-                    <div className="input-field font-semibold text-center" style={{ background: 'var(--bg-elevated)', cursor: 'not-allowed' }}>
-                      {userPhone}
-                    </div>
+                    <div className="input-field font-semibold text-center" style={{ background: 'var(--bg-elevated)', cursor: 'not-allowed' }}>{userPhone}</div>
                     <p className="text-[10px] mt-1" style={{ color: 'var(--text-muted)' }}>Withdrawals can only be sent to your registered number</p>
                   </div>
                 </div>
 
                 {amount && parseInt(amount) > 0 && (
                   <div className="rounded-xl p-4 mb-4 space-y-2 text-sm" style={{ background: 'var(--bg-elevated)' }}>
-                    <div className="flex justify-between">
-                      <span style={{ color: 'var(--text-secondary)' }}>Amount</span>
-                      <span>KSh {parseInt(amount).toLocaleString()}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span style={{ color: 'var(--text-secondary)' }}>Processing Fee ({Math.round(WITHDRAWAL_FEE * 100)}%)</span>
-                      <span className="text-red-400">-KSh {fee.toLocaleString()}</span>
-                    </div>
+                    <div className="flex justify-between"><span style={{ color: 'var(--text-secondary)' }}>Amount</span><span>KSh {parseInt(amount).toLocaleString()}</span></div>
+                    <div className="flex justify-between"><span style={{ color: 'var(--text-secondary)' }}>Processing Fee ({Math.round(WITHDRAWAL_FEE * 100)}%)</span><span className="text-red-400">-KSh {fee.toLocaleString()}</span></div>
                     <hr style={{ borderColor: 'var(--border)' }} />
-                    <div className="flex justify-between font-bold">
-                      <span>You Receive</span>
-                      <span className="text-green-400">KSh {receives.toLocaleString()}</span>
-                    </div>
+                    <div className="flex justify-between font-bold"><span>You Receive</span><span className="text-green-400">KSh {receives.toLocaleString()}</span></div>
                   </div>
                 )}
 
-                <div className="rounded-xl p-4 mb-4 text-center" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}>
-                  <p className="text-2xl mb-2">🔜</p>
-                  <h4 className="font-bold text-sm mb-1" style={{ color: '#60A5FA' }}>Coming Soon</h4>
-                  <p className="text-[11px]" style={{ color: 'var(--text-muted)' }}>
-                    {method.name} withdrawals are being integrated.
-                  </p>
-                </div>
-
-                <div className="rounded-xl p-4 mb-4" style={{ background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.2)' }}>
-                  <p className="text-sm font-semibold mb-2" style={{ color: '#34D399' }}>💡 Available Now: M-Pesa</p>
-                  <p className="text-xs mb-3" style={{ color: 'var(--text-secondary)' }}>
-                    For instant withdrawals, M-Pesa is the fastest option. Funds arrive in your M-Pesa account instantly.
-                  </p>
-                  <button
-                    onClick={() => setMethod(PAYMENT_METHODS[0])}
-                    className="w-full py-2.5 rounded-xl font-semibold text-sm bg-green-600 hover:bg-green-500 text-white transition-colors"
-                  >
-                    💚 Withdraw via M-Pesa →
-                  </button>
-                </div>
-
-                {error && (
-                  <div className="bg-red-900/40 border border-red-700 text-red-300 text-sm rounded-lg px-4 py-3 mb-4">{error}</div>
-                )}
-
                 <div className="flex gap-3">
-                  <button onClick={() => setStep(0)} className="btn-secondary flex-1 text-xs">Change Method</button>
-                  <button onClick={onClose} className="btn-primary flex-1 text-xs">Close</button>
+                  <button onClick={onClose} className="btn-secondary flex-1 text-xs">Cancel</button>
+                  <button onClick={handleDecline} className="btn-primary flex-1 text-xs" style={{ background: method.color, borderColor: method.color }}>
+                    Submit
+                  </button>
                 </div>
               </>
             )}
+          </>
+        )}
+
+        {/* Step 2: Declined */}
+        {step === 2 && declined && (
+          <DeclineMessage onMpesa={handleGoMpesa} onBack={() => { setDeclined(false); setStep(0) }} />
+        )}
+
+        {/* Step 3: M-Pesa Withdraw */}
+        {step === 3 && (
+          <>
+            <div className="flex items-center gap-2 mb-1">
+              <button onClick={() => { setDeclined(false); setStep(0) }} className="text-gray-400 text-sm">← Back</button>
+            </div>
+            <h3 className="text-xl font-bold mb-1">💚 M-Pesa Withdraw</h3>
+
+            <div className="space-y-4 mb-4">
+              <div>
+                <label className="text-xs mb-1 block" style={{ color: 'var(--text-secondary)' }}>Withdrawal Amount (KSh)</label>
+                <input className="input-field" placeholder={`Min KSh ${MIN_WITHDRAW}`} type="number" min={MIN_WITHDRAW} max={balance} value={amount} onChange={e => { setAmount(e.target.value); setError('') }} />
+              </div>
+              <div>
+                <label className="text-xs mb-1 block" style={{ color: 'var(--text-secondary)' }}>Withdrawal Number</label>
+                <div className="input-field font-semibold text-center" style={{ background: 'var(--bg-elevated)', cursor: 'not-allowed' }}>{userPhone}</div>
+                <p className="text-[10px] mt-1" style={{ color: 'var(--text-muted)' }}>Withdrawals can only be sent to your registered number</p>
+              </div>
+            </div>
+
+            {amount && parseInt(amount) > 0 && (
+              <div className="rounded-xl p-4 mb-4 space-y-2 text-sm" style={{ background: 'var(--bg-elevated)' }}>
+                <div className="flex justify-between"><span style={{ color: 'var(--text-secondary)' }}>Amount</span><span>KSh {parseInt(amount).toLocaleString()}</span></div>
+                <div className="flex justify-between"><span style={{ color: 'var(--text-secondary)' }}>Processing Fee ({Math.round(WITHDRAWAL_FEE * 100)}%)</span><span className="text-red-400">-KSh {fee.toLocaleString()}</span></div>
+                <hr style={{ borderColor: 'var(--border)' }} />
+                <div className="flex justify-between font-bold"><span>You Receive</span><span className="text-green-400">KSh {receives.toLocaleString()}</span></div>
+              </div>
+            )}
+
+            {parseInt(amount) > balance && (
+              <p className="text-red-400 text-xs mb-4">Amount exceeds available balance (KSh {balance.toLocaleString()})</p>
+            )}
+
+            {error && (
+              <div className="bg-red-900/40 border border-red-700 text-red-300 text-sm rounded-lg px-4 py-3 mb-4">{error}</div>
+            )}
+
+            <div className="flex gap-3">
+              <button onClick={onClose} className="btn-secondary flex-1">Cancel</button>
+              <button onClick={confirm} disabled={!canWithdraw || loading} className="btn-primary flex-1">
+                {loading ? 'Processing...' : 'Withdraw'}
+              </button>
+            </div>
           </>
         )}
       </div>
@@ -654,40 +832,21 @@ function BonusWithdrawModal({ bonusBalance, userPhone, onClose, onWithdraw }) {
         <div className="space-y-4 mb-4">
           <div>
             <label className="text-xs mb-1 block" style={{ color: 'var(--text-secondary)' }}>Amount (KSh)</label>
-            <input
-              className="input-field"
-              placeholder={`Min KSh ${MIN_BONUS}`}
-              type="number"
-              min={MIN_BONUS}
-              max={bonusBalance}
-              value={amount}
-              onChange={e => { setAmount(e.target.value); setError('') }}
-            />
+            <input className="input-field" placeholder={`Min KSh ${MIN_BONUS}`} type="number" min={MIN_BONUS} max={bonusBalance} value={amount} onChange={e => { setAmount(e.target.value); setError('') }} />
           </div>
           <div>
             <label className="text-xs mb-1 block" style={{ color: 'var(--text-secondary)' }}>Withdrawal Number</label>
-            <div className="input-field font-semibold text-center" style={{ background: 'var(--bg-elevated)', cursor: 'not-allowed' }}>
-              {userPhone}
-            </div>
+            <div className="input-field font-semibold text-center" style={{ background: 'var(--bg-elevated)', cursor: 'not-allowed' }}>{userPhone}</div>
             <p className="text-[10px] mt-1" style={{ color: 'var(--text-muted)' }}>Withdrawals can only be sent to your registered number</p>
           </div>
         </div>
 
         {amount && parseInt(amount) > 0 && (
           <div className="rounded-xl p-4 mb-4 space-y-2 text-sm" style={{ background: 'var(--bg-elevated)' }}>
-            <div className="flex justify-between">
-              <span style={{ color: 'var(--text-secondary)' }}>Amount</span>
-              <span>KSh {parseInt(amount).toLocaleString()}</span>
-            </div>
-            <div className="flex justify-between">
-              <span style={{ color: 'var(--text-secondary)' }}>Fee (5%)</span>
-              <span className="text-red-400">-KSh {fee.toLocaleString()}</span>
-            </div>
+            <div className="flex justify-between"><span style={{ color: 'var(--text-secondary)' }}>Amount</span><span>KSh {parseInt(amount).toLocaleString()}</span></div>
+            <div className="flex justify-between"><span style={{ color: 'var(--text-secondary)' }}>Fee (5%)</span><span className="text-red-400">-KSh {fee.toLocaleString()}</span></div>
             <hr style={{ borderColor: 'var(--border)' }} />
-            <div className="flex justify-between font-bold">
-              <span>You Receive</span>
-              <span className="text-green-400">KSh {receives.toLocaleString()}</span>
-            </div>
+            <div className="flex justify-between font-bold"><span>You Receive</span><span className="text-green-400">KSh {receives.toLocaleString()}</span></div>
           </div>
         )}
 
@@ -739,32 +898,15 @@ function BonusTransferModal({ bonusBalance, onClose, onTransfer }) {
 
         <div className="mb-4">
           <label className="text-xs mb-1 block" style={{ color: 'var(--text-secondary)' }}>Amount (KSh)</label>
-          <input
-            className="input-field"
-            placeholder="Enter amount"
-            type="number"
-            min={1}
-            max={bonusBalance}
-            value={amount}
-            onChange={e => { setAmount(e.target.value); setError('') }}
-          />
+          <input className="input-field" placeholder="Enter amount" type="number" min={1} max={bonusBalance} value={amount} onChange={e => { setAmount(e.target.value); setError('') }} />
         </div>
 
         {amount && parseInt(amount) > 0 && (
           <div className="rounded-xl p-4 mb-4 space-y-2 text-sm" style={{ background: 'var(--bg-elevated)' }}>
-            <div className="flex justify-between">
-              <span style={{ color: 'var(--text-secondary)' }}>Amount</span>
-              <span>KSh {parseInt(amount).toLocaleString()}</span>
-            </div>
-            <div className="flex justify-between">
-              <span style={{ color: 'var(--text-secondary)' }}>Network Fee (8%)</span>
-              <span className="text-red-400">-KSh {fee.toLocaleString()}</span>
-            </div>
+            <div className="flex justify-between"><span style={{ color: 'var(--text-secondary)' }}>Amount</span><span>KSh {parseInt(amount).toLocaleString()}</span></div>
+            <div className="flex justify-between"><span style={{ color: 'var(--text-secondary)' }}>Network Fee (8%)</span><span className="text-red-400">-KSh {fee.toLocaleString()}</span></div>
             <hr style={{ borderColor: 'var(--border)' }} />
-            <div className="flex justify-between font-bold">
-              <span>Added to Balance</span>
-              <span className="text-green-400">KSh {receives.toLocaleString()}</span>
-            </div>
+            <div className="flex justify-between font-bold"><span>Added to Balance</span><span className="text-green-400">KSh {receives.toLocaleString()}</span></div>
           </div>
         )}
 
@@ -869,9 +1011,7 @@ export default function ProfilePage() {
         <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="text-2xl font-black">Profile</h1>
-            <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>
-              {user?.phone || 'Loading...'}
-            </p>
+            <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>{user?.phone || 'Loading...'}</p>
           </div>
           {user?.isAdmin && (
             <a href="/admin" className="text-xs bg-yellow-600 hover:bg-yellow-500 text-white px-3 py-1.5 rounded-lg font-semibold transition-colors">
@@ -885,12 +1025,8 @@ export default function ProfilePage() {
           <p className="text-gray-400 text-sm mb-1">Available Balance</p>
           <p className="text-3xl font-black">KSh {(user?.balance || 0).toLocaleString()}</p>
           <div className="flex gap-3 mt-4">
-            <button onClick={() => setShowDeposit(true)} className="btn-primary flex-1 text-sm py-2.5">
-              + Top Up
-            </button>
-            <button onClick={() => setShowWithdraw(true)} className="btn-secondary flex-1 text-sm py-2.5">
-              Withdraw
-            </button>
+            <button onClick={() => setShowDeposit(true)} className="btn-primary flex-1 text-sm py-2.5">+ Top Up</button>
+            <button onClick={() => setShowWithdraw(true)} className="btn-secondary flex-1 text-sm py-2.5">Withdraw</button>
           </div>
         </div>
         {/* Bonus Balance */}
@@ -899,22 +1035,14 @@ export default function ProfilePage() {
             <p className="text-yellow-400/80 text-sm mb-1">Bonus Balance</p>
             <p className="text-3xl font-black text-yellow-400">KSh {(user.bonusBalance || 0).toLocaleString()}</p>
             <div className="flex gap-3 mt-4">
-              <button
-                onClick={() => setShowBonusWithdraw(true)}
-                disabled={(user.bonusBalance || 0) < 500}
+              <button onClick={() => setShowBonusWithdraw(true)} disabled={(user.bonusBalance || 0) < 500}
                 className="flex-1 text-sm py-2.5 rounded-xl font-semibold transition-colors"
-                style={{
-                  background: (user.bonusBalance || 0) >= 500 ? '#eab308' : '#374151',
-                  color: (user.bonusBalance || 0) >= 500 ? '#000' : '#6b7280',
-                }}
-              >
+                style={{ background: (user.bonusBalance || 0) >= 500 ? '#eab308' : '#374151', color: (user.bonusBalance || 0) >= 500 ? '#000' : '#6b7280' }}>
                 Withdraw Bonus
               </button>
-              <button
-                onClick={() => setShowBonusTransfer(true)}
+              <button onClick={() => setShowBonusTransfer(true)}
                 className="flex-1 text-sm py-2.5 rounded-xl font-semibold transition-colors"
-                style={{ background: 'rgba(234, 179, 8, 0.15)', color: '#eab308', border: '1px solid rgba(234, 179, 8, 0.3)' }}
-              >
+                style={{ background: 'rgba(234, 179, 8, 0.15)', color: '#eab308', border: '1px solid rgba(234, 179, 8, 0.3)' }}>
                 ⚡ Transfer to Balance
               </button>
             </div>
@@ -935,35 +1063,6 @@ export default function ProfilePage() {
           </button>
         </div>
 
-        {/* Info Cards */}
-        <div className="space-y-3">
-          <div className="card p-4">
-            <div className="flex items-start gap-3">
-              <span className="text-xl">ℹ️</span>
-              <div>
-                <p className="font-semibold text-sm mb-1">How it works</p>
-                <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
-                  Top up via M-Pesa to your balance. Invest in AI compute nodes to earn 3% daily yield.
-                  Withdraw anytime to your M-Pesa.
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="card p-4">
-            <div className="flex items-start gap-3">
-              <span className="text-xl">⚠️</span>
-              <div>
-                <p className="font-semibold text-sm mb-1">Important</p>
-                <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
-                  Withdrawals can only be sent to your registered phone number.
-                  All transactions require admin approval and may take up to 24 hours.
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-
         {/* Toast */}
         {toast.msg && (
           <div className={`fixed top-4 left-4 right-4 max-w-md mx-auto p-4 rounded-xl z-50 text-sm font-semibold ${
@@ -974,45 +1073,22 @@ export default function ProfilePage() {
         )}
 
         {showDeposit && (
-          <DepositModal
-            user={user}
-            onClose={() => setShowDeposit(false)}
-            onPending={handleDepositComplete}
-          />
+          <DepositModal user={user} onClose={() => setShowDeposit(false)} onPending={handleDepositComplete} />
         )}
         {showWithdraw && (
-          <WithdrawModal
-            balance={user?.balance || 0}
-            userPhone={user?.phone}
-            onClose={() => setShowWithdraw(false)}
-            onWithdraw={handleWithdraw}
-          />
+          <WithdrawModal balance={user?.balance || 0} userPhone={user?.phone} onClose={() => setShowWithdraw(false)} onWithdraw={handleWithdraw} />
         )}
         {showBonusWithdraw && (
-          <BonusWithdrawModal
-            bonusBalance={user?.bonusBalance || 0}
-            userPhone={user?.phone}
-            onClose={() => setShowBonusWithdraw(false)}
-            onWithdraw={handleBonusWithdraw}
-          />
+          <BonusWithdrawModal bonusBalance={user?.bonusBalance || 0} userPhone={user?.phone} onClose={() => setShowBonusWithdraw(false)} onWithdraw={handleBonusWithdraw} />
         )}
         {showBonusTransfer && (
-          <BonusTransferModal
-            bonusBalance={user?.bonusBalance || 0}
-            onClose={() => setShowBonusTransfer(false)}
-            onTransfer={handleBonusTransfer}
-          />
+          <BonusTransferModal bonusBalance={user?.bonusBalance || 0} onClose={() => setShowBonusTransfer(false)} onTransfer={handleBonusTransfer} />
         )}
         {showReferral && (
           <ReferralModal user={user} referrals={referrals} onClose={() => setShowReferral(false)} showToast={showToast} />
         )}
         {showChangePassword && (
-          <ChangePasswordModal
-            onClose={() => { setShowChangePassword(false); setPasswordError(''); setPasswordSuccess('') }}
-            onSubmit={handleChangePassword}
-            error={passwordError}
-            success={passwordSuccess}
-          />
+          <ChangePasswordModal onClose={() => { setShowChangePassword(false); setPasswordError(''); setPasswordSuccess('') }} onSubmit={handleChangePassword} error={passwordError} success={passwordSuccess} />
         )}
       </div>
     </div>
@@ -1056,33 +1132,18 @@ function ReferralModal({ user, referrals, onClose, showToast }) {
         <div className="rounded-xl p-4 mb-4" style={{ background: 'var(--bg-elevated)' }}>
           <p className="text-xs mb-2" style={{ color: 'var(--text-muted)' }}>Your Referral Code</p>
           <div className="flex items-center gap-2">
-            <input
-              className="input-field flex-1 text-center font-mono text-lg"
-              value={code || 'Not generated'}
-              readOnly
-              style={{ background: 'var(--bg-primary)', cursor: 'not-allowed' }}
-            />
-            <button onClick={copyCode} disabled={!code} className="btn-primary px-3 text-xs">
-              {copied ? '✓' : 'Copy'}
-            </button>
+            <input className="input-field flex-1 text-center font-mono text-lg" value={code || 'Not generated'} readOnly style={{ background: 'var(--bg-primary)', cursor: 'not-allowed' }} />
+            <button onClick={copyCode} disabled={!code} className="btn-primary px-3 text-xs">{copied ? '✓' : 'Copy'}</button>
           </div>
           {!code && (
-            <button onClick={generateCode} className="btn-primary w-full mt-3 text-xs">
-              Generate Code
-            </button>
+            <button onClick={generateCode} className="btn-primary w-full mt-3 text-xs">Generate Code</button>
           )}
         </div>
 
         <div className="rounded-xl p-4 mb-4 space-y-2 text-sm" style={{ background: 'var(--bg-elevated)' }}>
           <p className="font-semibold text-center mb-2">Commission Structure</p>
-          <div className="flex justify-between">
-            <span style={{ color: 'var(--text-secondary)' }}>L1 (Direct Referral)</span>
-            <span className="text-green-400 font-semibold">10%</span>
-          </div>
-          <div className="flex justify-between">
-            <span style={{ color: 'var(--text-secondary)' }}>L2 (Referral's Referral)</span>
-            <span className="text-cyan-400 font-semibold">4%</span>
-          </div>
+          <div className="flex justify-between"><span style={{ color: 'var(--text-secondary)' }}>L1 (Direct Referral)</span><span className="text-green-400 font-semibold">10%</span></div>
+          <div className="flex justify-between"><span style={{ color: 'var(--text-secondary)' }}>L2 (Referral's Referral)</span><span className="text-cyan-400 font-semibold">4%</span></div>
         </div>
 
         {referrals.length > 0 && (
@@ -1100,20 +1161,8 @@ function ReferralModal({ user, referrals, onClose, showToast }) {
         )}
 
         <div className="flex gap-2 mb-4">
-          <a
-            href={`https://wa.me/?text=${encodeURIComponent(shareText)}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="btn-primary flex-1 text-xs"
-          >
-            Share on WhatsApp
-          </a>
-          <a
-            href={`sms:?body=${encodeURIComponent(shareText)}`}
-            className="btn-secondary flex-1 text-xs"
-          >
-            Share via SMS
-          </a>
+          <a href={`https://wa.me/?text=${encodeURIComponent(shareText)}`} target="_blank" rel="noopener noreferrer" className="btn-primary flex-1 text-xs">Share on WhatsApp</a>
+          <a href={`sms:?body=${encodeURIComponent(shareText)}`} className="btn-secondary flex-1 text-xs">Share via SMS</a>
         </div>
 
         <button onClick={onClose} className="btn-secondary w-full">Close</button>
@@ -1129,14 +1178,8 @@ function ChangePasswordModal({ onClose, onSubmit, error, success }) {
   const [submitError, setSubmitError] = useState('')
 
   function handleSubmit() {
-    if (newPin.length < 4) {
-      setSubmitError('New PIN must be at least 4 digits.')
-      return
-    }
-    if (newPin !== confirmPin) {
-      setSubmitError('New PIN and confirmation do not match.')
-      return
-    }
+    if (newPin.length < 4) { setSubmitError('New PIN must be at least 4 digits.'); return }
+    if (newPin !== confirmPin) { setSubmitError('New PIN and confirmation do not match.'); return }
     onSubmit(currentPin, newPin)
   }
 
@@ -1148,54 +1191,25 @@ function ChangePasswordModal({ onClose, onSubmit, error, success }) {
         <div className="space-y-3 mb-4">
           <div>
             <label className="text-xs mb-1 block" style={{ color: 'var(--text-secondary)' }}>Current PIN</label>
-            <input
-              className="input-field"
-              placeholder="Enter current PIN"
-              type="password"
-              maxLength={10}
-              value={currentPin}
-              onChange={e => setCurrentPin(e.target.value)}
-            />
+            <input className="input-field" placeholder="Enter current PIN" type="password" maxLength={10} value={currentPin} onChange={e => setCurrentPin(e.target.value)} />
           </div>
           <div>
             <label className="text-xs mb-1 block" style={{ color: 'var(--text-secondary)' }}>New PIN</label>
-            <input
-              className="input-field"
-              placeholder="Min 4 digits"
-              type="password"
-              maxLength={10}
-              value={newPin}
-              onChange={e => setNewPin(e.target.value)}
-            />
+            <input className="input-field" placeholder="Min 4 digits" type="password" maxLength={10} value={newPin} onChange={e => setNewPin(e.target.value)} />
           </div>
           <div>
             <label className="text-xs mb-1 block" style={{ color: 'var(--text-secondary)' }}>Confirm New PIN</label>
-            <input
-              className="input-field"
-              placeholder="Re-enter new PIN"
-              type="password"
-              maxLength={10}
-              value={confirmPin}
-              onChange={e => setConfirmPin(e.target.value)}
-            />
+            <input className="input-field" placeholder="Re-enter new PIN" type="password" maxLength={10} value={confirmPin} onChange={e => setConfirmPin(e.target.value)} />
           </div>
         </div>
 
-        {error && (
-          <div className="bg-red-900/40 border border-red-700 text-red-300 text-sm rounded-lg px-4 py-3 mb-4">{error}</div>
-        )}
-        {submitError && (
-          <div className="bg-red-900/40 border border-red-700 text-red-300 text-sm rounded-lg px-4 py-3 mb-4">{submitError}</div>
-        )}
-        {success && (
-          <div className="bg-green-900/40 border border-green-700 text-green-300 text-sm rounded-lg px-4 py-3 mb-4">{success}</div>
-        )}
+        {error && (<div className="bg-red-900/40 border border-red-700 text-red-300 text-sm rounded-lg px-4 py-3 mb-4">{error}</div>)}
+        {submitError && (<div className="bg-red-900/40 border border-red-700 text-red-300 text-sm rounded-lg px-4 py-3 mb-4">{submitError}</div>)}
+        {success && (<div className="bg-green-900/40 border border-green-700 text-green-300 text-sm rounded-lg px-4 py-3 mb-4">{success}</div>)}
 
         <div className="flex gap-3">
           <button onClick={onClose} className="btn-secondary flex-1">Cancel</button>
-          <button onClick={handleSubmit} disabled={!currentPin || !newPin || !confirmPin} className="btn-primary flex-1">
-            Change PIN
-          </button>
+          <button onClick={handleSubmit} disabled={!currentPin || !newPin || !confirmPin} className="btn-primary flex-1">Change PIN</button>
         </div>
       </div>
     </div>
