@@ -29,6 +29,7 @@ import YieldClaimHistory from '../components/YieldClaimHistory'
 import SmartNotifications from '../components/SmartNotifications'
 import ApiRateLimiter from '../components/ApiRateLimiter'
 import EarningsForecast from '../components/EarningsForecast'
+import EarnMoreModal from '../components/EarnMoreModal'
 
 const SPIN_DAYS = [1, 5] // Monday=1, Friday=5
 
@@ -539,6 +540,7 @@ export default function Dashboard() {
       {showPromo && <PromoModal onClose={() => setShowPromo(false)} onClaim={handlePromo} />}
       {showLoan && <LoanModal onClose={() => setShowLoan(false)} onSubmit={handleLoan} />}
       {showContactAdmin && <SupportModal user={user} onClose={() => setShowContactAdmin(false)} />}
+      <EarnMoreModal />
 
       {/* Header */}
       <div className="flex items-center justify-between mb-6">

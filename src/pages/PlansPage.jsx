@@ -9,6 +9,7 @@ import {
 } from '../lib/plans'
 import PlanCertifications from '../components/PlanCertifications'
 import DataCenterInfo from '../components/DataCenterInfo'
+import { hasClaimedBonusToday, claimDailyLoginBonus, claimLuckySpin } from '../lib/db'
 
 const PLAN_IMAGES = {
   starter: '/icons/starter.webp',
@@ -258,6 +259,129 @@ function ConfirmModal({ plan, workload, balance, onConfirm, onClose, confirming,
 }
 
 /* ── Main Plans Page ──────────────────────────────────────────────────── */
+/* ── Quick Actions Strip ────────────────────────────────────────────────── */
+function QuickActions({ user, showToast }) {
+  const navigate = useNavigate()
+  const [bonusLoading, setBonusLoading] = useState(false)
+  const [bonusClaimed, setBonusClaimed] = useState(false)
+  const [spinLoading, setSpinLoading] = useState(false)
+
+  useEffect(() => {
+    if (!user?.phone) return
+    hasClaimedBonusToday(user.phone, 'login_bonus').then(setBonusClaimed).catch(() => {})
+  }, [user?.phone])
+
+  async function handleClaimBonus() {
+    if (!user?.phone || bonusLoading || bonusClaimed) return
+    setBonusLoading(true)
+    try {
+      const result = await claimDailyLoginBonus(user.phone)
+      if (result?.success) {
+        showToast(`✅ Claimed KSh ${(result.amount || 50).toLocaleString()} login bonus!`, 'success')
+        setBonusClaimed(true)
+      } else {
+        showToast(result?.message || 'Already claimed today', 'error')
+      }
+    } catch (e) {
+      showToast('Claim failed. Try again.', 'error')
+    }
+    setBonusLoading(false)
+  }
+
+  async function handleSpin() {
+    if (!user?.phone || spinLoading) return
+    setSpinLoading(true)
+    try {
+      const result = await claimLuckySpin(user.phone)
+      if (result?.success) {
+        showToast(`🎉 Won KSh ${(result.amount || 0).toLocaleString()} from Lucky Spin!`, 'success')
+      } else {
+        showToast(result?.message || 'Not available right now', 'error')
+      }
+    } catch (e) {
+      showToast('Spin failed. Try again.', 'error')
+    }
+    setSpinLoading(false)
+  }
+
+  const actions = [
+    {
+      icon: '🎁',
+      label: 'Claim Bonus',
+      onClick: handleClaimBonus,
+      disabled: bonusLoading || bonusClaimed,
+      loading: bonusLoading,
+      badge: bonusClaimed ? 'Done' : null,
+    },
+    {
+      icon: '🎰',
+      label: 'Lucky Spin',
+      onClick: handleSpin,
+      disabled: spinLoading,
+      loading: spinLoading,
+      badge: null,
+    },
+    {
+      icon: '💰',
+      label: 'Deposit',
+      onClick: () => navigate('/profile?deposit=1'),
+      disabled: false,
+      loading: false,
+      badge: null,
+    },
+    {
+      icon: '👥',
+      label: 'Refer',
+      onClick: () => navigate('/profile'),
+      disabled: false,
+      loading: false,
+      badge: null,
+    },
+    {
+      icon: '🔑',
+      label: 'Promo Code',
+      onClick: () => navigate('/dashboard'),
+      disabled: false,
+      loading: false,
+      badge: null,
+    },
+  ]
+
+  return (
+    <div className="mb-4">
+      <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide" style={{ WebkitOverflowScrolling: 'touch' }}>
+        {actions.map(a => (
+          <button
+            key={a.label}
+            onClick={a.onClick}
+            disabled={a.disabled}
+            className={`relative flex-shrink-0 flex flex-col items-center gap-1 px-4 py-3 rounded-xl transition-all active:scale-95 ${
+              a.disabled ? 'opacity-50 cursor-not-allowed' : 'hover:scale-105'
+            }`}
+            style={{
+              background: a.disabled
+                ? 'var(--bg-elevated)'
+                : 'linear-gradient(135deg, rgba(0,180,255,0.08), rgba(0,180,255,0.02))',
+              border: a.disabled ? '1px solid var(--border)' : '1px solid rgba(0,180,255,0.15)',
+            }}
+          >
+            <span className="text-xl">{a.icon}</span>
+            <span className="text-[10px] font-bold whitespace-nowrap" style={{ color: a.disabled ? 'var(--text-muted)' : 'var(--text-secondary)' }}>
+              {a.loading ? '...' : a.label}
+            </span>
+            {a.badge && (
+              <span className="absolute top-1 right-1 text-[8px] px-1 py-0.5 rounded-full bg-green-600 text-white">
+                {a.badge}
+              </span>
+            )}
+          </button>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+/* ── Main Plans Page ──────────────────────────────────────────────────── */
 export default function PlansPage() {
   const { user, updateUser } = useAuth()
   const navigate = useNavigate()
@@ -339,6 +463,9 @@ export default function PlansPage() {
           onDeposit={() => { setSelectedPlan(null); navigate('/profile?deposit=1') }}
         />
       )}
+
+      {/* Quick Actions Strip */}
+      <QuickActions user={user} showToast={showToast} />
 
       <div className="mb-6">
         <h2 className="text-2xl font-black">AI Compute Nodes</h2>

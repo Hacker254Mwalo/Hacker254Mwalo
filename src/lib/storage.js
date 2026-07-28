@@ -293,3 +293,21 @@ export function recordPasswordChangeAttempt(phone) {
     }
   } catch { }
 }
+// ── Onboarding / First-Time Experience ──────────────────────────────────────
+export function hasSeenOnboarding(phone) {
+  return localStorage.getItem(`dp_onboarding_seen_${phone}`) === 'true'
+}
+
+export function markOnboardingSeen(phone) {
+  localStorage.setItem(`dp_onboarding_seen_${phone}`, 'true')
+}
+
+export function isFirstLogin(phone) {
+  const key = `dp_first_login_${phone}`
+  const seen = localStorage.getItem(key)
+  if (!seen) {
+    localStorage.setItem(key, 'true')
+    return true
+  }
+  return false
+}
