@@ -31,6 +31,7 @@ import ApiRateLimiter from '../components/ApiRateLimiter'
 import EarningsForecast from '../components/EarningsForecast'
 import EarnMoreModal from '../components/EarnMoreModal'
 import DeploymentCertificate from '../components/DeploymentCertificate'
+import { getStreakData, recordComputeCycle, getStreakBonus, getNextStreakMilestone, isStreakBroken } from '../lib/storage'
 
 const SPIN_DAYS = [1, 5] // Monday=1, Friday=5
 
@@ -286,6 +287,8 @@ export default function Dashboard() {
   const [waPhone, setWaPhone] = useState('')
   const [waGroupLink, setWaGroupLink] = useState('')
   const [activityEnabled, setActivityEnabled] = useState(true)
+  const [streak, setStreak] = useState({ count: 0, bonusPct: 0 })
+  const [streakBroken, setStreakBroken] = useState(false)
 
   function showToast(msg, type = 'success') {
     setToast({ msg, type })
@@ -313,6 +316,15 @@ export default function Dashboard() {
     } catch { /* silent */ }
   }, [user])
   useEffect(() => { loadData() }, [loadData])
+
+  // Load streak data on mount
+  useEffect(() => {
+    if (!user) return
+    const phone = user.phone || user.id
+    const data = getStreakData(phone)
+    setStreak(data)
+    setStreakBroken(isStreakBroken(phone))
+  }, [user])
 
   const hasActiveInvestment = activeInvestments.length > 0
   const userBalance = user?.balance || 0
@@ -345,7 +357,13 @@ export default function Dashboard() {
       await new Promise(r => setTimeout(r, 1600))
       const result = await executeComputeCycle(inv.id, user.phone || user.id)
       if (result.success) {
-        showToast(`Compute cycle complete. +KSh ${Number(result.yield).toLocaleString()} yield`, 'success')
+        // Record streak
+        const phone = user.phone || user.id
+        const streakData = recordComputeCycle(phone)
+        setStreak(streakData)
+        setStreakBroken(false)
+        const bonusMsg = streakData.bonusPct > 0 ? ` 🔥 ${streakData.count}-day streak! +${streakData.bonusPct}% bonus` : ''
+        showToast(`Compute cycle complete. +KSh ${Number(result.yield).toLocaleString()} yield${bonusMsg}`, 'success')
         await loadData()
       } else {
         showToast(result.error || 'Execute failed', 'error')
@@ -652,6 +670,36 @@ export default function Dashboard() {
               </div>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Streak Banner */}
+      {hasActiveInvestment && streak.count > 0 && (
+        <div className="rounded-xl p-3 mb-4 border border-orange-700/50 bg-orange-900/20 flex items-center gap-3">
+          <div className="text-2xl">{streakBroken ? '💔' : '🔥'}</div>
+          <div className="flex-1">
+            <p className="font-bold text-sm" style={{ color: streakBroken ? '#f87171' : '#fbbf24' }}>
+              {streakBroken ? 'Streak Broken!' : `${streak.count}-Day Streak`}
+              {streak.bonusPct > 0 && !streakBroken && (
+                <span className="ml-1 text-green-400">+{streak.bonusPct}% Bonus</span>
+              )}
+            </p>
+            {streakBroken ? (
+              <p className="text-[10px]" style={{ color: 'var(--text-muted)' }}>Execute your compute cycle to restart your streak</p>
+            ) : (
+              <p className="text-[10px]" style={{ color: 'var(--text-muted)' }}>
+                {getNextStreakMilestone(streak.count).label === 'MAX'
+                  ? 'Maximum streak bonus active!'
+                  : `Next milestone: ${getNextStreakMilestone(streak.count).target}-day (+${getNextStreakMilestone(streak.count).bonus}%)`}
+              </p>
+            )}
+          </div>
+          {!streakBroken && (
+            <div className="flex flex-col items-center">
+              <span className="text-[10px]" style={{ color: 'var(--text-muted)' }}>Bonus</span>
+              <span className="text-sm font-black" style={{ color: '#fbbf24' }}>+{streak.bonusPct}%</span>
+            </div>
+          )}
         </div>
       )}
 

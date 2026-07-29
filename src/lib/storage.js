@@ -311,3 +311,54 @@ export function isFirstLogin(phone) {
   }
   return false
 }
+// ── Earnings Streak System ────────────────────────────────────────────────────
+export function getStreakData(userId) {
+  try {
+    const all = JSON.parse(localStorage.getItem('dp_streaks') || '{}')
+    return all[userId] || { count: 0, lastExecDate: null, bonusPct: 0 }
+  } catch { return { count: 0, lastExecDate: null, bonusPct: 0 } }
+}
+
+export function recordComputeCycle(userId) {
+  const all = JSON.parse(localStorage.getItem('dp_streaks') || '{}')
+  const today = new Date().toDateString()
+  const existing = all[userId] || { count: 0, lastExecDate: null, bonusPct: 0 }
+  const lastDate = existing.lastExecDate ? new Date(existing.lastExecDate).toDateString() : null
+
+  if (lastDate === today) return existing // Already counted today
+
+  const yesterday = new Date(Date.now() - 86400000).toDateString()
+  let newCount = (lastDate === yesterday) ? existing.count + 1 : 1
+
+  all[userId] = {
+    count: newCount,
+    lastExecDate: new Date().toISOString(),
+    bonusPct: getStreakBonus(newCount),
+  }
+  localStorage.setItem('dp_streaks', JSON.stringify(all))
+  return all[userId]
+}
+
+export function getStreakBonus(days) {
+  if (days >= 30) return 2
+  if (days >= 7) return 1
+  if (days >= 3) return 0.5
+  return 0
+}
+
+export function getNextStreakMilestone(days) {
+  if (days < 3) return { target: 3, bonus: 0.5, label: '3-day' }
+  if (days < 7) return { target: 7, bonus: 1, label: '7-day' }
+  if (days < 30) return { target: 30, bonus: 2, label: '30-day' }
+  return { target: 30, bonus: 2, label: 'MAX' }
+}
+
+export function isStreakBroken(userId) {
+  const data = getStreakData(userId)
+  if (data.count === 0 || !data.lastExecDate) return false
+  const lastDate = new Date(data.lastExecDate)
+  const yesterday = new Date(Date.now() - 86400000)
+  // Reset at start of yesterday (beginning of the day that was yesterday)
+  yesterday.setHours(0, 0, 0, 0)
+  return lastDate < yesterday
+}
