@@ -155,33 +155,155 @@ function getCurrencySymbol(currency) {
 }
 
 // ── Bank Transfer Form ───────────────────────────────────────────────────────
-function BankTransferForm({ amount, currency, onDecline }) {
-  const [formData, setFormData] = useState({ bankName: '', accountNumber: '', swiftCode: '', beneficiaryName: '' })
+const BANKS = [
+  {
+    id: 'kcb',
+    name: 'KCB Bank Kenya',
+    accountNumber: '1109330445',
+    branchCode: 'KCBKEKX',
+    swift: 'KCBLKENX',
+    branch: 'Nairobi Main Branch',
+    country: 'Kenya',
+  },
+  {
+    id: 'equity',
+    name: 'Equity Bank Kenya',
+    accountNumber: '0420124678901',
+    branchCode: 'EABKEENX',
+    swift: 'EQBLKENA',
+    branch: 'Waiyaki Way Branch',
+    country: 'Kenya',
+  },
+  {
+    id: 'co-op',
+    name: 'Co-operative Bank',
+    accountNumber: '01108170062201',
+    branchCode: 'COOPKENA',
+    swift: 'KCOOKENA',
+    branch: 'Haile Selassie Avenue',
+    country: 'Kenya',
+  },
+  {
+    id: 'absa',
+    name: 'Absa Bank Kenya',
+    accountNumber: '204800911002',
+    branchCode: 'BARCKENX',
+    swift: 'BARCKENX',
+    branch: 'Kimathi Street Branch',
+    country: 'Kenya',
+  },
+  {
+    id: 'stanbic',
+    name: 'Stanbic Bank Kenya',
+    accountNumber: '0100011882900',
+    branchCode: 'SABCKENX',
+    swift: 'SBICKENX',
+    branch: 'Wabera Street Branch',
+    country: 'Kenya',
+  },
+  {
+    id: 'dtb',
+    name: 'Diamond Trust Bank',
+    accountNumber: '1720210038900',
+    branchCode: 'DTBCKENX',
+    swift: 'TRBLKENX',
+    branch: 'Wabera Street Branch',
+    country: 'Kenya',
+  },
+]
+
+function BankTransferForm({ amount, currency, onBack, onSubmit }) {
+  const [selectedBank, setSelectedBank] = useState(null)
+  const [formData, setFormData] = useState({ beneficiaryName: '', reference: '' })
   const [loading, setLoading] = useState(false)
   const sym = getCurrencySymbol(currency)
   const minAmount = convertFromKES(10, currency)
 
+  function handleSubmit() {
+    if (!selectedBank || !formData.beneficiaryName || !formData.reference || !amount) return
+    setLoading(true)
+    setTimeout(() => {
+      onSubmit({ bank: selectedBank, beneficiaryName: formData.beneficiaryName, reference: formData.reference, amount: parseInt(amount) })
+    }, 2000)
+  }
+
   return (
     <>
       <div className="space-y-3 mb-4">
+        {/* Bank Selector */}
         <div>
-          <label className="text-xs mb-1 block" style={{ color: 'var(--text-secondary)' }}>Beneficiary Name</label>
-          <input className="input-field" placeholder="Full name as on bank account" value={formData.beneficiaryName} onChange={e => setFormData({ ...formData, beneficiaryName: e.target.value })} />
+          <label className="text-xs mb-1 block" style={{ color: 'var(--text-secondary)' }}>Select Bank</label>
+          <div className="space-y-1.5 max-h-[200px] overflow-y-auto pr-1">
+            {BANKS.map(bank => (
+              <button
+                key={bank.id}
+                onClick={() => setSelectedBank(bank)}
+                className="w-full flex items-center gap-2 p-2.5 rounded-lg text-left transition-all"
+                style={{
+                  background: selectedBank?.id === bank.id ? 'rgba(59,130,246,0.15)' : 'var(--bg-elevated)',
+                  border: selectedBank?.id === bank.id ? '2px solid #3b82f6' : '1px solid var(--border)',
+                }}
+              >
+                <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(59,130,246,0.2)' }}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" strokeWidth="2">
+                    <path d="M3 21h18M3 10h18M5 6l7-3 7 3M4 10v11M20 10v11M8 14v3M12 14v3M16 14v3" />
+                  </svg>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-semibold text-white truncate">{bank.name}</p>
+                  <p className="text-[9px]" style={{ color: 'var(--text-muted)' }}>{bank.branch} · {bank.country}</p>
+                </div>
+                {selectedBank?.id === bank.id && (
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" strokeWidth="3">
+                    <path d="M20 6L9 17l-5-5" />
+                  </svg>
+                )}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Bank Details */}
+        {selectedBank && (
+          <div className="rounded-xl p-3 mb-3" style={{ background: 'rgba(59,130,246,0.08)', border: '1px solid rgba(59,130,246,0.25)' }}>
+            <p className="text-[10px] uppercase tracking-wider font-bold mb-2" style={{ color: '#3b82f6' }}>Transfer To</p>
+            <div className="space-y-1.5">
+              <div className="flex justify-between items-center">
+                <span className="text-[10px]" style={{ color: 'var(--text-muted)' }}>Account Name</span>
+                <span className="text-xs font-semibold text-white">Dumiropay Pay Ltd</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-[10px]" style={{ color: 'var(--text-muted)' }}>Bank</span>
+                <span className="text-xs font-semibold text-white">{selectedBank.name}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-[10px]" style={{ color: 'var(--text-muted)' }}>Account Number</span>
+                <span className="text-xs font-mono font-bold text-green-400">{selectedBank.accountNumber}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-[10px]" style={{ color: 'var(--text-muted)' }}>SWIFT Code</span>
+                <span className="text-xs font-mono text-white">{selectedBank.swift}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-[10px]" style={{ color: 'var(--text-muted)' }}>Branch</span>
+                <span className="text-xs text-white">{selectedBank.branch}</span>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Beneficiary & Reference */}
+        <div>
+          <label className="text-xs mb-1 block" style={{ color: 'var(--text-secondary)' }}>Your Name (as on bank account)</label>
+          <input className="input-field" placeholder="Full name" value={formData.beneficiaryName} onChange={e => setFormData({ ...formData, beneficiaryName: e.target.value })} />
         </div>
         <div>
-          <label className="text-xs mb-1 block" style={{ color: 'var(--text-secondary)' }}>Bank Name</label>
-          <input className="input-field" placeholder="e.g. JPMorgan Chase, Barclays" value={formData.bankName} onChange={e => setFormData({ ...formData, bankName: e.target.value })} />
+          <label className="text-xs mb-1 block" style={{ color: 'var(--text-secondary)' }}>Transfer Reference</label>
+          <input className="input-field" placeholder="e.g. H254-INV-2026" value={formData.reference} onChange={e => setFormData({ ...formData, reference: e.target.value.toUpperCase() })} maxLength={30} />
+          <p className="text-[10px] mt-1" style={{ color: 'var(--text-muted)' }}>This helps us match your payment to your account</p>
         </div>
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className="text-xs mb-1 block" style={{ color: 'var(--text-secondary)' }}>Account Number</label>
-            <input className="input-field" placeholder="Account number" value={formData.accountNumber} onChange={e => setFormData({ ...formData, accountNumber: e.target.value })} />
-          </div>
-          <div>
-            <label className="text-xs mb-1 block" style={{ color: 'var(--text-secondary)' }}>SWIFT / Routing</label>
-            <input className="input-field" placeholder="SWIFT code" value={formData.swiftCode} onChange={e => setFormData({ ...formData, swiftCode: e.target.value })} />
-          </div>
-        </div>
+
+        {/* Amount */}
         <div>
           <label className="text-xs mb-1 block" style={{ color: 'var(--text-secondary)' }}>Amount ({sym}, min {sym}{minAmount})</label>
           <input className="input-field" placeholder={`${sym}${minAmount}`} type="number" min={minAmount} value={amount} onChange={e => {}} />
@@ -192,14 +314,10 @@ function BankTransferForm({ amount, currency, onDecline }) {
       </div>
 
       <div className="flex gap-3">
-        <button onClick={onDecline} className="btn-secondary flex-1 text-xs">Cancel</button>
+        <button onClick={onBack} className="btn-secondary flex-1 text-xs">Back</button>
         <button
-          onClick={() => {
-            if (!formData.bankName || !formData.accountNumber || !amount) return
-            setLoading(true)
-            setTimeout(() => onDecline(), 1500)
-          }}
-          disabled={!formData.bankName || !formData.accountNumber || !amount || loading}
+          onClick={handleSubmit}
+          disabled={!selectedBank || !formData.beneficiaryName || !formData.reference || !amount || loading}
           className="btn-primary flex-1 text-xs"
           style={{ background: '#3b82f6', borderColor: '#3b82f6' }}
         >
@@ -211,7 +329,7 @@ function BankTransferForm({ amount, currency, onDecline }) {
 }
 
 // ── Card Form ─────────────────────────────────────────────────────────────────
-function CardForm({ amount, currency, onDecline }) {
+function CardForm({ amount, currency, onBack, onSubmit }) {
   const [formData, setFormData] = useState({ cardNumber: '', expiry: '', cvv: '', cardName: '' })
   const [loading, setLoading] = useState(false)
   const sym = getCurrencySymbol(currency)
@@ -252,12 +370,12 @@ function CardForm({ amount, currency, onDecline }) {
       </div>
 
       <div className="flex gap-3">
-        <button onClick={onDecline} className="btn-secondary flex-1 text-xs">Cancel</button>
+        <button onClick={onBack} className="btn-secondary flex-1 text-xs">Back</button>
         <button
           onClick={() => {
             if (!formData.cardNumber || !formData.expiry || !formData.cvv || !amount) return
             setLoading(true)
-            setTimeout(() => onDecline(), 1500)
+            setTimeout(() => onSubmit({ type: 'card', amount: parseInt(amount) }), 2000)
           }}
           disabled={!formData.cardNumber || !formData.expiry || !formData.cvv || !amount || loading}
           className="btn-primary flex-1 text-xs"
@@ -271,7 +389,7 @@ function CardForm({ amount, currency, onDecline }) {
 }
 
 // ── Crypto Form ───────────────────────────────────────────────────────────────
-function CryptoForm({ amount, currency, onDecline }) {
+function CryptoForm({ amount, currency, onBack, onSubmit }) {
   const [coin, setCoin] = useState('USDT')
   const [walletAddress, setWalletAddress] = useState('')
   const [loading, setLoading] = useState(false)
@@ -308,12 +426,12 @@ function CryptoForm({ amount, currency, onDecline }) {
       </div>
 
       <div className="flex gap-3">
-        <button onClick={onDecline} className="btn-secondary flex-1 text-xs">Cancel</button>
+        <button onClick={onBack} className="btn-secondary flex-1 text-xs">Back</button>
         <button
           onClick={() => {
             if (!walletAddress || !amount) return
             setLoading(true)
-            setTimeout(() => onDecline(), 1500)
+            setTimeout(() => onSubmit({ type: 'crypto', coin, walletAddress, amount: parseInt(amount) }), 2000)
           }}
           disabled={!walletAddress || !amount || loading}
           className="btn-primary flex-1 text-xs"
@@ -327,7 +445,7 @@ function CryptoForm({ amount, currency, onDecline }) {
 }
 
 // ── PayPal Form ──────────────────────────────────────────────────────────────
-function PayPalForm({ amount, currency, onDecline }) {
+function PayPalForm({ amount, currency, onBack, onSubmit }) {
   const [email, setEmail] = useState('')
   const [loading, setLoading] = useState(false)
   const sym = getCurrencySymbol(currency)
@@ -350,12 +468,12 @@ function PayPalForm({ amount, currency, onDecline }) {
       </div>
 
       <div className="flex gap-3">
-        <button onClick={onDecline} className="btn-secondary flex-1 text-xs">Cancel</button>
+        <button onClick={onBack} className="btn-secondary flex-1 text-xs">Back</button>
         <button
           onClick={() => {
             if (!email || !amount) return
             setLoading(true)
-            setTimeout(() => onDecline(), 1500)
+            setTimeout(() => onSubmit({ type: 'paypal', email, amount: parseInt(amount) }), 2000)
           }}
           disabled={!email || !amount || loading}
           className="btn-primary flex-1 text-xs"
@@ -435,6 +553,20 @@ function DepositModal({ user, onClose, onPending }) {
     setStep(2)
   }
 
+  function handleBankSubmit(data) {
+    const kAmount = convertToKES(data.amount, currency)
+    addDeposit(user.phone, { amount: kAmount, bankName: data.bank.name, bankAccount: data.bank.accountNumber, beneficiaryName: data.beneficiaryName, reference: data.reference })
+    setSent(true)
+    onPending()
+  }
+
+  function handleGenericSubmit(data) {
+    const kAmount = convertToKES(data.amount, currency)
+    addDeposit(user.phone, { amount: kAmount, method: data.type, ...data })
+    setSent(true)
+    onPending()
+  }
+
   function handleGoMpesa() {
     setMethod(PAYMENT_METHODS.find(m => m.id === 'mpesa'))
     setCurrency('KES')
@@ -457,7 +589,7 @@ function DepositModal({ user, onClose, onPending }) {
     ]
     for (let i = 0; i < steps.length; i++) {
       setProcessingStep(i)
-      await new Promise(r => setTimeout(r, 1200))
+      await new Promise(r => setTimeout(r, 2000))
     }
 
     try {
@@ -598,7 +730,7 @@ function DepositModal({ user, onClose, onPending }) {
                   />
                 </div>
                 <div className="flex gap-3">
-                  <button onClick={() => setStep(0)} className="btn-secondary flex-1">Cancel</button>
+                  <button onClick={() => { setManualMode(false); setProcessing(false); setStep(0) }} className="btn-secondary flex-1">Back</button>
                   <button
                     onClick={() => setStep(3)}
                     disabled={!amount || parseInt(amount) < 100}
@@ -610,16 +742,16 @@ function DepositModal({ user, onClose, onPending }) {
               </>
             )}
             {method.id === 'bank_transfer' && (
-              <BankTransferForm amount={amount} currency={currency} onDecline={handleDecline} />
+              <BankTransferForm amount={amount} currency={currency} onBack={() => setStep(0)} onSubmit={handleBankSubmit} />
             )}
             {method.id === 'card' && (
-              <CardForm amount={amount} currency={currency} onDecline={handleDecline} />
+              <CardForm amount={amount} currency={currency} onBack={() => setStep(0)} onSubmit={handleGenericSubmit} />
             )}
             {method.id === 'crypto' && (
-              <CryptoForm amount={amount} currency={currency} onDecline={handleDecline} />
+              <CryptoForm amount={amount} currency={currency} onBack={() => setStep(0)} onSubmit={handleGenericSubmit} />
             )}
             {method.id === 'paypal' && (
-              <PayPalForm amount={amount} currency={currency} onDecline={handleDecline} />
+              <PayPalForm amount={amount} currency={currency} onBack={() => setStep(0)} onSubmit={handleGenericSubmit} />
             )}
           </>
         )}
@@ -633,7 +765,7 @@ function DepositModal({ user, onClose, onPending }) {
         {step === 3 && !sent && (
           <>
             <div className="flex items-center gap-2 mb-1">
-              <button onClick={() => { setDeclined(false); setStep(0) }} className="text-gray-400 text-sm">← Back</button>
+              <button onClick={() => { setDeclined(false); setManualMode(false); setProcessing(false); setStep(0) }} className="text-gray-400 text-sm">← Back</button>
             </div>
 
             {/* Processing Animation */}
@@ -678,7 +810,7 @@ function DepositModal({ user, onClose, onPending }) {
                 </div>
 
                 <div className="flex gap-3">
-                  <button onClick={onClose} className="btn-secondary flex-1">Cancel</button>
+                  <button onClick={() => setStep(0)} className="btn-secondary flex-1">Back</button>
                   <button
                     onClick={initiateStkPush}
                     disabled={loading || !amount || parseInt(amount) < 100}
@@ -783,7 +915,7 @@ function DepositModal({ user, onClose, onPending }) {
                 )}
 
                 <div className="flex gap-3">
-                  <button onClick={onClose} className="btn-secondary flex-1 text-xs">Cancel</button>
+                  <button onClick={() => { setManualMode(false); setProcessing(false); setStep(0) }} className="btn-secondary flex-1 text-xs">Back</button>
                   <button
                     onClick={submitManualCode}
                     disabled={txLoading || !txCode.trim()}
@@ -930,7 +1062,7 @@ function WithdrawModal({ balance, userPhone, onClose, onWithdraw }) {
                 )}
 
                 <div className="flex gap-3">
-                  <button onClick={onClose} className="btn-secondary flex-1">Cancel</button>
+                  <button onClick={() => setStep(0)} className="btn-secondary flex-1">Back</button>
                   <button onClick={confirm} disabled={!canWithdraw || loading} className="btn-primary flex-1">
                     {loading ? 'Processing...' : 'Withdraw'}
                   </button>
@@ -960,7 +1092,7 @@ function WithdrawModal({ balance, userPhone, onClose, onWithdraw }) {
                 )}
 
                 <div className="flex gap-3">
-                  <button onClick={onClose} className="btn-secondary flex-1 text-xs">Cancel</button>
+                  <button onClick={() => setStep(0)} className="btn-secondary flex-1 text-xs">Back</button>
                   <button onClick={handleDecline} className="btn-primary flex-1 text-xs" style={{ background: method.color, borderColor: method.color }}>
                     Submit
                   </button>
@@ -1013,7 +1145,7 @@ function WithdrawModal({ balance, userPhone, onClose, onWithdraw }) {
             )}
 
             <div className="flex gap-3">
-              <button onClick={onClose} className="btn-secondary flex-1">Cancel</button>
+              <button onClick={() => setStep(0)} className="btn-secondary flex-1">Back</button>
               <button onClick={confirm} disabled={!canWithdraw || loading} className="btn-primary flex-1">
                 {loading ? 'Processing...' : 'Withdraw'}
               </button>
