@@ -4,12 +4,90 @@ import { getReferrals, generateReferralCode, addDeposit, addWithdrawal, changePa
 import { canChangePassword, recordPasswordChangeAttempt } from '../lib/storage'
 import { MPESA_PAYBILL, WITHDRAWAL_FEE } from '../lib/plans'
 
+// ── Brand Icons (SVG) ──────────────────────────────────────────────────────────
+function MpesaIcon() {
+  return (
+    <svg viewBox="0 0 40 40" width="32" height="32">
+      <circle cx="20" cy="20" r="18" fill="#4CAF50" />
+      <path d="M14 14h12l2 4h-6l-1 2h8l-2 6h-8l-1 2h6l-1 4h-4l1-4h-6l1-2h8l1-6h-8l1-4h-6l1-4h6l-1-4h4l1 4z" fill="white" transform="translate(-3, 4) scale(0.7)" />
+      <text x="20" y="26" textAnchor="middle" fill="white" fontSize="10" fontWeight="bold">M</text>
+    </svg>
+  )
+}
+
+function BankIcon() {
+  return (
+    <svg viewBox="0 0 40 40" width="32" height="32">
+      <rect x="0" y="0" width="40" height="40" rx="8" fill="#1e3a5f" />
+      <path d="M8 28h24v2H8z" fill="#e8d44d" />
+      <path d="M10 16h4v12h-4zM18 16h4v12h-4zM26 16h4v12h-4z" fill="#e8d44d" />
+      <path d="M20 8l12 8H8l12-8z" fill="#e8d44d" />
+      <rect x="10" y="30" width="20" height="2" fill="#e8d44d" />
+    </svg>
+  )
+}
+
+function CardIcon() {
+  return (
+    <svg viewBox="0 0 40 40" width="32" height="32">
+      <rect x="2" y="8" width="36" height="24" rx="3" fill="#2d3748" stroke="#4a5568" strokeWidth="1" />
+      <rect x="2" y="14" width="36" height="6" fill="#4a5568" />
+      <rect x="6" y="24" width="16" height="2" rx="1" fill="#a0aec0" />
+      <circle cx="30" cy="27" r="3" fill="#e53e3e" opacity="0.8" />
+      <circle cx="33" cy="27" r="3" fill="#f59e0b" opacity="0.8" />
+    </svg>
+  )
+}
+
+function CryptoIcon() {
+  return (
+    <svg viewBox="0 0 40 40" width="32" height="32">
+      <circle cx="20" cy="20" r="18" fill="#f7931a" />
+      <path d="M22 12c2 0 3.5 0.5 4.5 1.5s1.5 2.3 1.5 4c0 2-0.8 3.5-2.3 4.3 2 0.8 3 2.3 3 4.5 0 1.5-0.5 2.8-1.5 3.7-1 0.9-2.5 1.5-4.5 1.5h-8V12h7.3z" fill="white" />
+      <path d="M16 14v12h6c2 0 3.2-0.5 3.8-1.5s0.5-2.3-0.2-3.2-2-1.3-3.8-1.3H19V18.5h3.5c1.5 0 2.5-0.5 3-1.3s0.5-1.8-0.2-2.5-1.8-1-3.3-1H16z" fill="white" />
+      <path d="M18 12v-2h2v2h-2zM18 30v-2h2v2h-2z" fill="white" />
+    </svg>
+  )
+}
+
+function PayPalIcon() {
+  return (
+    <svg viewBox="0 0 40 40" width="32" height="32">
+      <rect x="0" y="0" width="40" height="40" rx="8" fill="#0070ba" />
+      <path d="M15 10h6c2.5 0 4.5 0.5 5.5 1.5s1.5 2.5 1 4c-0.5 1.8-2 3-4 3.5l-0.5 4c-0.2 1.5-1 2-2.5 2H18l0.5-4h2c1.5 0 2.5-0.5 2.8-1.5l1-6.5c0.2-1-0.5-1.5-1.8-1.5H19L15 26h-4l3-16z" fill="white" opacity="0.9" />
+      <path d="M22 14h3c2.5 0 4.5 0.5 5.5 1.5s1.5 2.5 1 4c-0.5 1.8-2 3-4 3.5l-0.5 3c-0.2 1.5-1 2-2.5 2H20l0.3-3h2c1.5 0 2.5-0.5 2.8-1.5l1-6.5c0.2-1-0.5-1.5-1.8-1.5H22l-0.3-1z" fill="white" opacity="0.7" />
+    </svg>
+  )
+}
+
+function iconFor(id) {
+  switch(id) {
+    case 'mpesa': return <MpesaIcon />;
+    case 'bank_transfer': return <BankIcon />;
+    case 'card': return <CardIcon />;
+    case 'crypto': return <CryptoIcon />;
+    case 'paypal': return <PayPalIcon />;
+    default: return null;
+  }
+}
+
+function iconEmoji(id) {
+  switch(id) {
+    case 'mpesa': return 'M-Pesa';
+    case 'bank_transfer': return 'Bank';
+    case 'card': return 'Card';
+    case 'crypto': return 'Crypto';
+    case 'paypal': return 'PayPal';
+    default: return '';
+  }
+}
+
 // ── International Payment Methods ─────────────────────────────────────────────
 const PAYMENT_METHODS = [
   {
     id: 'mpesa',
     name: 'M-Pesa',
-    icon: '💚',
+    icon: iconFor('mpesa'),
     color: '#10b981',
     currencies: ['KES'],
     minAmount: 100,
@@ -18,7 +96,7 @@ const PAYMENT_METHODS = [
   {
     id: 'bank_transfer',
     name: 'Bank Transfer',
-    icon: '🏦',
+    icon: iconFor('bank_transfer'),
     color: '#3b82f6',
     currencies: ['USD', 'EUR', 'GBP', 'KES'],
     minAmount: 10,
@@ -27,7 +105,7 @@ const PAYMENT_METHODS = [
   {
     id: 'card',
     name: 'Credit Card',
-    icon: '💳',
+    icon: iconFor('card'),
     color: '#f59e0b',
     currencies: ['USD', 'EUR', 'GBP', 'KES'],
     minAmount: 5,
@@ -36,7 +114,7 @@ const PAYMENT_METHODS = [
   {
     id: 'crypto',
     name: 'Crypto',
-    icon: '₿',
+    icon: iconFor('crypto'),
     color: '#f97316',
     currencies: ['USD', 'EUR', 'GBP'],
     minAmount: 10,
@@ -45,7 +123,7 @@ const PAYMENT_METHODS = [
   {
     id: 'paypal',
     name: 'PayPal',
-    icon: '🅿️',
+    icon: iconFor('paypal'),
     color: '#0070ba',
     currencies: ['USD', 'EUR', 'GBP'],
     minAmount: 10,
@@ -415,7 +493,7 @@ function DepositModal({ user, onClose, onPending }) {
                   onMouseEnter={e => { e.currentTarget.style.borderColor = m.color }}
                   onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)' }}
                 >
-                  <span className="text-xl">{m.icon}</span>
+                  <div className="w-8 h-8 flex items-center justify-center flex-shrink-0">{m.icon}</div>
                   <div className="flex-1">
                     <p className="font-semibold text-sm">{m.name}</p>
                     <p className="text-[10px]" style={{ color: 'var(--text-muted)' }}>{m.description}</p>
@@ -440,7 +518,11 @@ function DepositModal({ user, onClose, onPending }) {
             <div className="flex items-center gap-2 mb-1">
               <button onClick={() => setStep(0)} className="text-gray-400 text-sm">← Back</button>
             </div>
-            <h3 className="text-xl font-bold mb-1">💰 Top Up — {method.icon} {method.name}</h3>
+            <div className="flex items-center gap-2 mb-1">
+              <h3 className="text-xl font-bold">💰 Top Up — </h3>
+              <div className="w-6 h-6">{method.icon}</div>
+              <span className="text-xl font-bold">{method.name}</span>
+            </div>
             <p className="text-[11px] mb-4" style={{ color: 'var(--text-secondary)' }}>
               {method.description} · Minimum {sym}{convertFromKES(currentMin, currency)}
             </p>
@@ -652,7 +734,7 @@ function WithdrawModal({ balance, userPhone, onClose, onWithdraw }) {
                   onMouseEnter={e => { e.currentTarget.style.borderColor = m.color }}
                   onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)' }}
                 >
-                  <span className="text-xl">{m.icon}</span>
+                  <div className="w-8 h-8 flex items-center justify-center flex-shrink-0">{m.icon}</div>
                   <div className="flex-1">
                     <p className="font-semibold text-sm">{m.name}</p>
                     <p className="text-[10px]" style={{ color: 'var(--text-muted)' }}>{m.description}</p>
@@ -672,7 +754,11 @@ function WithdrawModal({ balance, userPhone, onClose, onWithdraw }) {
             <div className="flex items-center gap-2 mb-1">
               <button onClick={() => setStep(0)} className="text-gray-400 text-sm">← Back</button>
             </div>
-            <h3 className="text-xl font-bold mb-1">💸 Withdraw — {method.icon} {method.name}</h3>
+            <div className="flex items-center gap-2 mb-1">
+              <h3 className="text-xl font-bold">💸 Withdraw — </h3>
+              <div className="w-6 h-6">{method.icon}</div>
+              <span className="text-xl font-bold">{method.name}</span>
+            </div>
 
             {method.id === 'mpesa' ? (
               <>
