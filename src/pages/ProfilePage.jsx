@@ -372,7 +372,12 @@ function PayPalForm({ amount, currency, onDecline }) {
 function DeclineMessage({ onMpesa, onBack }) {
   return (
     <div className="text-center py-4">
-      <p className="text-4xl mb-3">🚫</p>
+      <div className="w-12 h-12 mx-auto mb-3 rounded-full flex items-center justify-center" style={{ background: 'rgba(248,113,113,0.15)', border: '1px solid rgba(248,113,113,0.3)' }}>
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#f87171" strokeWidth="2">
+          <circle cx="12" cy="12" r="10" />
+          <path d="M15 9l-6 6M9 9l6 6" />
+        </svg>
+      </div>
       <h4 className="font-bold text-base mb-2" style={{ color: '#f87171' }}>Transaction Declined</h4>
       <div className="rounded-xl p-4 mb-4 text-left" style={{ background: 'var(--bg-elevated)', border: '1px solid rgba(248,113,113,0.2)' }}>
         <p className="text-sm mb-2" style={{ color: 'var(--text-secondary)' }}>
@@ -480,7 +485,12 @@ function DepositModal({ user, onClose, onPending }) {
         {/* Step 0: Select Payment Method */}
         {step === 0 && (
           <>
-            <h3 className="text-xl font-bold mb-1">💰 Top Up</h3>
+            <h3 className="text-xl font-bold mb-1 flex items-center gap-2">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#00B4FF" strokeWidth="2">
+                <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+              </svg>
+              Top Up
+            </h3>
             <p className="text-[11px] mb-4" style={{ color: 'var(--text-secondary)' }}>Select your preferred payment method</p>
 
             <div className="space-y-2 mb-4">
@@ -519,7 +529,12 @@ function DepositModal({ user, onClose, onPending }) {
               <button onClick={() => setStep(0)} className="text-gray-400 text-sm">← Back</button>
             </div>
             <div className="flex items-center gap-2 mb-1">
-              <h3 className="text-xl font-bold">💰 Top Up — </h3>
+              <h3 className="text-xl font-bold flex items-center gap-2">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#00B4FF" strokeWidth="2">
+                  <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+                </svg>
+                Top Up —
+              </h3>
               <div className="w-6 h-6">{method.icon}</div>
               <span className="text-xl font-bold">{method.name}</span>
             </div>
