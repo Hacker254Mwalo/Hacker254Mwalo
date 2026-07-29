@@ -14,6 +14,7 @@ import {
   checkIsAdmin,
   getClaimedKeywords,
   executeComputeCycle,
+  getShortTermInvestments,
 } from '../lib/db'
 import EarningsPanel from '../components/EarningsPanel'
 import LiveActivityFeed from '../components/LiveActivityFeed'
@@ -31,6 +32,8 @@ import ApiRateLimiter from '../components/ApiRateLimiter'
 import EarningsForecast from '../components/EarningsForecast'
 import EarnMoreModal from '../components/EarnMoreModal'
 import DeploymentCertificate from '../components/DeploymentCertificate'
+import PlatformStats from '../components/PlatformStats'
+import JobFeed from '../components/JobFeed'
 import { getStreakData, recordComputeCycle, getStreakBonus, getNextStreakMilestone, isStreakBroken } from '../lib/storage'
 
 const SPIN_DAYS = [1, 5] // Monday=1, Friday=5
@@ -295,17 +298,21 @@ export default function Dashboard() {
     setTimeout(() => setToast({ msg: '', type: 'success' }), 3500)
   }
 
+  const [shortTermInvs, setShortTermInvs] = useState([])
+
   const loadData = useCallback(async () => {
     if (!user) return
     const phone = user.phone || user.id
     try {
-      const [invs, bonusStatus, spinStatus, waSettings] = await Promise.all([
+      const [invs, stInvs, bonusStatus, spinStatus, waSettings] = await Promise.all([
         getInvestments(phone),
+        getShortTermInvestments(phone),
         hasClaimedBonusToday(phone, 'login_bonus'),
         hasClaimedBonusToday(phone, 'spin'),
         getWhatsAppSettings(),
       ])
       setActiveInvestments((invs || []).filter(i => i.status === 'active'))
+      setShortTermInvs((stInvs || []).filter(i => i.status === 'active'))
       setBonusClaimed(bonusStatus)
       setSpinClaimed(spinStatus)
       setWaPhone(waSettings.whatsapp_phone || '')
@@ -545,6 +552,7 @@ export default function Dashboard() {
 
   return (
     <div className="pt-4 md:pt-20 pb-24 md:pb-8 px-4 max-w-2xl mx-auto">
+      <PlatformStats />
       <SmartNotifications userPhone={user?.phone || user?.id} activeInvestments={activeInvestments} />
       <WelcomeBanner />
       <Toast msg={toast.msg} type={toast.type} />
@@ -896,6 +904,70 @@ export default function Dashboard() {
         </div>
       )}
 
+      {/* Short-Term AI Nodes */}
+      {shortTermInvs.length > 0 && (
+        <div className="card mb-6 border-blue-500/30 bg-blue-900/5">
+          <h3 className="font-bold mb-3 flex items-center gap-2 text-blue-400">
+            <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
+            Short-Term Compute Nodes
+          </h3>
+          <div className="space-y-4">
+            {shortTermInvs.map(inv => {
+              const now = new Date()
+              const ends = new Date(inv.endsAt)
+              const diff = ends - now
+              const isExpired = diff <= 0
+              const h = Math.floor(diff / 3600000)
+              const m = Math.floor((diff % 3600000) / 60000)
+              const s = Math.floor((diff % 60000) / 1000)
+              
+              return (
+                <div key={inv.id} className="rounded-xl px-4 py-4 border border-blue-500/20 bg-black/40">
+                  <div className="flex items-center justify-between mb-3">
+                    <div>
+                      <p className="font-bold text-sm text-blue-100">{inv.planName}</p>
+                      <p className="text-[10px] text-emerald-500 font-mono font-bold">{inv.nodeId}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-xs font-bold text-blue-400">KSh {inv.amount.toLocaleString()}</p>
+                      <p className="text-[10px] text-gray-500">Principal</p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4 mb-4">
+                    <div className="bg-white/5 rounded-lg p-2 text-center">
+                      <p className="text-[10px] text-gray-500 uppercase">Time Left</p>
+                      <p className={`text-sm font-mono font-bold ${isExpired ? 'text-red-400' : 'text-white'}`}>
+                        {isExpired ? 'COMPLETED' : `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`}
+                      </p>
+                    </div>
+                    <div className="bg-white/5 rounded-lg p-2 text-center">
+                      <p className="text-[10px] text-gray-500 uppercase">Est. Return</p>
+                      <p className="text-sm font-mono font-bold text-emerald-400">KSh {inv.totalReturn.toLocaleString()}</p>
+                    </div>
+                  </div>
+
+                  <div className="space-y-1">
+                    <div className="flex justify-between text-[10px] text-gray-500 uppercase font-bold">
+                      <span>Node Status</span>
+                      <span className="text-blue-400">{inv.currentJob || 'Processing...'}</span>
+                    </div>
+                    <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
+                      <div 
+                        className="h-full bg-blue-500 transition-all duration-1000"
+                        style={{ width: isExpired ? '100%' : `${Math.max(5, 100 - (diff / (inv.duration_hours * 3600000) * 100))}%` }}
+                      />
+                    </div>
+                  </div>
+
+                  <JobFeed isActive={!isExpired} nodeId={inv.nodeId} />
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
       {/* Active Investments */}
       {activeInvestments.length > 0 && (
         <div className="card mb-6">
@@ -924,7 +996,10 @@ export default function Dashboard() {
                   <div className="flex items-center justify-between mb-2">
                     <div>
                       <p className="font-medium text-sm">{inv.planName}</p>
-                      <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>{startDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
+                      <div className="flex items-center space-x-2">
+                        <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>{startDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
+                        {inv.nodeId && <p className="text-[10px] text-emerald-500/80 font-mono font-bold">{inv.nodeId}</p>}
+                      </div>
                     </div>
                     <div className="text-right">
                       <p className="text-sm font-semibold" style={{ color: '#34D399' }}>KSh {Number(inv.amount).toLocaleString()} deployed</p>
@@ -1002,6 +1077,8 @@ export default function Dashboard() {
                       📄 View Node Certificate
                     </button>
                   </div>
+                  
+                  <JobFeed isActive={true} nodeId={inv.nodeId} />
                 </div>
               )
             })}

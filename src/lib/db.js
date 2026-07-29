@@ -61,6 +61,7 @@ function dbInvToApp(row) {
     workload: row.workload || 'healthcare',
     efficiencyScore: row.efficiency_score || 100,
     datacenter: row.datacenter || 'US-East-1',
+    nodeId: row.node_id || null,
   }
 }
 
@@ -161,11 +162,64 @@ export async function getInvestments(userPhone) {
   if (!isSupabaseConfigured) return local.getInvestments(userPhone)
   const { data, error } = await supabase
     .from('investments')
-    .select('id, plan_id, plan_name, amount, daily_return, total_return, profit, status, created_at, started_at, ends_at, last_profit_at, last_executed_at, workload, efficiency_score, datacenter')
+    .select('id, plan_id, plan_name, amount, daily_return, total_return, profit, status, created_at, started_at, ends_at, last_profit_at, last_executed_at, workload, efficiency_score, datacenter, node_id')
     .eq('user_phone', userPhone)
     .order('created_at', { ascending: false })
   if (error) throw error
   return (data || []).map(dbInvToApp)
+}
+
+export async function getShortTermInvestments(userPhone) {
+  if (!isSupabaseConfigured) return []
+  const { data, error } = await supabase
+    .from('short_term_investments')
+    .select('*')
+    .eq('user_phone', userPhone)
+    .order('created_at', { ascending: false })
+  if (error) throw error
+  return (data || []).map(row => ({
+    ...row,
+    id: row.id,
+    nodeId: row.node_id,
+    planName: row.duration_hours === 24 ? '24h Quick Burst' : row.duration_hours === 72 ? '3D Standard Deploy' : '7D Extended Run',
+    amount: Number(row.amount),
+    totalReturn: Number(row.total_return),
+    profit: Number(row.profit),
+    jobsCompleted: row.jobs_completed,
+    currentJob: row.current_job,
+    endsAt: row.ends_at,
+    startedAt: row.started_at,
+    status: row.status
+  }))
+}
+
+export async function getPlatformStats() {
+  if (!isSupabaseConfigured) return []
+  const { data, error } = await supabase
+    .from('platform_stats')
+    .select('stat_key, stat_value, stat_label')
+  if (error) throw error
+  return data || []
+}
+
+export async function getJobTemplates() {
+  if (!isSupabaseConfigured) return []
+  const { data, error } = await supabase
+    .from('job_templates')
+    .select('*')
+    .eq('active', true)
+  if (error) throw error
+  return data || []
+}
+
+export async function getJobClients() {
+  if (!isSupabaseConfigured) return []
+  const { data, error } = await supabase
+    .from('job_clients')
+    .select('name')
+    .eq('active', true)
+  if (error) throw error
+  return data || []
 }
 
 // Uses atomic_invest DB function to prevent partial-update bugs

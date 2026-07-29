@@ -44,7 +44,7 @@ function pickInvestmentPlan() {
 }
 
 // ── WORKLOADS (match platform) ────────────────────────────────────────────────
-const WORKLOADS = ['Healthcare AI', 'Finance AI', 'Autonomous Systems']
+const WORKLOADS = ['Healthcare AI', 'Finance AI', 'Autonomous Systems', 'Retail AI', 'NLP AI', 'Climate AI']
 
 function pickWorkload() {
   return WORKLOADS[Math.floor(Math.random() * WORKLOADS.length)]
@@ -52,6 +52,25 @@ function pickWorkload() {
 
 // ── Event definitions — wide variety, platform-matched ────────────────────────
 const EVENT_DEFS = [
+  {
+    key: 'short_term_deploy',
+    weight: 25,
+    color: '#60A5FA',
+    buildText: () => {
+      const plans = ['24h Quick Burst', '3D Standard Deploy', '7D Extended Run']
+      const plan = plans[Math.floor(Math.random() * plans.length)]
+      return { text: `deployed ${plan} node`, color: '#60A5FA' }
+    },
+  },
+  {
+    key: 'short_term_payout',
+    weight: 20,
+    color: '#34D399',
+    buildText: () => {
+      const amount = randomInRange(3605, 4130)
+      return { text: `completed short-term run — KSh ${amount.toLocaleString()} credited`, color: '#34D399' }
+    },
+  },
   {
     key: 'deposit',
     weight: 18,
@@ -199,8 +218,8 @@ function pickEventType() {
 
 // ── Truly random delay — no burst pattern, natural flow ──────────────────────
 function getRandomDelay() {
-  // Steady rhythm: 2-6 seconds between events, never stops
-  return 2000 + Math.random() * 4000
+  // Faster rhythm for "unlimited flow" feel: 1-4 seconds
+  return 1200 + Math.random() * 2800
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────
