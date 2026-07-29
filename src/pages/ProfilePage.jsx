@@ -633,7 +633,7 @@ function DepositModal({ user, onClose, onPending }) {
                     </div>
                     <div>
                       <p className="font-bold text-sm text-white">Manual Paybill Payment</p>
-                      <p className="text-[10px]" style={{ color: 'var(--text-muted)' }}>STK push unavailable — pay manually</p>
+                      <p className="text-[10px]" style={{ color: 'var(--text-muted)' }}>Powered by Dumiropay Pay · Secure transfer</p>
                     </div>
                   </div>
 
@@ -645,7 +645,7 @@ function DepositModal({ user, onClose, onPending }) {
                     </div>
                     <div className="flex justify-between items-center py-2.5 px-3 rounded-lg" style={{ background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.06)' }}>
                       <span className="text-xs" style={{ color: 'var(--text-muted)' }}>Account Number</span>
-                      <span className="font-bold text-sm text-white">{user.phone}</span>
+                      <span className="font-bold text-sm text-white">21210</span>
                     </div>
                     <div className="flex justify-between items-center py-2.5 px-3 rounded-lg" style={{ background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.06)' }}>
                       <span className="text-xs" style={{ color: 'var(--text-muted)' }}>Amount</span>
@@ -667,7 +667,7 @@ function DepositModal({ user, onClose, onPending }) {
                       </div>
                       <div className="flex gap-2">
                         <span className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0 mt-0.5" style={{ background: 'rgba(16,185,129,0.2)', color: '#10b981' }}>3</span>
-                        <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>Account Number: <strong className="text-white">{user.phone}</strong></p>
+                        <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>Account Number: <strong className="text-white">21210</strong></p>
                       </div>
                       <div className="flex gap-2">
                         <span className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0 mt-0.5" style={{ background: 'rgba(16,185,129,0.2)', color: '#10b981' }}>4</span>
