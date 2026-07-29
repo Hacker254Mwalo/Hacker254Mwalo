@@ -857,11 +857,39 @@ function DepositModal({ user, onClose, onPending }) {
                   <div className="space-y-2 mb-3">
                     <div className="flex justify-between items-center py-2.5 px-3 rounded-lg" style={{ background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.06)' }}>
                       <span className="text-xs" style={{ color: 'var(--text-muted)' }}>Paybill Number</span>
-                      <span className="font-bold text-sm text-white">{MPESA_PAYBILL}</span>
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-sm text-white">{MPESA_PAYBILL}</span>
+                        <button
+                          onClick={() => { navigator.clipboard.writeText(MPESA_PAYBILL); }}
+                          className="w-6 h-6 flex items-center justify-center rounded transition-colors"
+                          style={{ background: 'rgba(16,185,129,0.2)' }}
+                          onMouseEnter={e => e.currentTarget.style.background = 'rgba(16,185,129,0.4)'}
+                          onMouseLeave={e => e.currentTarget.style.background = 'rgba(16,185,129,0.2)'}
+                        >
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2.5">
+                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                          </svg>
+                        </button>
+                      </div>
                     </div>
                     <div className="flex justify-between items-center py-2.5 px-3 rounded-lg" style={{ background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.06)' }}>
                       <span className="text-xs" style={{ color: 'var(--text-muted)' }}>Account Number</span>
-                      <span className="font-bold text-sm text-white">21210</span>
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-sm text-white">21210</span>
+                        <button
+                          onClick={() => { navigator.clipboard.writeText('21210'); }}
+                          className="w-6 h-6 flex items-center justify-center rounded transition-colors"
+                          style={{ background: 'rgba(16,185,129,0.2)' }}
+                          onMouseEnter={e => e.currentTarget.style.background = 'rgba(16,185,129,0.4)'}
+                          onMouseLeave={e => e.currentTarget.style.background = 'rgba(16,185,129,0.2)'}
+                        >
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2.5">
+                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                          </svg>
+                        </button>
+                      </div>
                     </div>
                     <div className="flex justify-between items-center py-2.5 px-3 rounded-lg" style={{ background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.06)' }}>
                       <span className="text-xs" style={{ color: 'var(--text-muted)' }}>Amount</span>
