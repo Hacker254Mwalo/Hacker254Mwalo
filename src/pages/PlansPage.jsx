@@ -136,6 +136,59 @@ function HapticButton({ children, onClick, className, disabled, style }) {
   )
 }
 
+/* ── Market Pulse ────────────────────────────────────────────────────── */
+function MarketPulse() {
+  const [metrics, setMetrics] = useState([
+    { label: 'H100 Rate', value: 25.40, unit: '$/hr', trend: 'up', base: 25.40, variance: 1.2 },
+    { label: 'AI Demand', value: 94.2, unit: '', trend: 'up', base: 94.2, variance: 2.0 },
+    { label: 'KE Utilization', value: 87.1, unit: '%', trend: 'stable', base: 87.1, variance: 1.5 },
+    { label: 'Training Jobs', value: 2.42, unit: 'M/day', trend: 'up', base: 2.42, variance: 0.08 },
+  ])
+
+  useEffect(() => {
+    const tick = () => {
+      setMetrics(prev => prev.map(m => {
+        const delta = (Math.random() - 0.48) * m.variance
+        const next = parseFloat(Math.max(m.base * 0.92, Math.min(m.base * 1.08, m.value + delta)).toFixed(m.unit === '$/hr' ? 2 : m.unit === 'M/day' ? 2 : 1))
+        return {
+          ...m,
+          value: next,
+          trend: delta > 0.05 ? 'up' : delta < -0.05 ? 'down' : 'stable',
+        }
+      }))
+    }
+    const id = setInterval(tick, 4000)
+    return () => clearInterval(id)
+  }, [])
+
+  return (
+    <div className="rounded-xl px-4 py-3 mb-4 overflow-hidden" style={{ background: 'linear-gradient(135deg, rgba(10,12,30,0.95), rgba(6,8,20,0.98))', border: '1px solid rgba(0,180,255,0.08)' }}>
+      <div className="flex items-center gap-2 mb-3">
+        <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
+        <p className="text-[10px] uppercase tracking-widest font-bold" style={{ color: '#00B4FF' }}>Market Pulse</p>
+        <p className="text-[9px] ml-auto" style={{ color: 'var(--text-muted)' }}>Live · Updates every 4s</p>
+      </div>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+        {metrics.map(m => (
+          <div key={m.label} className="rounded-lg px-3 py-2 text-center" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.04)' }}>
+            <p className="text-[9px] uppercase tracking-wider mb-1" style={{ color: 'var(--text-muted)' }}>{m.label}</p>
+            <div className="flex items-center justify-center gap-1">
+              <p className="text-sm font-black" style={{ color: m.trend === 'up' ? '#34d399' : m.trend === 'down' ? '#f87171' : '#e2e8f0' }}>
+                {m.unit === '$/hr' ? '$' : ''}{m.value}{m.unit !== '$/hr' && m.unit !== 'M/day' ? '' : ''}
+              </p>
+              <span className="text-[10px]">
+                {m.trend === 'up' ? '↑' : m.trend === 'down' ? '↓' : '→'}
+              </span>
+            </div>
+            {m.unit === '$/hr' && <p className="text-[8px] mt-0.5" style={{ color: 'var(--text-muted)' }}>{m.unit}</p>}
+            {m.unit === 'M/day' && <p className="text-[8px] mt-0.5" style={{ color: 'var(--text-muted)' }}>{m.unit}</p>}
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 /* ── Number Wall Row ─────────────────────────────────────────────────── */
 function NumberWallRow({ plan, workload, onClick, isCritical, slots }) {
   const daily = getWorkloadYield(plan.amount, workload)
@@ -466,6 +519,9 @@ export default function PlansPage() {
           Deploy enterprise GPU infrastructure and earn AI compute yields
         </p>
       </div>
+
+      {/* Market Pulse */}
+      <MarketPulse />
 
       {/* Global Demand Bar */}
       <GlobalDemandBar />
