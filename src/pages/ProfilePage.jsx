@@ -623,28 +623,65 @@ function DepositModal({ user, onClose, onPending }) {
               </>
             ) : (
               <>
-                <div className="bg-yellow-900/30 border border-yellow-700/50 rounded-xl p-4 mb-4 text-sm text-yellow-200">
-                  <p className="font-bold mb-2 flex items-center gap-2">
-                    <span className="text-lg">⚠️</span> STK Prompt Unavailable
-                  </p>
-                  <p className="mb-3 opacity-90">Please complete your top up manually by sending <span className="font-bold text-white">KSh {Number(convertToKES(parseInt(amount) || 0, currency)).toLocaleString()}</span> to the Paybill below:</p>
-                  <div className="space-y-2 mb-2">
-                    <div className="flex justify-between py-2 px-3 rounded-lg bg-black/20">
-                      <span className="opacity-70">Paybill Number</span>
-                      <span className="font-bold">{MPESA_PAYBILL}</span>
+                {/* Premium Manual Payment Instructions */}
+                <div className="rounded-xl p-4 mb-4" style={{ background: 'linear-gradient(135deg, rgba(16,185,129,0.08), rgba(16,185,129,0.02))', border: '1px solid rgba(16,185,129,0.2)' }}>
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: '#10b981' }}>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5">
+                        <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+                      </svg>
                     </div>
-                    <div className="flex justify-between py-2 px-3 rounded-lg bg-black/20">
-                      <span className="opacity-70">Account Number</span>
-                      <span className="font-bold">{user.phone}</span>
-                    </div>
-                    <div className="flex justify-between py-2 px-3 rounded-lg bg-black/20">
-                      <span className="opacity-70">Amount</span>
-                      <span className="font-bold">KSh {Number(convertToKES(parseInt(amount) || 0, currency)).toLocaleString()}</span>
+                    <div>
+                      <p className="font-bold text-sm text-white">Manual Paybill Payment</p>
+                      <p className="text-[10px]" style={{ color: 'var(--text-muted)' }}>STK push unavailable — pay manually</p>
                     </div>
                   </div>
-                  <p className="text-xs opacity-70">After sending, enter your M-Pesa transaction code below.</p>
+
+                  {/* Payment Details */}
+                  <div className="space-y-2 mb-3">
+                    <div className="flex justify-between items-center py-2.5 px-3 rounded-lg" style={{ background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.06)' }}>
+                      <span className="text-xs" style={{ color: 'var(--text-muted)' }}>Paybill Number</span>
+                      <span className="font-bold text-sm text-white">{MPESA_PAYBILL}</span>
+                    </div>
+                    <div className="flex justify-between items-center py-2.5 px-3 rounded-lg" style={{ background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.06)' }}>
+                      <span className="text-xs" style={{ color: 'var(--text-muted)' }}>Account Number</span>
+                      <span className="font-bold text-sm text-white">{user.phone}</span>
+                    </div>
+                    <div className="flex justify-between items-center py-2.5 px-3 rounded-lg" style={{ background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.06)' }}>
+                      <span className="text-xs" style={{ color: 'var(--text-muted)' }}>Amount</span>
+                      <span className="font-bold text-sm text-green-400">KSh {Number(convertToKES(parseInt(amount) || 0, currency)).toLocaleString()}</span>
+                    </div>
+                  </div>
+
+                  {/* Step-by-step instructions */}
+                  <div className="rounded-lg p-3 mb-3" style={{ background: 'rgba(0,0,0,0.2)' }}>
+                    <p className="text-[10px] uppercase tracking-wider font-bold mb-2" style={{ color: '#10b981' }}>Steps to Pay</p>
+                    <div className="space-y-2">
+                      <div className="flex gap-2">
+                        <span className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0 mt-0.5" style={{ background: 'rgba(16,185,129,0.2)', color: '#10b981' }}>1</span>
+                        <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>Go to <strong>M-Pesa</strong> → <strong>Lipa na M-Pesa</strong> → <strong>Paybill</strong></p>
+                      </div>
+                      <div className="flex gap-2">
+                        <span className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0 mt-0.5" style={{ background: 'rgba(16,185,129,0.2)', color: '#10b981' }}>2</span>
+                        <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>Enter Business Number: <strong className="text-white">{MPESA_PAYBILL}</strong></p>
+                      </div>
+                      <div className="flex gap-2">
+                        <span className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0 mt-0.5" style={{ background: 'rgba(16,185,129,0.2)', color: '#10b981' }}>3</span>
+                        <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>Account Number: <strong className="text-white">{user.phone}</strong></p>
+                      </div>
+                      <div className="flex gap-2">
+                        <span className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0 mt-0.5" style={{ background: 'rgba(16,185,129,0.2)', color: '#10b981' }}>4</span>
+                        <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>Enter Amount: <strong className="text-white">KSh {Number(convertToKES(parseInt(amount) || 0, currency)).toLocaleString()}</strong></p>
+                      </div>
+                      <div className="flex gap-2">
+                        <span className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0 mt-0.5" style={{ background: 'rgba(16,185,129,0.2)', color: '#10b981' }}>5</span>
+                        <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>Confirm with your M-Pesa PIN</p>
+                      </div>
+                    </div>
+                  </div>
                 </div>
 
+                {/* Transaction Code Entry */}
                 <div className="mb-4">
                   <label className="text-xs mb-1 block" style={{ color: 'var(--text-secondary)' }}>M-Pesa Transaction Code</label>
                   <input
@@ -654,6 +691,7 @@ function DepositModal({ user, onClose, onPending }) {
                     onChange={e => { setTxCode(e.target.value.toUpperCase()); setTxError('') }}
                     maxLength={12}
                   />
+                  <p className="text-[10px] mt-1" style={{ color: 'var(--text-muted)' }}>Found in your M-Pesa confirmation SMS</p>
                 </div>
 
                 {txError && (
@@ -661,13 +699,14 @@ function DepositModal({ user, onClose, onPending }) {
                 )}
 
                 <div className="flex gap-3">
-                  <button onClick={onClose} className="btn-secondary flex-1">Cancel</button>
+                  <button onClick={onClose} className="btn-secondary flex-1 text-xs">Cancel</button>
                   <button
                     onClick={submitManualCode}
                     disabled={txLoading || !txCode.trim()}
-                    className="btn-primary flex-1"
+                    className="btn-primary flex-1 text-xs"
+                    style={{ background: '#10b981', borderColor: '#10b981' }}
                   >
-                    {txLoading ? 'Saving...' : 'Submit Code'}
+                    {txLoading ? 'Verifying...' : 'Confirm Payment'}
                   </button>
                 </div>
               </>
