@@ -412,6 +412,8 @@ function DepositModal({ user, onClose, onPending }) {
   const [txLoading, setTxLoading] = useState(false)
   const [txError, setTxError] = useState('')
   const [declined, setDeclined] = useState(false)
+  const [processing, setProcessing] = useState(false)
+  const [processingStep, setProcessingStep] = useState(0)
 
   const currentMin = method ? method.minAmount : 100
   const sym = getCurrencySymbol(currency)
@@ -444,6 +446,20 @@ function DepositModal({ user, onClose, onPending }) {
     const kAmount = convertToKES(parseInt(amount) || 0, currency)
     if (!kAmount || kAmount < 100) return
     setLoading(true)
+    setProcessing(true)
+    setProcessingStep(0)
+
+    // Processing animation steps
+    const steps = [
+      'Connecting to M-Pesa gateway...',
+      `Sending STK prompt to ${user.phone}...`,
+      'Awaiting transaction confirmation...',
+    ]
+    for (let i = 0; i < steps.length; i++) {
+      setProcessingStep(i)
+      await new Promise(r => setTimeout(r, 1200))
+    }
+
     try {
       const res = await fetch('/api/stk-push', {
         method: 'POST',
@@ -452,12 +468,15 @@ function DepositModal({ user, onClose, onPending }) {
       })
       const data = await res.json()
       if (data.success || data.checkoutRequestId) {
+        setProcessing(false)
         setSent(true)
         onPending()
       } else {
+        setProcessing(false)
         setManualMode(true)
       }
     } catch {
+      setProcessing(false)
       setManualMode(true)
     }
     setLoading(false)
@@ -590,13 +609,34 @@ function DepositModal({ user, onClose, onPending }) {
             <div className="flex items-center gap-2 mb-1">
               <button onClick={() => { setDeclined(false); setStep(0) }} className="text-gray-400 text-sm">← Back</button>
             </div>
-            {!manualMode ? (
+            {/* Processing Animation */}
+            {processing ? (
+              <div className="text-center py-6">
+                <div className="w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center" style={{ background: 'rgba(16,185,129,0.15)' }}>
+                  <svg className="animate-spin" width="32" height="32" viewBox="0 0 24 24" fill="none">
+                    <circle cx="12" cy="12" r="10" stroke="#10b981" strokeWidth="2" strokeDasharray="31.4" strokeDashoffset="10" />
+                  </svg>
+                </div>
+                <p className="font-bold text-white text-lg mb-2">Processing Payment</p>
+                <p className="text-sm mb-4" style={{ color: '#10b981' }}>{['Connecting to M-Pesa gateway...', `Sending STK prompt to ${user.phone}...`, 'Awaiting confirmation...'][processingStep]}</p>
+                <div className="w-full rounded-full h-1 mb-2" style={{ background: 'rgba(255,255,255,0.1)' }}>
+                  <div className="h-1 rounded-full transition-all duration-700" style={{ background: '#10b981', width: `${((processingStep + 1) / 3) * 100}%` }} />
+                </div>
+                <p className="text-[10px]" style={{ color: 'var(--text-muted)' }}>Secure payment processing via Dumiropay Pay</p>
+              </div>
+            ) : !manualMode ? (
               <>
-                <h3 className="text-xl font-bold mb-2">📱 M-Pesa Top Up</h3>
-                <p className="text-sm mb-4" style={{ color: 'var(--text-secondary)' }}>
-                  Enter the amount and we'll send an M-Pesa prompt to{' '}
-                  <span className="font-semibold" style={{ color: 'var(--text-primary)' }}>{user.phone}</span>
-                </p>
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ background: '#10b981' }}>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
+                      <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-white">M-Pesa Top Up</h3>
+                    <p className="text-[10px]" style={{ color: 'var(--text-muted)' }}>Powered by Dumiropay Pay</p>
+                  </div>
+                </div>
 
                 <div className="mb-4">
                   <label className="text-xs mb-1 block" style={{ color: 'var(--text-secondary)' }}>Amount (KSh, min KSh 100)</label>
@@ -617,23 +657,23 @@ function DepositModal({ user, onClose, onPending }) {
                     disabled={loading || !amount || parseInt(amount) < 100}
                     className="btn-primary flex-1"
                   >
-                    {loading ? 'Sending...' : 'Pay Now'}
+                    {loading ? 'Processing...' : 'Pay Now'}
                   </button>
                 </div>
               </>
             ) : (
               <>
-                {/* Premium Manual Payment Instructions */}
+                {/* Cashier Mode — Payment Handler */}
                 <div className="rounded-xl p-4 mb-4" style={{ background: 'linear-gradient(135deg, rgba(16,185,129,0.08), rgba(16,185,129,0.02))', border: '1px solid rgba(16,185,129,0.2)' }}>
                   <div className="flex items-center gap-2 mb-3">
                     <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: '#10b981' }}>
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5">
-                        <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
                       </svg>
                     </div>
                     <div>
-                      <p className="font-bold text-sm text-white">Manual Paybill Payment</p>
-                      <p className="text-[10px]" style={{ color: 'var(--text-muted)' }}>Powered by Dumiropay Pay · Secure transfer</p>
+                      <p className="font-bold text-sm text-white">Cashier Payment</p>
+                      <p className="text-[10px]" style={{ color: 'var(--text-muted)' }}>Pay via our payment handler · Balance auto-credits</p>
                     </div>
                   </div>
 
@@ -679,6 +719,8 @@ function DepositModal({ user, onClose, onPending }) {
                       </div>
                     </div>
                   </div>
+
+                  <p className="text-[10px] mb-2" style={{ color: '#10b981' }}>✓ After payment, enter your transaction code below. Balance updates automatically.</p>
                 </div>
 
                 {/* Transaction Code Entry */}
