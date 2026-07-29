@@ -571,7 +571,7 @@ export default function PlansPage() {
         </button>
       </div>
 
-      {/* Certifications */Content truncated due to size limit. Use line ranges to read remaining content)
+      {/* Certifications */}
       <PlanCertifications />
 
       {/* Data Center Status */}
