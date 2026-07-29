@@ -1016,7 +1016,7 @@ function BonusTransferModal({ bonusBalance, onClose, onTransfer }) {
 }
 
 export default function ProfilePage() {
-  const { user, updateUser } = useAuth()
+  const { user, updateUser, logout } = useAuth()
   const [toast, setToast] = useState({ msg: '', type: 'success' })
   const [showDeposit, setShowDeposit] = useState(false)
   const [showWithdraw, setShowWithdraw] = useState(false)
@@ -1099,11 +1099,16 @@ export default function ProfilePage() {
             <h1 className="text-2xl font-black">Profile</h1>
             <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>{user?.phone || 'Loading...'}</p>
           </div>
-          {user?.isAdmin && (
-            <a href="/admin" className="text-xs bg-yellow-600 hover:bg-yellow-500 text-white px-3 py-1.5 rounded-lg font-semibold transition-colors">
-              ⚙️ Admin
-            </a>
-          )}
+          <div className="flex items-center gap-2">
+            {user?.isAdmin && (
+              <a href="/admin" className="text-xs bg-yellow-600 hover:bg-yellow-500 text-white px-3 py-1.5 rounded-lg font-semibold transition-colors">
+                ⚙️ Admin
+              </a>
+            )}
+            <button onClick={() => { logout(); window.location.href = '/login' }} className="text-xs bg-red-900/50 hover:bg-red-800/60 text-red-400 px-3 py-1.5 rounded-lg font-semibold transition-colors">
+              Log Out
+            </button>
+          </div>
         </div>
 
         {/* Balance */}
@@ -1208,7 +1213,7 @@ function ReferralModal({ user, referrals, onClose, showToast }) {
     }
   }
 
-  const shareText = `Join Dumiropay and earn with AI compute! Use my code: ${code}\nhttps://dumiropay.com?ref=${code}`
+  const shareText = `Join Dumiropay and earn with AI compute! Use my code: ${code}\nhttps://dumiropay.space?ref=${code}`
 
   return (
     <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4" onClick={onClose}>

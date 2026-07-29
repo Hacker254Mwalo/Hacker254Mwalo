@@ -70,26 +70,35 @@ export default function EarningsPanel({ user, activeInvestments, hasActiveInvest
           )}
         </>
       ) : (
-        /* ── No investment — show tempting CTA ── */
+        /* ── No investment — show market opportunity CTA ── */
         <>
           <div className="text-center py-2">
-            <p className="text-xs font-bold tracking-wider uppercase mb-3" style={{ color: '#FFD700' }}>
-              Your Earning Journey Starts Here
-            </p>
+            {/* Live demand indicator */}
+            <div className="mb-3">
+              <div className="flex items-center justify-center gap-2 mb-1">
+                <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
+                <span className="text-[10px] font-bold tracking-wider uppercase" style={{ color: '#FFD700' }}>
+                  Global AI Compute Demand: 94.2%
+                </span>
+              </div>
+              <div className="h-1 rounded-full mx-auto" style={{ background: 'var(--bg-input)', maxWidth: '160px' }}>
+                <div className="h-full rounded-full bg-gradient-to-r from-red-500 to-orange-500" style={{ width: '94%' }}></div>
+              </div>
+            </div>
             <p className="text-sm mb-1" style={{ color: 'var(--text-secondary)' }}>
-              Start earning daily from
+              Enterprise demand at all-time highs
             </p>
-            <p className="text-xl font-black mb-1" style={{ color: '#34D399' }}>
-              KSh 150/day
+            <p className="text-xs mb-1" style={{ color: 'var(--text-muted)' }}>
+              Secure your GPU node before capacity fills
             </p>
-            <p className="text-xs mb-4" style={{ color: 'var(--text-muted)' }}>
-              with just KSh 5,000 investment
+            <p className="text-sm mb-4" style={{ color: 'var(--text-muted)' }}>
+              Daily returns from 3% · Powered by H100 & A100
             </p>
             <button
               onClick={() => navigate('/plans')}
               className="earnings-cta-btn w-full text-sm py-2.5 rounded-xl font-semibold transition-all"
             >
-              Choose Your First Plan →
+              View Available Plans →
             </button>
           </div>
         </>
