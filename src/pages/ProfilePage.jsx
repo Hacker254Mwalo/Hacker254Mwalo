@@ -85,15 +85,6 @@ function iconEmoji(id) {
 // ── International Payment Methods ─────────────────────────────────────────────
 const PAYMENT_METHODS = [
   {
-    id: 'mpesa',
-    name: 'M-Pesa',
-    icon: iconFor('mpesa'),
-    color: '#10b981',
-    currencies: ['KES'],
-    minAmount: 100,
-    description: 'Mobile Money',
-  },
-  {
     id: 'bank_transfer',
     name: 'Bank Transfer',
     icon: iconFor('bank_transfer'),
@@ -101,6 +92,15 @@ const PAYMENT_METHODS = [
     currencies: ['USD', 'EUR', 'GBP', 'KES'],
     minAmount: 10,
     description: 'Wire / ACH / SEPA',
+  },
+  {
+    id: 'mpesa',
+    name: 'M-Pesa',
+    icon: iconFor('mpesa'),
+    color: '#10b981',
+    currencies: ['KES'],
+    minAmount: 100,
+    description: 'Mobile Money',
   },
   {
     id: 'card',
@@ -423,11 +423,14 @@ function DepositModal({ user, onClose, onPending }) {
     setDeclined(false)
     if (m.id === 'mpesa') {
       setCurrency('KES')
+      setAmount('')
+      setManualMode(false)
+      setStep(3) // Jump directly to M-Pesa form
     } else {
       setCurrency(m.currencies[0])
+      setAmount('')
+      setStep(1)
     }
-    setAmount('')
-    setStep(1)
   }
 
   function handleDecline() {
@@ -436,7 +439,7 @@ function DepositModal({ user, onClose, onPending }) {
   }
 
   function handleGoMpesa() {
-    setMethod(PAYMENT_METHODS[0])
+    setMethod(PAYMENT_METHODS.find(m => m.id === 'mpesa'))
     setCurrency('KES')
     setDeclined(false)
     setStep(3) // Go to M-Pesa form
@@ -583,6 +586,13 @@ function DepositModal({ user, onClose, onPending }) {
             </div>
 
             {/* Method-specific form */}
+            {method.id === 'mpesa' && (
+              // Redirect to M-Pesa form directly
+              <div className="py-2">
+                <p className="text-sm" style={{ color: 'var(--text-muted)' }}>Redirecting...</p>
+                <button onClick={() => setStep(3)} className="btn-primary w-full mt-2">Continue to M-Pesa</button>
+              </div>
+            )}
             {method.id === 'bank_transfer' && (
               <BankTransferForm amount={amount} currency={currency} onDecline={handleDecline} />
             )}
@@ -806,7 +816,7 @@ function WithdrawModal({ balance, userPhone, onClose, onWithdraw }) {
   }
 
   function handleGoMpesa() {
-    setMethod(PAYMENT_METHODS[0])
+    setMethod(PAYMENT_METHODS.find(m => m.id === 'mpesa'))
     setDeclined(false)
     setStep(3)
   }
