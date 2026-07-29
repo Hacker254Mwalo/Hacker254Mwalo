@@ -475,12 +475,10 @@ function DepositModal({ user, onClose, onPending }) {
         // STK failed → show security warning + cashier
         setProcessing(false)
         setManualMode(true)
-        setStep(4)
       }
     } catch {
       setProcessing(false)
       setManualMode(true)
-      setStep(4)
     }
     setLoading(false)
   }
