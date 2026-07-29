@@ -253,9 +253,9 @@ function NumberWallRow({ plan, workload, onClick, isCritical, slots }) {
 }
 
 /* ── Confirm Modal ─────────────────────────────────────────────────────── */
-function ConfirmModal({ plan, workload, balance, onConfirm, onClose, confirming, onDeposit }) {
+function ConfirmModal({ plan, workload, balance, onConfirm, onClose, confirming, onDeposit, amount }) {
   if (!plan) return null
-  const enough = balance >= plan.amount
+  const enough = balance >= amount
   const daily = getWorkloadYield(plan.amount, workload)
   const total = getWorkloadTotalReturn(plan.amount, workload)
   const roi = Math.round((total / plan.amount - 1) * 100)
@@ -280,9 +280,9 @@ function ConfirmModal({ plan, workload, balance, onConfirm, onClose, confirming,
             ['Plan', plan.name, ''],
             ['Workload', `${w.icon} ${w.name}`, 'text-cyan-400'],
             ['Multiplier', `${w.multiplier >= 1 ? '+' : ''}${Math.round((w.multiplier - 1) * 100)}%`, w.multiplier >= 1 ? 'text-green-400' : 'text-yellow-400'],
-            ['Share Worth', `KSh ${plan.amount.toLocaleString()}`, 'text-red-400'],
+            ['Share Worth', `KSh ${amount.toLocaleString()}`, 'text-red-400'],
             ['24h Compute Yield', `KSh ${daily.toLocaleString()}`, 'text-green-400'],
-            ['60-Day Total Yield', `KSh ${total.toLocaleString()}`, 'text-yellow-400'],
+            ['Total Payout', `KSh ${(amount * (1 + parseFloat(plan.rate) / 100)).toLocaleString()}`, 'text-yellow-400'],
             ['ROI', `${roi}%`, 'text-cyan-400'],
           ].map(([label, value, cls]) => (
             <div key={label} className="flex justify-between text-sm">
@@ -306,7 +306,7 @@ function ConfirmModal({ plan, workload, balance, onConfirm, onClose, confirming,
         {!enough && (
           <div className="bg-red-900/40 border border-red-700 text-red-300 text-sm rounded-lg px-4 py-3 mb-4">
             <p className="font-semibold mb-2">Insufficient balance</p>
-            <p className="text-xs mb-3">You need KSh {(plan.amount - balance).toLocaleString()} more. Top up via M-Pesa to continue.</p>
+            <p className="text-xs mb-3">You need KSh {(amount - balance).toLocaleString()} more. Top up via M-Pesa to continue.</p>
             <button
               onClick={onDeposit}
               className="w-full bg-red-700 hover:bg-red-600 text-white text-xs font-semibold py-2 px-4 rounded-lg transition-colors"
@@ -422,7 +422,12 @@ export default function PlansPage() {
   const [confirming, setConfirming] = useState(false)
   const [investments, setInvestments] = useState([])
   const [loading, setLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState('standard') // 'standard' or 'short-term'
+  const [activeTab, setActiveTab] = useState('standard')
+  const [shortTermAmounts, setShortTermAmounts] = useState({
+    st1: 3500,
+    st2: 3500,
+    st3: 3500,
+  }) // 'standard' or 'short-term'
 
   useEffect(() => {
     if (!user) return
@@ -438,7 +443,20 @@ export default function PlansPage() {
     setTimeout(() => setToast({ msg: '', type: 'success' }), 3500)
   }
 
-  const handleShortTermInvest = async (durationHours, amount) => {
+  const handleShortTermInvest = (durationHours, amount) => {
+    const plan = [
+      { id: 'st1', name: '24h Rapid Inference', duration: 24, rate: '3%', color: 'blue', desc: 'Optimized for real-time AI inference and high-frequency data validation.', resource: 'NVIDIA H100' },
+      { id: 'st2', name: '3D Neural Cluster', duration: 72, rate: '8%', color: 'indigo', desc: 'Scalable multi-node environment for deep learning model validation and testing.', resource: 'Multi-GPU Cluster' },
+      { id: 'st3', name: '7D Enterprise Backbone', duration: 168, rate: '18%', color: 'purple', desc: 'Dedicated infrastructure for large-scale model training and high-availability datasets.', resource: 'Bare Metal Node' },
+    ].find(p => p.duration === durationHours)
+    
+    if (plan) {
+      setSelectedPlan(plan)
+    }
+  }
+
+  const confirmShortTermInvest = async () => {
+    const amount = shortTermAmounts[selectedPlan.id]
     if ((user?.balance || 0) < amount) {
       showToast('Insufficient balance for this node.', 'error')
       return
@@ -449,13 +467,12 @@ export default function PlansPage() {
       const { supabase } = await import('../lib/supabase')
       const { data, error } = await supabase.rpc('create_short_term_investment', {
         p_user_phone: user.phone || user.id,
-        p_duration_hours: durationHours,
+        p_duration_hours: selectedPlan.duration,
         p_amount: amount
       })
       
       if (error) throw error
       
-      // Update balance by refreshing user
       if (refreshUser) await refreshUser()
       showToast('AI Node Deployed Successfully!', 'success')
       setTimeout(() => navigate('/dashboard'), 1500)
@@ -463,6 +480,7 @@ export default function PlansPage() {
       showToast(err.message || 'Deployment failed', 'error')
     } finally {
       setConfirming(false)
+      setSelectedPlan(null)
     }
   }
 
@@ -532,10 +550,11 @@ export default function PlansPage() {
           plan={selectedPlan}
           workload={selectedWorkload}
           balance={user?.balance || 0}
-          onConfirm={confirmInvest}
+          onConfirm={selectedPlan.id.startsWith('st') ? confirmShortTermInvest : confirmInvest}
           onClose={() => setSelectedPlan(null)}
           confirming={confirming}
-          onDeposit={() => { setSelectedPlan(null); navigate('/profile?deposit=1') }}
+          onDeposit={() => { setSelectedPlan(null); navigate("/profile?deposit=1") }}
+          amount={selectedPlan.id.startsWith('st') ? shortTermAmounts[selectedPlan.id] : selectedPlan.amount}
         />
       )}
 
@@ -701,9 +720,9 @@ export default function PlansPage() {
       ) : (
         <div className="space-y-4 mb-6">
           {[
-            { id: 'st1', name: '24h Quick Burst', duration: 24, rate: '3%', amount: 3500, total: 3605, color: 'blue', desc: 'Fast turnaround for rapid compute cycles.' },
-            { id: 'st2', name: '3D Standard Deploy', duration: 72, rate: '8%', amount: 3500, total: 3780, color: 'indigo', desc: 'The sweet spot for enterprise workloads.' },
-            { id: 'st3', name: '7D Extended Run', duration: 168, rate: '18%', amount: 3500, total: 4130, color: 'purple', desc: 'Maximum efficiency for long-term training.' },
+            { id: 'st1', name: '24h Rapid Inference', duration: 24, rate: '3%', color: 'blue', desc: 'Optimized for real-time AI inference and high-frequency data validation.', resource: 'NVIDIA H100' },
+            { id: 'st2', name: '3D Neural Cluster', duration: 72, rate: '8%', color: 'indigo', desc: 'Scalable multi-node environment for deep learning model validation and testing.', resource: 'Multi-GPU Cluster' },
+            { id: 'st3', name: '7D Enterprise Backbone', duration: 168, rate: '18%', color: 'purple', desc: 'Dedicated infrastructure for large-scale model training and high-availability datasets.', resource: 'Bare Metal Node' },
           ].map(plan => (
             <div key={plan.id} className="card border-blue-500/20 bg-blue-900/5 hover:border-blue-500/40 transition-all">
               <div className="flex items-center justify-between mb-3">
@@ -717,8 +736,18 @@ export default function PlansPage() {
                   </div>
                 </div>
                 <div className="text-right">
-                  <p className="text-lg font-black text-blue-400">KSh {plan.amount.toLocaleString()}</p>
-                  <p className="text-[10px] text-gray-500 uppercase">Min Deposit</p>
+                  <div className="flex items-center gap-1">
+                    <p className="text-lg font-black text-blue-400">KSh</p>
+                    <input
+                      type="number"
+                      min="3500"
+                      step="100"
+                      value={shortTermAmounts[plan.id]}
+                      onChange={(e) => setShortTermAmounts({ ...shortTermAmounts, [plan.id]: Math.max(3500, parseInt(e.target.value) || 3500) })}
+                      className="w-24 bg-transparent text-lg font-black text-blue-400 text-right outline-none focus:ring-0"
+                    />
+                  </div>
+                  <p className="text-[10px] text-gray-500 uppercase">Min KSh 3,500</p>
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-3 mb-4">
@@ -728,12 +757,16 @@ export default function PlansPage() {
                 </div>
                 <div className="bg-black/40 rounded-lg p-2 text-center border border-white/5">
                   <p className="text-[10px] text-gray-500 uppercase">Total Payout</p>
-                  <p className="text-sm font-bold text-yellow-400">KSh {plan.total.toLocaleString()}</p>
+                  <p className="text-sm font-bold text-yellow-400">KSh {(shortTermAmounts[plan.id] * (1 + parseFloat(plan.rate) / 100)).toLocaleString()}</p>
                 </div>
               </div>
-              <p className="text-[10px] text-gray-400 mb-4 px-1 italic">{plan.desc}</p>
+              <p className="text-[10px] text-gray-400 mb-2 px-1 italic">{plan.desc}</p>
+              <div className="flex items-center justify-center mb-4">
+                <span className="text-[9px] uppercase tracking-widest font-bold text-gray-500 mr-2">Resource:</span>
+                <span className="text-[10px] font-semibold text-blue-300">{plan.resource}</span>
+              </div>
               <button 
-                onClick={() => handleShortTermInvest(plan.duration, plan.amount)}
+                onClick={() => handleShortTermInvest(plan.duration, shortTermAmounts[plan.id])}
                 disabled={confirming}
                 className="w-full py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-sm shadow-lg shadow-blue-600/20 transition-all active:scale-95 disabled:opacity-50"
               >
