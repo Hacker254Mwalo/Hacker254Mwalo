@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { getInvestments, addInvestment, getUser } from '../lib/db'
@@ -22,6 +22,52 @@ const PLAN_IMAGES = {
   emerald: '/icons/emerald.webp',
   sapphire: '/icons/sapphire.webp',
   vip: '/icons/vip.webp',
+}
+
+/* ── Loading Ritual ──────────────────────────────────────────────────── */
+function LoadingRitual({ onComplete }) {
+  const [stage, setStage] = useState(0)
+  const messages = [
+    'Connecting to GPU cluster...',
+    '14 nodes active · Demand: 94.2%',
+    'Your session: secure',
+  ]
+
+  useEffect(() => {
+    const t1 = setTimeout(() => setStage(1), 350)
+    const t2 = setTimeout(() => setStage(2), 700)
+    const t3 = setTimeout(() => onComplete(), 1000)
+    return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3) }
+  }, [onComplete])
+
+  return (
+    <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center"
+      style={{ background: 'linear-gradient(180deg, #030712 0%, #0a0e1a 100%)' }}>
+      <div className="scan-line" />
+      <div className="mb-6">
+        <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4"
+          style={{ background: 'linear-gradient(135deg, rgba(0,180,255,0.15), rgba(0,180,255,0.05))', border: '1px solid rgba(0,180,255,0.3)' }}>
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#00B4FF" strokeWidth="1.5">
+            <rect x="2" y="2" width="20" height="20" rx="3" />
+            <path d="M7 7h4v4H7zM13 7h4v4h-4zM7 13h4v4H7zM13 13h4v4h-4z" />
+          </svg>
+        </div>
+      </div>
+      <div className="space-y-2 text-center">
+        {messages.map((msg, i) => (
+          <p key={i} className={`text-sm transition-all duration-300 ${
+            i <= stage ? 'text-green-400 opacity-100' : 'text-gray-700 opacity-30'
+          }`}>
+            {i <= stage && '✓ '}{msg}
+          </p>
+        ))}
+      </div>
+      <div className="mt-6 w-48 h-1 rounded-full bg-gray-800 overflow-hidden">
+        <div className="h-full rounded-full transition-all duration-500"
+          style={{ width: `${(stage + 1) * 33}%`, background: 'linear-gradient(90deg, #00B4FF, #34D399)' }} />
+      </div>
+    </div>
+  )
 }
 
 /* ── Global Compute Demand Bar ─────────────────────────────────────────── */
@@ -69,117 +115,87 @@ function GlobalDemandBar() {
   )
 }
 
-/* ── Workload Selector ─────────────────────────────────────────────────── */
-function WorkloadSelector({ selected, onChange }) {
+/* ── Haptic Touch Wrapper ────────────────────────────────────────────── */
+function HapticButton({ children, onClick, className, disabled, style }) {
+  const [shaking, setShaking] = useState(false)
+  const handleClick = () => {
+    if (disabled) return
+    setShaking(true)
+    onClick()
+    setTimeout(() => setShaking(false), 350)
+  }
   return (
-    <div className="space-y-2">
-      <p className="text-[10px] uppercase tracking-widest font-semibold" style={{ color: '#00B4FF' }}>
-        Select AI Workload
-      </p>
-      <div className="grid grid-cols-3 gap-2">
-        {Object.values(WORKLOAD_MULTIPLIERS).map(w => {
-          const active = selected === w.id
-          return (
-            <button
-              key={w.id}
-              onClick={() => onChange(w.id)}
-              className={`relative rounded-xl px-2 py-3 text-center transition-all ${
-                active
-                  ? 'bg-gradient-to-br from-blue-600/30 to-cyan-600/20 border-2 border-cyan-500 shadow-lg shadow-cyan-500/10'
-                  : 'border border-gray-700/50 hover:border-gray-500'
-              }`}
-              style={{ background: active ? undefined : 'var(--bg-elevated)' }}
-            >
-              <span className="text-xl block mb-1">{w.icon}</span>
-              <p className={`text-[10px] font-bold ${active ? 'text-cyan-300' : 'text-gray-300'}`}>{w.name}</p>
-              <p className="text-[9px] mt-0.5" style={{ color: 'var(--text-muted)' }}>{w.description}</p>
-              <p className={`text-[9px] mt-1 font-semibold ${
-                w.multiplier > 1 ? 'text-green-400' : w.multiplier >= 0.95 ? 'text-blue-400' : 'text-yellow-400'
-              }`}>
-                {w.multiplier >= 1 ? '+' : ''}{Math.round((w.multiplier - 1) * 100)}% yield
-              </p>
-              {active && <div className="absolute top-1 right-1 w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />}
-            </button>
-          )
-        })}
-      </div>
-    </div>
+    <button
+      onClick={handleClick}
+      disabled={disabled}
+      className={`${className || ''} ${shaking ? 'haptic-shake' : ''}`}
+      style={style}
+    >
+      {children}
+    </button>
   )
 }
 
-/* ── Plan Card ─────────────────────────────────────────────────────────── */
-function PlanCard({ plan, onInvest, alreadyUsed, initialWorkload, onWorkloadChange }) {
-  const [workload, setWorkload] = useState(initialWorkload || 'finance')
+/* ── Number Wall Row ─────────────────────────────────────────────────── */
+function NumberWallRow({ plan, workload, onClick, isCritical, slots }) {
   const daily = getWorkloadYield(plan.amount, workload)
   const total = getWorkloadTotalReturn(plan.amount, workload)
   const roi = Math.round((total / plan.amount - 1) * 100)
   const planImage = PLAN_IMAGES[plan.id]
 
   return (
-    <div className="card flex flex-col gap-4 hover:border-gray-600 transition-colors overflow-hidden">
-      {/* Header with gradient */}
-      <div className={`bg-gradient-to-r ${plan.color} rounded-xl p-4 flex items-center justify-between`}>
-        <div className="flex items-center gap-3">
+    <tr
+      onClick={() => onClick(plan, workload)}
+      className={`transition-all duration-200 ${isCritical ? 'demand-critical' : ''}`}
+      style={{ borderBottom: '1px solid rgba(31,41,55,0.4)' }}
+    >
+      {/* Plan Name */}
+      <td className="pr-2">
+        <div className="flex items-center gap-2">
           {planImage && (
-            <div className="w-14 h-14 rounded-xl overflow-hidden bg-white/10 backdrop-blur-sm flex-shrink-0 border border-white/20 shadow-lg">
+            <div className="w-9 h-9 rounded-lg overflow-hidden flex-shrink-0 border border-white/10">
               <img src={planImage} alt={plan.name} className="w-full h-full object-cover" />
             </div>
           )}
           <div>
-            <p className="text-[10px] text-white/70 font-semibold uppercase tracking-widest">{plan.once ? 'One-Time Only' : 'Repeatable'}</p>
-            <p className="text-lg font-black text-white mt-0.5">{plan.name}</p>
+            <p className="text-sm font-bold text-white">{plan.name}</p>
+            <p className="text-[9px]" style={{ color: 'var(--text-muted)' }}>
+              {plan.specs || 'AI Compute'}
+            </p>
           </div>
         </div>
-        <div className="text-right">
-          <p className="text-xl font-black text-white">KSh {plan.amount.toLocaleString()}</p>
-          <p className="text-white/60 text-[10px] uppercase tracking-wider mt-0.5">Share Worth</p>
-        </div>
-      </div>
+      </td>
 
-      {/* Specs badge */}
-      {plan.specs && (
-        <div className="rounded-lg px-3 py-2 flex flex-wrap gap-1.5" style={{ background: 'var(--bg-elevated)' }}>
-          <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-blue-900/40 text-blue-300 border border-blue-700/30">
-            {plan.specs}
-          </span>
-        </div>
-      )}
+      {/* Cost */}
+      <td className="text-center">
+        <p className="text-sm font-black text-white">KSh {plan.amount.toLocaleString()}</p>
+        <p className="text-[9px] text-gray-500">{plan.once ? 'One-time' : 'Repeatable'}</p>
+      </td>
 
-      {/* Workload Selector */}
-      <WorkloadSelector selected={workload} onChange={(w) => { setWorkload(w); onWorkloadChange(w) }} />
+      {/* Daily Yield */}
+      <td className="text-center">
+        <p className="num-glow-green font-bold text-sm">KSh {daily.toLocaleString()}</p>
+        <p className="text-[9px] text-gray-500">per day</p>
+      </td>
 
-      {/* Yield breakdown — dynamic based on workload */}
-      <div className="grid grid-cols-3 gap-2">
-        <div className="rounded-xl p-3 text-center" style={{ background: 'var(--bg-elevated)' }}>
-          <p className="text-green-400 font-bold text-base">KSh {daily.toLocaleString()}</p>
-          <p className="text-[9px] mt-0.5" style={{ color: 'var(--text-secondary)' }}>24h Yield</p>
-        </div>
-        <div className="rounded-xl p-3 text-center" style={{ background: 'var(--bg-elevated)' }}>
-          <p className="text-yellow-400 font-bold text-base">KSh {total.toLocaleString()}</p>
-          <p className="text-[9px] mt-0.5" style={{ color: 'var(--text-secondary)' }}>60-Day Total</p>
-        </div>
-        <div className="rounded-xl p-3 text-center" style={{ background: 'var(--bg-elevated)' }}>
-          <p className="text-cyan-400 font-bold text-base">{roi}%</p>
-          <p className="text-[9px] mt-0.5" style={{ color: 'var(--text-secondary)' }}>ROI</p>
-        </div>
-      </div>
+      {/* 60-Day Total */}
+      <td className="text-center">
+        <p className="num-glow-gold font-bold text-sm">KSh {total.toLocaleString()}</p>
+        <p className="text-[9px] text-gray-500">60-day</p>
+      </td>
 
-      {/* Description */}
-      <p className="text-xs leading-relaxed px-1" style={{ color: 'var(--text-secondary)' }}>
-        {plan.description}
-      </p>
+      {/* ROI */}
+      <td className="text-center">
+        <p className="text-cyan-400 font-bold text-sm">{roi}%</p>
+      </td>
 
-      {/* Action button */}
-      {alreadyUsed ? (
-        <div className="text-center text-sm rounded-xl py-3" style={{ background: 'var(--bg-elevated)', color: 'var(--text-secondary)' }}>
-          ✓ Already purchased (one-time plan)
-        </div>
-      ) : (
-        <button onClick={() => onInvest(plan, workload)} className="btn-primary w-full text-sm">
-          Deploy Node — {plan.shareWorth}
-        </button>
-      )}
-    </div>
+      {/* Available */}
+      <td className="text-center">
+        <p className={`font-bold text-sm ${isCritical ? 'num-pulse-red' : 'text-gray-300'}`}>
+          {isCritical ? '🔴' : '🟢'} {slots}
+        </p>
+      </td>
+    </tr>
   )
 }
 
@@ -258,7 +274,6 @@ function ConfirmModal({ plan, workload, balance, onConfirm, onClose, confirming,
   )
 }
 
-/* ── Main Plans Page ──────────────────────────────────────────────────── */
 /* ── Quick Actions Strip ────────────────────────────────────────────────── */
 function QuickActions({ user, showToast }) {
   const navigate = useNavigate()
@@ -305,59 +320,22 @@ function QuickActions({ user, showToast }) {
   }
 
   const actions = [
-    {
-      icon: '🎁',
-      label: 'Claim Bonus',
-      onClick: handleClaimBonus,
-      disabled: bonusLoading || bonusClaimed,
-      loading: bonusLoading,
-      badge: bonusClaimed ? 'Done' : null,
-    },
-    {
-      icon: '🎰',
-      label: 'Lucky Spin',
-      onClick: handleSpin,
-      disabled: spinLoading,
-      loading: spinLoading,
-      badge: null,
-    },
-    {
-      icon: '💰',
-      label: 'Top Up',
-      onClick: () => navigate('/profile?deposit=1'),
-      disabled: false,
-      loading: false,
-      badge: null,
-    },
-    {
-      icon: '👥',
-      label: 'Refer',
-      onClick: () => navigate('/profile'),
-      disabled: false,
-      loading: false,
-      badge: null,
-    },
-    {
-      icon: '🔑',
-      label: 'Promo Code',
-      onClick: () => navigate('/dashboard'),
-      disabled: false,
-      loading: false,
-      badge: null,
-    },
+    { icon: '🎁', label: 'Claim Bonus', onClick: handleClaimBonus, disabled: bonusLoading || bonusClaimed, loading: bonusLoading, badge: bonusClaimed ? 'Done' : null },
+    { icon: '🎰', label: 'Lucky Spin', onClick: handleSpin, disabled: spinLoading, loading: spinLoading, badge: null },
+    { icon: '💰', label: 'Top Up', onClick: () => navigate('/profile?deposit=1'), disabled: false, loading: false, badge: null },
+    { icon: '👥', label: 'Refer', onClick: () => navigate('/profile'), disabled: false, loading: false, badge: null },
+    { icon: '🔑', label: 'Promo Code', onClick: () => navigate('/dashboard'), disabled: false, loading: false, badge: null },
   ]
 
   return (
     <div className="mb-4">
       <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide" style={{ WebkitOverflowScrolling: 'touch' }}>
         {actions.map(a => (
-          <button
+          <HapticButton
             key={a.label}
             onClick={a.onClick}
             disabled={a.disabled}
-            className={`relative flex-shrink-0 flex flex-col items-center gap-1 px-4 py-3 rounded-xl transition-all active:scale-95 ${
-              a.disabled ? 'opacity-50 cursor-not-allowed' : 'hover:scale-105'
-            }`}
+            className="relative flex-shrink-0 flex flex-col items-center gap-1 px-4 py-3 rounded-xl transition-all active:scale-95 hover:scale-105"
             style={{
               background: a.disabled
                 ? 'var(--bg-elevated)'
@@ -374,7 +352,7 @@ function QuickActions({ user, showToast }) {
                 {a.badge}
               </span>
             )}
-          </button>
+          </HapticButton>
         ))}
       </div>
     </div>
@@ -390,11 +368,16 @@ export default function PlansPage() {
   const [toast, setToast] = useState({ msg: '', type: 'success' })
   const [confirming, setConfirming] = useState(false)
   const [investments, setInvestments] = useState([])
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     if (!user) return
     getInvestments(user.phone || user.id).then(setInvestments).catch(() => {})
   }, [user])
+
+  const handleLoadingComplete = useCallback(() => {
+    setLoading(false)
+  }, [])
 
   function showToast(msg, type = 'success') {
     setToast({ msg, type })
@@ -440,6 +423,16 @@ export default function PlansPage() {
     return investments.some(i => i.planId === plan.id)
   }
 
+  // Simulate slot availability (fewer slots = more urgency)
+  function getSlots(plan) {
+    const seed = plan.amount % 7
+    return Math.max(2, 12 - seed - Math.floor(Math.random() * 3))
+  }
+
+  if (loading) {
+    return <LoadingRitual onComplete={handleLoadingComplete} />
+  }
+
   return (
     <div className="pt-4 md:pt-20 pb-24 md:pb-8 px-4 max-w-2xl mx-auto">
       {toast.msg && (
@@ -483,6 +476,7 @@ export default function PlansPage() {
       {/* Data Center Status */}
       <DataCenterInfo />
 
+      {/* Balance */}
       <div className="balance-gradient rounded-xl px-5 py-4 mb-6 flex items-center justify-between">
         <div>
           <p className="text-gray-400 text-xs">Available Balance</p>
@@ -495,17 +489,144 @@ export default function PlansPage() {
         <p>All plans run on enterprise-grade infrastructure with 24/7 monitoring</p>
       </div>
 
-      <div className="grid gap-4">
-        {PLANS.map(plan => (
-          <PlanCard
-            key={plan.id}
-            plan={plan}
-            onInvest={(p, w) => { setSelectedPlan(p); setSelectedWorkload(w) }}
-            onWorkloadChange={(w) => setSelectedWorkload(w)}
-            initialWorkload={selectedWorkload}
-            alreadyUsed={isOnceUsed(plan)}
-          />
-        ))}
+      {/* ── NUMBER WALL TABLE ─────────────────────────────────────────── */}
+      <div className="rounded-xl overflow-hidden mb-6"
+        style={{ background: 'linear-gradient(135deg, rgba(10,12,30,0.95), rgba(6,8,20,0.98))', border: '1px solid rgba(0,180,255,0.12)' }}>
+        
+        {/* Table Header */}
+        <div className="px-4 py-3 border-b" style={{ borderColor: 'rgba(0,180,255,0.12)' }}>
+          <div className="flex items-center justify-between">
+            <p className="text-[10px] uppercase tracking-widest font-bold" style={{ color: '#00B4FF' }}>
+              Live Node Market
+            </p>
+            <p className="text-[10px]" style={{ color: 'var(--text-muted)' }}>
+              Tap any row to deploy
+            </p>
+          </div>
+        </div>
+
+        {/* Desktop Table */}
+        <div className="hidden md:block overflow-x-auto">
+          <table className="number-wall-table">
+            <thead>
+              <tr>
+                <th className="text-left">Plan</th>
+                <th>Cost</th>
+                <th>Daily Yield</th>
+                <th>60-Day Total</th>
+                <th>ROI</th>
+                <th>Available</th>
+              </tr>
+            </thead>
+            <tbody>
+              {PLANS.map(plan => (
+                <NumberWallRow
+                  key={plan.id}
+                  plan={plan}
+                  workload={selectedWorkload}
+                  onClick={(p) => { setSelectedPlan(p); setSelectedWorkload('finance') }}
+                  isCritical={plan.amount >= 15000}
+                  slots={getSlots(plan)}
+                />
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Mobile Cards (compact number wall style) */}
+        <div className="md:hidden divide-y" style={{ borderColor: 'rgba(31,41,55,0.4)' }}>
+          {PLANS.map(plan => {
+            const daily = getWorkloadYield(plan.amount, selectedWorkload)
+            const total = getWorkloadTotalReturn(plan.amount, selectedWorkload)
+            const roi = Math.round((total / plan.amount - 1) * 100)
+            const isCritical = plan.amount >= 15000
+            const planImage = PLAN_IMAGES[plan.id]
+
+            return (
+              <HapticButton
+                key={plan.id}
+                onClick={() => { setSelectedPlan(plan); setSelectedWorkload('finance') }}
+                className={`w-full text-left px-4 py-3 transition-all ${isCritical ? 'demand-critical' : ''}`}
+              >
+                <div className="flex items-center gap-3 mb-2">
+                  {planImage && (
+                    <div className="w-10 h-10 rounded-lg overflow-hidden flex-shrink-0 border border-white/10">
+                      <img src={planImage} alt={plan.name} className="w-full h-full object-cover" />
+                    </div>
+                  )}
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm font-bold text-white">{plan.name}</p>
+                      <p className="text-sm font-black text-white">KSh {plan.amount.toLocaleString()}</p>
+                    </div>
+                    <p className="text-[9px]" style={{ color: 'var(--text-muted)' }}>{plan.specs || 'AI Compute'}</p>
+                  </div>
+                </div>
+
+                <div className="flex justify-between items-center pt-2" style={{ borderTop: '1px solid rgba(31,41,55,0.4)' }}>
+                  <div className="text-center">
+                    <p className="num-glow-green font-bold text-xs">KSh {daily.toLocaleString()}</p>
+                    <p className="text-[8px] text-gray-500">24h</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="num-glow-gold font-bold text-xs">KSh {total.toLocaleString()}</p>
+                    <p className="text-[8px] text-gray-500">60-Day</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-cyan-400 font-bold text-xs">{roi}%</p>
+                    <p className="text-[8px] text-gray-500">ROI</p>
+                  </div>
+                  <div className="text-center">
+                    <p className={`font-bold text-xs ${isCritical ? 'num-pulse-red' : 'text-gray-300'}`}>
+                      {isCritical ? '🔴' : '🟢'} {getSlots(plan)}
+                    </p>
+                    <p className="text-[8px] text-gray-500">Left</p>
+                  </div>
+                  <div className="text-center">
+                    <HapticButton
+                      onClick={() => { setSelectedPlan(plan); setSelectedWorkload('finance') }}
+                      className="liquid-gold text-[9px] font-bold px-3 py-1.5 rounded-lg text-white"
+                    >
+                      Deploy
+                    </HapticButton>
+                  </div>
+                </div>
+              </HapticButton>
+            )
+          })}
+        </div>
+      </div>
+
+      {/* Workload Selector (below table, applies globally) */}
+      <div className="card mb-4">
+        <p className="text-[10px] uppercase tracking-widest font-semibold mb-3" style={{ color: '#00B4FF' }}>
+          Select AI Workload (applies to all plans)
+        </p>
+        <div className="grid grid-cols-3 gap-2">
+          {Object.values(WORKLOAD_MULTIPLIERS).map(w => {
+            const active = selectedWorkload === w.id
+            return (
+              <HapticButton
+                key={w.id}
+                onClick={() => setSelectedWorkload(w.id)}
+                className={`relative rounded-xl px-2 py-3 text-center transition-all ${
+                  active
+                    ? 'bg-gradient-to-br from-blue-600/30 to-cyan-600/20 border-2 border-cyan-500 shadow-lg shadow-cyan-500/10'
+                    : 'border border-gray-700/50'
+                }`}
+              >
+                <span className="text-xl block mb-1">{w.icon}</span>
+                <p className={`text-[10px] font-bold ${active ? 'text-cyan-300' : 'text-gray-300'}`}>{w.name}</p>
+                <p className={`text-[9px] mt-1 font-semibold ${
+                  w.multiplier > 1 ? 'text-green-400' : w.multiplier >= 0.95 ? 'text-blue-400' : 'text-yellow-400'
+                }`}>
+                  {w.multiplier >= 1 ? '+' : ''}{Math.round((w.multiplier - 1) * 100)}% yield
+                </p>
+                {active && <div className="absolute top-1 right-1 w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />}
+              </HapticButton>
+            )
+          })}
+        </div>
       </div>
     </div>
   )
