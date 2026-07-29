@@ -3,7 +3,7 @@ import { updateInvestmentWorkload } from '../lib/db'
 import { WORKLOAD_MULTIPLIERS, getWorkloadYield } from '../lib/plans'
 
 export default function WorkloadSelector({ investment, userPhone }) {
-  const [selected, setSelected] = useState(investment.workload || 'healthcare')
+  const [selected, setSelected] = useState(investment.workload || 'finance')
   const [isSaving, setIsSaving] = useState(false)
 
   const dailyBase = getWorkloadYield(Number(investment.amount || 0), selected)
@@ -16,7 +16,7 @@ export default function WorkloadSelector({ investment, userPhone }) {
       await updateInvestmentWorkload(investment.id, workloadId, userPhone)
     } catch (err) {
       console.error('Workload update failed:', err)
-      setSelected(investment.workload || 'healthcare')
+      setSelected(investment.workload || 'finance')
     }
     setIsSaving(false)
   }
