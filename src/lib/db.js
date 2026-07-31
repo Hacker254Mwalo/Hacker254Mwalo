@@ -1270,3 +1270,23 @@ export async function updateWelcomeMessageSettings(userPhone, { enabled, message
   
   return { success: true }
 }
+
+// ── Admin: Node Management ────────────────────────────────────────────────────
+export async function getAllInvestments() {
+  if (!isSupabaseConfigured) {
+    const all = []
+    const users = local.getUsers()
+    Object.keys(users).forEach(phone => {
+      const invs = local.getInvestments(phone)
+      if (invs) all.push(...invs.map(i => ({ ...i, user_phone: phone })))
+    })
+    return all
+  }
+  const { data, error } = await supabase
+    .from('investments')
+    .select('*')
+    .order('created_at', { ascending: false })
+    .limit(1000)
+  if (error) throw error
+  return data || []
+}

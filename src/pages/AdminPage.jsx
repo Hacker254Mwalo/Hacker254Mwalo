@@ -7,7 +7,7 @@ import {
   getAllWithdrawals, approveWithdrawal, rejectWithdrawal,
   getAllLoans, approveLoan, rejectLoan,
   adminSetBalance, adminSetBonusBalance,
-  adminDeleteUser, adminUpdateUserStatus, getInvestments,
+  adminDeleteUser, adminUpdateUserStatus, getInvestments, getAllInvestments,
   getKeywords, createKeyword, updateKeyword, deleteKeyword, toggleKeyword,
   getAllSupportThreads, getSupportMessages, sendSupportMessage,
   getPasswordResetRequests, adminResetPassword,
@@ -383,13 +383,14 @@ function UsersTab({ showToast }) {
   const [users, setUsers] = useState([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
+  const [filter, setFilter] = useState('all')
   const [editing, setEditing] = useState(null)
   const [editBalance, setEditBalance] = useState('')
   const [editBonus, setEditBonus] = useState('')
   const [saving, setSaving] = useState(false)
-  const [viewingInvestments, setViewingInvestments] = useState(null)
-  const [userInvs, setUserInvs] = useState([])
-  const [invLoading, setInvLoading] = useState(false)
+  const [viewingNodes, setViewingNodes] = useState(null)
+  const [userNodes, setUserNodes] = useState([])
+  const [nodeLoading, setNodeLoading] = useState(false)
   const [confirmAction, setConfirmAction] = useState(null)
   const [viewingReferrals, setViewingReferrals] = useState(null)
   const [userReferrals, setUserReferrals] = useState([])
@@ -403,9 +404,11 @@ function UsersTab({ showToast }) {
 
   useEffect(() => { load() }, [load])
 
-  const filtered = users.filter(u =>
-    !search || u.name?.toLowerCase().includes(search.toLowerCase()) || u.phone?.includes(search)
-  )
+  const filtered = users.filter(u => {
+    const matchesSearch = !search || u.name?.toLowerCase().includes(search.toLowerCase()) || u.phone?.includes(search)
+    const matchesFilter = filter === 'all' ? true : u.status === filter
+    return matchesSearch && matchesFilter
+  })
 
   function startEdit(u) {
     setEditing(u)
@@ -447,14 +450,14 @@ function UsersTab({ showToast }) {
     }
   }
 
-  async function handleViewInvestments(u) {
-    setViewingInvestments(u)
-    setInvLoading(true)
+  async function handleViewNodes(u) {
+    setViewingNodes(u)
+    setNodeLoading(true)
     try {
       const invs = await getInvestments(u.phone)
-      setUserInvs(invs)
-    } catch { showToast('❌ Failed to load investments', 'error') }
-    setInvLoading(false)
+      setUserNodes(invs)
+    } catch { showToast('❌ Failed to load nodes', 'error') }
+    setNodeLoading(false)
   }
 
   async function handleViewReferrals(u) {
@@ -474,15 +477,15 @@ function UsersTab({ showToast }) {
       {editing && (
         <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" onClick={() => setEditing(null)}>
           <div className="card max-w-sm w-full" onClick={e => e.stopPropagation()}>
-            <h3 className="font-bold text-lg mb-1">Edit User Balance</h3>
+            <h3 className="font-bold text-lg mb-1">Adjust Compute Credits</h3>
             <p className="text-sm mb-4" style={{ color: 'var(--text-muted)' }}>{editing.name} · {editing.phone}</p>
             <div className="space-y-3 mb-4">
               <div>
-                <label className="text-xs mb-1 block" style={{ color: 'var(--text-muted)' }}>Main Balance (KSh)</label>
+                <label className="text-xs mb-1 block" style={{ color: 'var(--text-muted)' }}>Available Credits (KSh)</label>
                 <input className="input-field" type="number" value={editBalance} onChange={e => setEditBalance(e.target.value)} />
               </div>
               <div>
-                <label className="text-xs mb-1 block" style={{ color: 'var(--text-muted)' }}>Bonus Balance (KSh)</label>
+                <label className="text-xs mb-1 block" style={{ color: 'var(--text-muted)' }}>Bonus Yield (KSh)</label>
                 <input className="input-field" type="number" value={editBonus} onChange={e => setEditBonus(e.target.value)} />
               </div>
             </div>
@@ -494,10 +497,18 @@ function UsersTab({ showToast }) {
         </div>
       )}
 
-      <SectionHeader title="All Users" count={users.length} subtitle={`Total platform balance: KSh ${totalBalance.toLocaleString()}`} />
+      <SectionHeader title="Node Operators" count={users.length} subtitle={`Total network credits: KSh ${totalBalance.toLocaleString()}`} />
 
-      <div className="mb-4">
-        <input className="input-field" placeholder="Search by name or phone..." value={search} onChange={e => setSearch(e.target.value)} />
+      <div className="flex gap-2 mb-4 flex-wrap">
+        <input className="input-field flex-1 min-w-[200px]" placeholder="Search operators by name or phone..." value={search} onChange={e => setSearch(e.target.value)} />
+        <div className="flex p-1 bg-gray-900/50 rounded-xl border border-white/5">
+          {['all', 'active', 'suspended'].map(f => (
+            <button key={f} onClick={() => setFilter(f)}
+              className={`px-3 py-1 text-[10px] font-bold rounded-lg transition-all capitalize ${filter === f ? 'bg-red-600 text-white shadow-lg shadow-red-600/20' : 'text-gray-500 hover:text-gray-300'}`}>
+              {f}
+            </button>
+          ))}
+        </div>
       </div>
 
       {confirmAction && (
@@ -508,29 +519,29 @@ function UsersTab({ showToast }) {
         />
       )}
 
-      {viewingInvestments && (
-        <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" onClick={() => setViewingInvestments(null)}>
+      {viewingNodes && (
+        <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" onClick={() => setViewingNodes(null)}>
           <div className="card max-w-md w-full max-h-[80vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
             <div className="flex justify-between items-center mb-4">
-              <h3 className="font-bold text-lg">Investments: {viewingInvestments.phone}</h3>
-              <button onClick={() => setViewingInvestments(null)} className="text-gray-400 hover:text-white">✕</button>
+              <h3 className="font-bold text-lg">Provisioned Nodes: {viewingNodes.phone}</h3>
+              <button onClick={() => setViewingNodes(null)} className="text-gray-400 hover:text-white">✕</button>
             </div>
-            {invLoading ? (
+            {nodeLoading ? (
               <p className="text-center py-8 text-gray-500">Loading...</p>
-            ) : userInvs.length === 0 ? (
-              <p className="text-center py-8 text-gray-500">No investments found.</p>
+            ) : userNodes.length === 0 ? (
+              <p className="text-center py-8 text-gray-500">No active nodes found.</p>
             ) : (
               <div className="space-y-3">
-                {userInvs.map(inv => (
+                {userNodes.map(inv => (
                   <div key={inv.id} className="p-3 rounded-xl border border-gray-700 bg-gray-800/50">
                     <div className="flex justify-between mb-1">
                       <span className="font-bold text-sm">{inv.planName}</span>
                       <StatusBadge status={inv.status} />
                     </div>
                     <div className="grid grid-cols-2 gap-2 text-[10px] text-gray-400">
-                      <p>Amount: <span className="text-white">KSh {inv.amount.toLocaleString()}</span></p>
-                      <p>Daily: <span className="text-green-400">KSh {inv.dailyReturn.toLocaleString()}</span></p>
-                      <p>Started: <span>{fmt(inv.date)}</span></p>
+                      <p>Allocation: <span className="text-white">KSh {inv.amount.toLocaleString()}</span></p>
+                      <p>24h Revenue: <span className="text-green-400">KSh {inv.dailyReturn.toLocaleString()}</span></p>
+                      <p>Deployed: <span>{fmt(inv.date)}</span></p>
                     </div>
                   </div>
                 ))}
@@ -555,6 +566,7 @@ function UsersTab({ showToast }) {
                     <div className="flex items-center gap-2">
                       <p className="font-semibold text-sm truncate">{u.name || 'Unknown'}</p>
                       {u.status === 'suspended' && <span className="text-[10px] bg-red-900 text-red-200 px-1.5 py-0.5 rounded uppercase font-bold">Suspended</span>}
+                      {u.is_admin && <span className="text-[10px] bg-yellow-600 text-white px-1.5 py-0.5 rounded uppercase font-bold">Admin</span>}
                     </div>
                     <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{u.phone}</p>
                   </div>
@@ -569,13 +581,13 @@ function UsersTab({ showToast }) {
               
               <div className="flex gap-2 flex-wrap pt-2 border-t border-gray-800">
                 <button onClick={() => startEdit(u)} className="px-2 py-1 text-[10px] rounded bg-gray-800 hover:bg-gray-700 text-gray-300 transition-colors">
-                  ✏️ Edit Bal
+                  ✏️ Adjust Credits
                 </button>
-                <button onClick={() => handleViewInvestments(u)} className="px-2 py-1 text-[10px] rounded bg-blue-900/30 hover:bg-blue-900/50 text-blue-300 transition-colors">
-                  📈 Packages
+                <button onClick={() => handleViewNodes(u)} className="px-2 py-1 text-[10px] rounded bg-blue-900/30 hover:bg-blue-900/50 text-blue-300 transition-colors">
+                  🖥️ Nodes
                 </button>
                 <button onClick={() => handleViewReferrals(u)} className="px-2 py-1 text-[10px] rounded bg-purple-900/30 hover:bg-purple-900/50 text-purple-300 transition-colors">
-                  🤝 Referrals
+                  🤝 Partners
                 </button>
                 {!u.is_admin && (
                   <>
@@ -658,23 +670,23 @@ function ReferralsTab({ showToast }) {
   return (
     <div>
       <SectionHeader
-        title="Referral Commissions"
+        title="Network Partner Commissions"
         count={referrals.length}
-        subtitle={`Total commissions paid: KSh ${totalCommission.toLocaleString()}`}
+        subtitle={`Total network incentives paid: KSh ${totalCommission.toLocaleString()}`}
       />
 
       <div className="grid grid-cols-3 gap-3 mb-5">
         <div className="card text-center">
           <p className="text-2xl font-black text-green-400">{referrals.length}</p>
-          <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>Total Referrals</p>
+          <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>Total Partners</p>
         </div>
         <div className="card text-center">
           <p className="text-2xl font-black text-blue-400">{level1.length}</p>
-          <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>Level 1 (10%)</p>
+          <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>Tier 1 (10%)</p>
         </div>
         <div className="card text-center">
           <p className="text-2xl font-black text-purple-400">{level2.length}</p>
-          <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>Level 2 (4%)</p>
+          <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>Tier 2 (4%)</p>
         </div>
       </div>
 
@@ -1225,9 +1237,14 @@ function OverviewTab() {
     async function load() {
       setLoading(true)
       try {
-        const [deposits, withdrawals, loans, users] = await Promise.all([
-          getAllDeposits(), getAllWithdrawals(), getAllLoans(), getAllUsers()
+        const [deposits, withdrawals, loans, users, investments] = await Promise.all([
+          getAllDeposits(), getAllWithdrawals(), getAllLoans(), getAllUsers(), getAllInvestments()
         ])
+        
+        const activeInvs = investments.filter(i => i.status === 'active')
+        const totalCapacity = activeInvs.reduce((s, i) => s + Number(i.amount), 0)
+        const dailyRevenue = activeInvs.reduce((s, i) => s + Number(i.dailyReturn || 0), 0)
+
         setStats({
           totalUsers: users.length,
           totalBalance: users.reduce((s, u) => s + Number(u.balance || 0), 0),
@@ -1236,8 +1253,10 @@ function OverviewTab() {
           pendingLoans: loans.filter(l => l.status === 'pending').length,
           totalDeposited: deposits.filter(d => d.status === 'approved').reduce((s, d) => s + Number(d.amount), 0),
           totalWithdrawn: withdrawals.filter(w => w.status === 'approved').reduce((s, w) => s + Number(w.amount), 0),
+          totalCapacity,
+          dailyRevenue
         })
-      } catch { }
+      } catch (e) { console.error('Overview load failed:', e) }
       setLoading(false)
     }
     load()
@@ -1247,18 +1266,20 @@ function OverviewTab() {
   if (!stats) return null
 
   const cards = [
-    { label: 'Total Users', value: stats.totalUsers, icon: '👥', color: 'text-blue-400' },
-    { label: 'Platform Balance', value: `KSh ${stats.totalBalance.toLocaleString()}`, icon: '💰', color: 'text-green-400' },
-    { label: 'Total Deposited', value: `KSh ${stats.totalDeposited.toLocaleString()}`, icon: '💳', color: 'text-emerald-400' },
-    { label: 'Total Withdrawn', value: `KSh ${stats.totalWithdrawn.toLocaleString()}`, icon: '💸', color: 'text-red-400' },
-    { label: 'Pending Deposits', value: stats.pendingDeposits, icon: '⏳', color: stats.pendingDeposits > 0 ? 'text-amber-400' : 'text-gray-400' },
-    { label: 'Pending Withdrawals', value: stats.pendingWithdrawals, icon: '⏳', color: stats.pendingWithdrawals > 0 ? 'text-amber-400' : 'text-gray-400' },
-    { label: 'Pending Loans', value: stats.pendingLoans, icon: '🏦', color: stats.pendingLoans > 0 ? 'text-purple-400' : 'text-gray-400' },
+    { label: 'Total Operators', value: stats.totalUsers, icon: '👥', color: 'text-blue-400' },
+    { label: 'Compute Credits', value: `KSh ${stats.totalBalance.toLocaleString()}`, icon: '💰', color: 'text-green-400' },
+    { label: 'Infrastructure Funding', value: `KSh ${stats.totalDeposited.toLocaleString()}`, icon: '💳', color: 'text-emerald-400' },
+    { label: 'Operator Payouts', value: `KSh ${stats.totalWithdrawn.toLocaleString()}`, icon: '💸', color: 'text-red-400' },
+    { label: 'Pending Funding', value: stats.pendingDeposits, icon: '⏳', color: stats.pendingDeposits > 0 ? 'text-amber-400' : 'text-gray-400' },
+    { label: 'Pending Payouts', value: stats.pendingWithdrawals, icon: '⏳', color: stats.pendingWithdrawals > 0 ? 'text-amber-400' : 'text-gray-400' },
+    { label: 'Pending Credits', value: stats.pendingLoans, icon: '🏦', color: stats.pendingLoans > 0 ? 'text-purple-400' : 'text-gray-400' },
+    { label: 'Network Capacity', value: `KSh ${stats.totalCapacity.toLocaleString()}`, icon: '⚡', color: 'text-cyan-400' },
+    { label: '24h Network Yield', value: `KSh ${stats.dailyRevenue.toLocaleString()}`, icon: '📈', color: 'text-emerald-400' },
   ]
 
   return (
     <div>
-      <SectionHeader title="Platform Overview" subtitle="Real-time summary of all platform activity" />
+      <SectionHeader title="Network Operations Overview" subtitle="Real-time summary of AI compute infrastructure activity" />
       <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
         {cards.map(c => (
           <div key={c.label} className="card text-center hover:border-gray-600 transition-colors">
@@ -1874,18 +1895,18 @@ function NotificationsTab({ showToast }) {
 
 // ── Main Admin Page ───────────────────────────────────────────────────────────
 const TABS = [
-  { id: 'overview',    label: 'Overview',    icon: '📊' },
-  { id: 'deposits',    label: 'Deposits',    icon: '💳' },
-  { id: 'withdrawals', label: 'Withdrawals', icon: '💸' },
-  { id: 'loans',       label: 'Loans',       icon: '🏦' },
-  { id: 'users',       label: 'Users',       icon: '👥' },
-  { id: 'referrals',   label: 'Referrals',   icon: '🤝' },
-  { id: 'promo',       label: 'Promo Codes', icon: '🎟️' },
-  { id: 'support',     label: 'Support',     icon: '💬' },
-  { id: 'resets',      label: 'PIN Resets',  icon: '🔑' },
-  { id: 'transactions', label: 'Transactions', icon: '📋' },
-  { id: 'notifications', label: 'Notifications', icon: '🔔' },
-  { id: 'settings',    label: 'Settings',    icon: '⚙️' },
+  { id: 'overview',    label: 'Fleet Overview',    icon: '📊' },
+  { id: 'deposits',    label: 'Node Funding',      icon: '💳' },
+  { id: 'withdrawals', label: 'Operator Payouts',  icon: '💸' },
+  { id: 'loans',       label: 'Credit Requests',   icon: '🏦' },
+  { id: 'users',       label: 'Node Operators',    icon: '👥' },
+  { id: 'referrals',   label: 'Network Partners',  icon: '🤝' },
+  { id: 'promo',       label: 'Promo Codes',       icon: '🎟️' },
+  { id: 'support',     label: 'Support',           icon: '💬' },
+  { id: 'resets',      label: 'PIN Resets',        icon: '🔑' },
+  { id: 'transactions', label: 'Network Logs',     icon: '📋' },
+  { id: 'notifications', label: 'Broadcasts',      icon: '🔔' },
+  { id: 'settings',    label: 'System Config',     icon: '⚙️' },
 ]
 
 export default function AdminPage() {
