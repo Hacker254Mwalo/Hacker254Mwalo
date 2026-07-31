@@ -616,6 +616,8 @@ export default function PlansPage() {
   const [investments, setInvestments] = useState([])
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState('standard')
+  const [selectedDetailPlan, setSelectedDetailPlan] = useState(null)
+  const [isProvisioning, setIsProvisioning] = useState(false)
   const [shortTermAmounts, setShortTermAmounts] = useState({
     st1: '',
     st2: '',
