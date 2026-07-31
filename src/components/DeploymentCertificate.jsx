@@ -25,7 +25,7 @@ export default function DeploymentCertificate({ inv, onClose }) {
         <div className="mb-4">
           <div className="text-3xl mb-2">📜</div>
           <h3 className="text-lg font-black" style={{ background: 'linear-gradient(135deg, #FFD700, #DAA520)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-            Node Deployment Certificate
+            Node Commission Certificate
           </h3>
           <p className="text-[10px] mt-1" style={{ color: 'var(--text-muted)' }}>
             Your AI compute node is active and earning
@@ -45,17 +45,17 @@ export default function DeploymentCertificate({ inv, onClose }) {
           </div>
 
           <div className="flex justify-between items-center pb-2" style={{ borderBottom: '1px solid var(--border)' }}>
-            <span className="text-[10px] font-bold uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>Capital Deployed</span>
+            <span className="text-[10px] font-bold uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>Allocated Capacity</span>
             <span className="text-sm font-bold text-green-400">KSh {Number(inv.amount || 0).toLocaleString()}</span>
           </div>
 
           <div className="flex justify-between items-center pb-2" style={{ borderBottom: '1px solid var(--border)' }}>
-            <span className="text-[10px] font-bold uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>Daily Yield</span>
+            <span className="text-[10px] font-bold uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>24h Revenue</span>
             <span className="text-sm font-bold" style={{ color: '#34D399' }}>KSh {Number(inv.dailyReturn || 0).toLocaleString()}</span>
           </div>
 
           <div className="flex justify-between items-center pb-2" style={{ borderBottom: '1px solid var(--border)' }}>
-            <span className="text-[10px] font-bold uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>60-Day Target</span>
+            <span className="text-[10px] font-bold uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>Contract Value</span>
             <span className="text-sm font-bold text-yellow-400">KSh {Number(inv.totalReturn || 0).toLocaleString()}</span>
           </div>
 

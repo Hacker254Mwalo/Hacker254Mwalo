@@ -275,7 +275,7 @@ function ConfirmModal({ plan, workload, balance, onConfirm, onClose, confirming,
           {planImage && (
             <img src={planImage} alt={plan.name} className="w-8 h-8 rounded-lg object-cover border border-white/20" />
           )}
-          Deploy Node
+          Provision Compute Node
         </h3>
         <p className="text-[10px] mb-4 uppercase tracking-widest" style={{ color: '#00B4FF' }}>
           Workload: {w.icon} {w.name}
@@ -283,13 +283,13 @@ function ConfirmModal({ plan, workload, balance, onConfirm, onClose, confirming,
 
         <div className="rounded-xl p-4 space-y-2 mb-4" style={{ background: 'var(--bg-elevated)' }}>
           {[
-            ['Plan', plan.name, ''],
-            ['Workload', `${w.icon} ${w.name}`, 'text-cyan-400'],
-            ['Multiplier', `${w.multiplier >= 1 ? '+' : ''}${Math.round((w.multiplier - 1) * 100)}%`, w.multiplier >= 1 ? 'text-green-400' : 'text-yellow-400'],
-            ['Share Worth', `KSh ${numAmount.toLocaleString()}`, 'text-red-400'],
-            ['24h Compute Yield', `KSh ${daily.toLocaleString()}`, 'text-green-400'],
-            ['Total Payout', `KSh ${(numAmount * (1 + parseFloat(plan.rate || 0) / 100)).toLocaleString()}`, 'text-yellow-400'],
-            ['ROI', `${roi}%`, 'text-cyan-400'],
+['Node Type', plan.name, ''],
+	            ['Workload', `${w.icon} ${w.name}`, 'text-cyan-400'],
+	            ['Yield Mult.', `${w.multiplier >= 1 ? '+' : ''}${Math.round((w.multiplier - 1) * 100)}%`, w.multiplier >= 1 ? 'text-green-400' : 'text-yellow-400'],
+	            ['Node Capacity', `KSh ${numAmount.toLocaleString()}`, 'text-red-400'],
+	            ['24h Compute Revenue', `KSh ${daily.toLocaleString()}`, 'text-green-400'],
+	            ['Total Contract Value', `KSh ${(numAmount * (1 + parseFloat(plan.rate || 0) / 100)).toLocaleString()}`, 'text-yellow-400'],
+	            ['Yield Index', `${roi}%`, 'text-cyan-400'],
           ].map(([label, value, cls]) => (
             <div key={label} className="flex justify-between text-sm">
               <span style={{ color: 'var(--text-secondary)' }}>{label}</span>
@@ -332,7 +332,7 @@ function ConfirmModal({ plan, workload, balance, onConfirm, onClose, confirming,
         <div className="flex gap-3">
           <button onClick={onClose} className="btn-secondary flex-1">Cancel</button>
           <button onClick={onConfirm} disabled={!enough || confirming || alreadyUsed} className="btn-primary flex-1">
-            {confirming ? 'Processing...' : 'Confirm & Deploy'}
+            {confirming ? 'Initializing...' : 'Initialize & Provision'}
           </button>
         </div>
       </div>
@@ -542,7 +542,7 @@ export default function PlansPage() {
       const freshInvs = await getInvestments(userPhone)
       setInvestments(freshInvs)
       setSelectedPlan(null)
-      showToast(`✅ Invested KSh ${plan.amount.toLocaleString()} in ${plan.name} (${selectedWorkload})!`)
+      showToast(`✅ Provisioned KSh ${plan.amount.toLocaleString()} in ${plan.name} (${selectedWorkload})!`)
     } catch (err) {
       console.error('Investment error:', err)
       showToast(`❌ ${err.message || 'Investment failed. Please try again.'}`, 'error')
@@ -595,9 +595,9 @@ export default function PlansPage() {
       <QuickActions user={user} showToast={showToast} />
 
       <div className="mb-6">
-        <h2 className="text-2xl font-black">AI Compute Nodes</h2>
+        <h2 className="text-2xl font-black">Provision Compute Infrastructure</h2>
         <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>
-          Deploy enterprise GPU infrastructure and earn AI compute yields
+          Provision high-performance GPU nodes and earn real-time compute revenue.
         </p>
       </div>
 
@@ -613,13 +613,13 @@ export default function PlansPage() {
           onClick={() => setActiveTab('standard')}
           className={`flex-1 py-2.5 text-xs font-bold rounded-lg transition-all ${activeTab === 'standard' ? 'bg-red-600 text-white shadow-lg shadow-red-600/20' : 'text-gray-500 hover:text-gray-300'}`}
         >
-          AI Nodes — 60D Earn
+          Compute Fleet (60D Term)
         </button>
         <button 
           onClick={() => setActiveTab('short-term')}
           className={`flex-1 py-2.5 text-xs font-bold rounded-lg transition-all ${activeTab === 'short-term' ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/20' : 'text-gray-500 hover:text-gray-300'}`}
         >
-          Quick Returns — 24h to 7D Earn
+          Spot Market (24h - 7D Spot)
         </button>
       </div>
 
@@ -664,12 +664,12 @@ export default function PlansPage() {
             <table className="number-wall-table">
               <thead>
                 <tr>
-                  <th className="text-left">Plan</th>
-                  <th>Cost</th>
-                  <th>Daily Yield</th>
-                  <th>60-Day Total</th>
-                  <th>ROI</th>
-                  <th>Available</th>
+<th className="text-left">Node Type</th>
+	                  <th>Allocation</th>
+	                  <th>24h Revenue</th>
+	                  <th>Contract Value</th>
+	                  <th>Yield Index</th>
+	                  <th>Status</th>
                 </tr>
               </thead>
               <tbody>
@@ -710,26 +710,26 @@ export default function PlansPage() {
                     )}
                     <div className="flex-1">
                       <div className="flex items-center justify-between">
-                        <p className="text-sm font-bold text-white">{plan.name}</p>
-                        <p className="text-sm font-black text-white">KSh {plan.amount.toLocaleString()}</p>
-                      </div>
-                      <p className="text-[9px]" style={{ color: 'var(--text-muted)' }}>{plan.specs || 'AI Compute'}</p>
-                    </div>
-                  </div>
-
-                  <div className="flex justify-between items-center pt-2" style={{ borderTop: '1px solid rgba(31,41,55,0.4)' }}>
-                    <div className="text-center">
-                      <p className="num-glow-green font-bold text-xs">KSh {daily.toLocaleString()}</p>
-                      <p className="text-[8px] text-gray-500">24h</p>
-                    </div>
-                    <div className="text-center">
-                      <p className="num-glow-gold font-bold text-xs">KSh {total.toLocaleString()}</p>
-                      <p className="text-[8px] text-gray-500">60-Day</p>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-cyan-400 font-bold text-xs">{roi}%</p>
-                      <p className="text-[8px] text-gray-500">ROI</p>
-                    </div>
+<p className="text-sm font-bold text-white">{plan.name}</p>
+	                        <p className="text-sm font-black text-white">KSh {plan.amount.toLocaleString()}</p>
+	                      </div>
+	                      <p className="text-[9px]" style={{ color: 'var(--text-muted)' }}>{plan.specs || 'AI Compute'}</p>
+	                    </div>
+	                  </div>
+	
+	                  <div className="flex justify-between items-center pt-2" style={{ borderTop: '1px solid rgba(31,41,55,0.4)' }}>
+	                    <div className="text-center">
+	                      <p className="num-glow-green font-bold text-xs">KSh {daily.toLocaleString()}</p>
+	                      <p className="text-[8px] text-gray-500">24h Rev</p>
+	                    </div>
+	                    <div className="text-center">
+	                      <p className="num-glow-gold font-bold text-xs">KSh {total.toLocaleString()}</p>
+	                      <p className="text-[8px] text-gray-500">Value</p>
+	                    </div>
+	                    <div className="text-center">
+	                      <p className="text-cyan-400 font-bold text-xs">{roi}%</p>
+	                      <p className="text-[8px] text-gray-500">Yield</p>
+	                    </div>
                     <div className="text-center">
                       <p className={`font-bold text-xs ${isCritical ? 'num-pulse-red' : 'text-gray-300'}`}>
                         {isCritical ? '🔴' : '🟢'} {getSlots(plan)}
@@ -820,7 +820,7 @@ export default function PlansPage() {
                 className="w-full py-2.5 rounded-xl font-bold text-sm text-white transition-all active:scale-95 disabled:opacity-50"
                 style={{ background: 'linear-gradient(135deg, #10b981, #059669)', boxShadow: '0 4px 20px rgba(16,185,129,0.25)' }}
               >
-                {confirming ? 'Deploying Node...' : 'Deploy 24h Node'}
+                {confirming ? 'Initializing...' : 'Provision 24h Node'}
               </button>
             </div>
           </div>
@@ -884,7 +884,7 @@ export default function PlansPage() {
                 className="w-full py-2.5 rounded-xl font-bold text-sm text-white transition-all active:scale-95 disabled:opacity-50"
                 style={{ background: 'linear-gradient(135deg, #3b82f6, #2563eb)', boxShadow: '0 4px 20px rgba(59,130,246,0.25)' }}
               >
-                {confirming ? 'Deploying Node...' : 'Deploy 72h Node'}
+                {confirming ? 'Initializing...' : 'Provision 72h Node'}
               </button>
             </div>
           </div>
@@ -948,7 +948,7 @@ export default function PlansPage() {
                 className="w-full py-2.5 rounded-xl font-bold text-sm text-white transition-all active:scale-95 disabled:opacity-50"
                 style={{ background: 'linear-gradient(135deg, #a855f7, #7c3aed)', boxShadow: '0 4px 20px rgba(168,85,247,0.25)' }}
               >
-                {confirming ? 'Deploying Node...' : 'Deploy 7D Node'}
+                {confirming ? 'Initializing...' : 'Provision 7D Node'}
               </button>
             </div>
           </div>

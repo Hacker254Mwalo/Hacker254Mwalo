@@ -136,9 +136,9 @@ export default function Navbar() {
 
   const links = [
     { to: '/dashboard',      label: 'Dashboard',      key: 'dashboard',      icon: icons.dashboard, img: navIcons.dashboard },
-    { to: '/plans',          label: 'Invest',         key: 'invest',         icon: icons.invest, img: navIcons.invest },
-    { to: '/history',        label: 'History',        key: 'history',        icon: icons.history, img: navIcons.history },
-    { to: '/notifications',  label: 'Alerts',         key: 'notifications',  icon: icons.bell, img: navIcons.notifications },
+    { to: '/plans',          label: 'Compute',        key: 'invest',         icon: icons.invest, img: navIcons.invest },
+    { to: '/history',        label: 'Logs',           key: 'history',        icon: icons.history, img: navIcons.history },
+    { to: '/notifications',  label: 'Network',        key: 'notifications',  icon: icons.bell, img: navIcons.notifications },
   ]
 
   const waDigits = waPhone.replace(/\D/g, '')

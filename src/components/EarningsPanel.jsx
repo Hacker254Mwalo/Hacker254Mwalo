@@ -7,7 +7,7 @@ import { executeComputeCycle } from '../lib/db'
  * Shows today's earnings for active investments, or a tempting CTA if no investment.
  * Slides in from the left with a subtle float animation.
  */
-export default function EarningsPanel({ user, activeInvestments, hasActiveInvestment, onToast }) {
+export default function EarningsPanel({ user, activeNodes, hasActiveNodes, onToast }) {
   const navigate = useNavigate()
   const [visible, setVisible] = useState(false)
 
@@ -18,9 +18,9 @@ export default function EarningsPanel({ user, activeInvestments, hasActiveInvest
 
   // Calculate today's earnings from active investments
   let todayEarnings = 0
-  if (activeInvestments.length > 0) {
+  if (activeNodes.length > 0) {
     // Sum daily returns from all active investments
-    todayEarnings = activeInvestments.reduce((sum, inv) => sum + Number(inv.dailyReturn || 0), 0)
+    todayEarnings = activeNodes.reduce((sum, inv) => sum + Number(inv.dailyReturn || 0), 0)
   }
 
   if (!visible) return null
@@ -32,14 +32,14 @@ export default function EarningsPanel({ user, activeInvestments, hasActiveInvest
         animation: 'earningsSlideIn 0.6s ease-out forwards',
       }}
     >
-      {hasActiveInvestment ? (
+      {hasActiveNodes ? (
         /* ── User has active investment — show today's earnings ── */
         <>
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
               <span className="earnings-pulse-dot" />
               <p className="text-xs font-bold tracking-wider uppercase" style={{ color: '#FFD700' }}>
-                Today's Earnings
+                Today's Compute Revenue
               </p>
             </div>
             <span className="text-[10px] px-2 py-0.5 rounded-full font-semibold" style={{ background: 'rgba(255,215,0,0.15)', color: '#FFD700' }}>
@@ -50,9 +50,9 @@ export default function EarningsPanel({ user, activeInvestments, hasActiveInvest
             KSh {todayEarnings.toLocaleString()}
           </p>
           <p className="text-xs mb-3" style={{ color: 'var(--text-secondary)' }}>
-            from {activeInvestments.length} active {activeInvestments.length === 1 ? 'node' : 'nodes'}
+            from {activeNodes.length} active compute {activeNodes.length === 1 ? 'node' : 'nodes'}
           </p>
-          {activeInvestments.slice(0, 2).map(inv => (
+          {activeNodes.slice(0, 2).map(inv => (
             <div
               key={inv.id}
               className="flex items-center justify-between py-1.5 border-t border-white/5"
@@ -63,9 +63,9 @@ export default function EarningsPanel({ user, activeInvestments, hasActiveInvest
               </span>
             </div>
           ))}
-          {activeInvestments.length > 2 && (
+          {activeNodes.length > 2 && (
             <p className="text-[10px] mt-2 text-center" style={{ color: 'var(--text-muted)' }}>
-              +{activeInvestments.length - 2} more
+              +{activeNodes.length - 2} more
             </p>
           )}
         </>
@@ -92,13 +92,13 @@ export default function EarningsPanel({ user, activeInvestments, hasActiveInvest
               Secure your GPU node before capacity fills
             </p>
             <p className="text-sm mb-4" style={{ color: 'var(--text-muted)' }}>
-              Daily returns from 3% · Powered by H100 & A100
+              Compute yields from 3% · Powered by H100 & A100
             </p>
             <button
               onClick={() => navigate('/plans')}
               className="earnings-cta-btn w-full text-sm py-2.5 rounded-xl font-semibold transition-all"
             >
-              View Available Plans →
+              Provision Compute Now →
             </button>
           </div>
         </>

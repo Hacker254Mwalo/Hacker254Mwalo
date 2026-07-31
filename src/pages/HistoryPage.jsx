@@ -44,7 +44,7 @@ function EmptyState({ icon, title, subtitle }) {
 
 export default function HistoryPage() {
   const { user } = useAuth()
-  const [investments, setInvestments] = useState([])
+  const [nodes, setInvestments] = useState([])
   const [shortTermInvestments, setShortTermInvestments] = useState([])
   const [deposits, setDeposits] = useState([])
   const [withdrawals, setWithdrawals] = useState([])
@@ -110,11 +110,11 @@ export default function HistoryPage() {
     prevWithdrawalStatuses.current = newWithStatuses
   }, [deposits, withdrawals, showToast])
 
-  const totalInvested = investments.reduce((s, i) => s + Number(i.amount || 0), 0)
-  const totalExpectedReturn = investments.reduce((s, i) => s + Number(i.totalReturn || 0), 0)
-  const activeInvestments = investments.filter(i => i.status === 'active')
-  // Show actual credited profit from all active investments (from server-side cron accrual)
-  const todayInterest = activeInvestments.reduce((s, i) => s + Number(i.profit || 0), 0)
+  const totalInvested = nodes.reduce((s, i) => s + Number(i.amount || 0), 0)
+  const totalExpectedReturn = nodes.reduce((s, i) => s + Number(i.totalReturn || 0), 0)
+  const activeNodes = nodes.filter(i => i.status === 'active')
+  // Show actual credited profit from all active nodes (from server-side cron accrual)
+  const todayInterest = activeNodes.reduce((s, i) => s + Number(i.profit || 0), 0)
 
   const combinedLedger = [
     ...deposits.map(d => ({ ...d, type: 'deposit' })),
@@ -123,8 +123,8 @@ export default function HistoryPage() {
 
   const tabs = [
     { id: 'ledger', label: 'Ledger', count: combinedLedger.length },
-    { id: 'investments', label: '60D Nodes', count: investments.length },
-    { id: 'quick-returns', label: 'Quick Returns', count: shortTermInvestments.length },
+    { id: 'investments', label: 'Compute Fleet', count: nodes.length },
+    { id: 'quick-returns', label: 'Spot Market', count: shortTermInvestments.length },
     { id: 'deposits', label: 'Top Ups', count: deposits.length },
     { id: 'withdrawals', label: 'Withdrawals', count: withdrawals.length },
     { id: 'loans', label: 'Loans', count: loans.length },
@@ -155,10 +155,10 @@ export default function HistoryPage() {
         <div className="card">
           <p className="text-xs uppercase tracking-wider mb-1" style={{ color: 'var(--text-muted)' }}>Today's Compute Yield</p>
           <p className="text-2xl font-black text-green-400">+KSh {todayInterest.toLocaleString()}</p>
-          <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>From {activeInvestments.length} active plan{activeInvestments.length !== 1 ? 's' : ''}</p>
+          <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>From {activeNodes.length} active plan{activeNodes.length !== 1 ? 's' : ''}</p>
         </div>
         <div className="card">
-          <p className="text-xs uppercase tracking-wider mb-1" style={{ color: 'var(--text-muted)' }}>Total Compute Deployed</p>
+          <p className="text-xs uppercase tracking-wider mb-1" style={{ color: 'var(--text-muted)' }}>Total Allocated Capacity</p>
           <p className="text-2xl font-black text-red-400">KSh {totalInvested.toLocaleString()}</p>
           <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>Expected: KSh {totalExpectedReturn.toLocaleString()}</p>
         </div>
@@ -231,21 +231,21 @@ export default function HistoryPage() {
       {/* Investments Tab */}
       {tab === 'investments' && (
         <div className="space-y-3 animate-fadeIn">
-          {investments.length === 0 ? (
-            <EmptyState icon="📊" title="No investments yet" subtitle="Start investing to see your history here" />
+          {nodes.length === 0 ? (
+            <EmptyState icon="📊" title="No nodes yet" subtitle="Provision a node to see your operation logs here" />
           ) : (
             <>
               <div className="grid grid-cols-2 gap-3 mb-4">
                 <div className="card text-center">
                   <p className="text-red-400 text-xl font-black">KSh {totalInvested.toLocaleString()}</p>
-                  <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>Total Compute Deployed</p>
+                  <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>Total Allocated Capacity</p>
                 </div>
                 <div className="card text-center">
                   <p className="text-green-400 text-xl font-black">KSh {totalExpectedReturn.toLocaleString()}</p>
-                  <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>Expected Compute Return</p>
+                  <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>Expected Compute Revenue</p>
                 </div>
               </div>
-              {investments.map(inv => {
+              {nodes.map(inv => {
                 const startDate = inv.startedAt ? new Date(inv.startedAt) : new Date(inv.date)
                 const endDate = inv.endsAt ? new Date(inv.endsAt) : new Date(startDate.getTime() + 60 * 86400000)
                 const now = new Date()
@@ -254,8 +254,8 @@ export default function HistoryPage() {
                   ? Math.max(0, Math.floor((now - startDate) / 86400000))
                   : totalDays
                 const dailyReturn = Number(inv.dailyReturn || 0)
-                // Show ACTUAL credited profit from server for active investments
-                // Completed investments show their full total return
+                // Show ACTUAL credited profit from server for active nodes
+                // Completed nodes show their full total return
                 const accumulatedProfit = inv.status === 'active'
                   ? Number(inv.profit || 0)
                   : Number(inv.totalReturn || 0)
@@ -308,7 +308,7 @@ export default function HistoryPage() {
       {tab === 'quick-returns' && (
         <div className="space-y-3 animate-fadeIn">
           {shortTermInvestments.length === 0 ? (
-            <EmptyState icon="⚡" title="No Quick Return nodes yet" subtitle="Deploy a short-term compute node from the Plans page" />
+            <EmptyState icon="⚡" title="No Spot Market nodes yet" subtitle="Provision a spot contract from the Compute page" />
           ) : (
             shortTermInvestments.map(inv => {
               const startDate = inv.startedAt ? new Date(inv.startedAt) : new Date(inv.created_at)

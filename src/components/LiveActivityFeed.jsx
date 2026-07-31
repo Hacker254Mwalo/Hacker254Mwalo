@@ -53,6 +53,16 @@ function pickWorkload() {
 // ── Event definitions — wide variety, platform-matched ────────────────────────
 const EVENT_DEFS = [
   {
+    key: 'enterprise_contract',
+    weight: 15,
+    color: '#00B4FF',
+    buildText: () => {
+      const companies = ['MedAI Corp', 'FinTech Solutions', 'Global Logistics', 'SecureGov', 'AutoDrive AI', 'SaaS Innovators']
+      const company = companies[Math.floor(Math.random() * companies.length)]
+      return { text: `secured new contract: ${company} inference batch`, color: '#00B4FF' }
+    },
+  },
+  {
     key: 'short_term_deploy',
     weight: 25,
     color: '#60A5FA',
@@ -105,7 +115,7 @@ const EVENT_DEFS = [
     buildText: () => {
       const plan = pickInvestmentPlan()
       const workload = pickWorkload()
-      return { text: `invested in ${plan.name} (${workload})`, color: '#F59E0B' }
+      return { text: `provisioned ${plan.name} (${workload})`, color: '#F59E0B' }
     },
   },
   {
@@ -114,7 +124,7 @@ const EVENT_DEFS = [
     color: '#34D399',
     buildText: () => {
       const amount = randomInRange(6, 450)
-      return { text: `earned AI compute yield +KSh ${amount}`, color: '#34D399' }
+      return { text: `generated compute revenue +KSh ${amount}`, color: '#34D399' }
     },
   },
   {

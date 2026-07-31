@@ -56,23 +56,23 @@ function Toast({ msg, type }) {
 }
 
 /** Shown when user tries to access a feature that needs an active investment */
-function InvestFirstModal({ onClose, onGoInvest, onGoDeposit, hasBalance }) {
+function ProvisionFirstModal({ onClose, onGoProvision, onGoDeposit, hasBalance }) {
   return (
     <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4" onClick={onClose}>
       <div className="card max-w-sm w-full text-center" onClick={e => e.stopPropagation()}>
         <div className="text-5xl mb-3">🔒</div>
-        <h3 className="text-xl font-bold mb-2">Active Investment Required</h3>
+        <h3 className="text-xl font-bold mb-2">Active Compute Node Required</h3>
         <p className="text-sm mb-5" style={{ color: 'var(--text-secondary)' }}>
-          This feature is only available to members with an active investment.
+          This feature is only available to operators with an active compute node.
           {hasBalance
-            ? ' You have balance — go invest now to unlock this!'
-            : ' Please top up at least KSh 100, then invest to unlock this feature.'}
+            ? ' You have credits — provision a node now to unlock this!'
+            : ' Please fund your account with at least KSh 100, then provision a node to unlock this feature.'}
         </p>
         <div className="space-y-3">
           {hasBalance ? (
-            <button onClick={onGoInvest} className="btn-primary w-full">
-              📈 Go Invest Now
-            </button>
+<button onClick={onGoProvision} className="btn-primary w-full">
+	              📈 Provision Node Now
+	            </button>
           ) : (
             <>
               <button onClick={onGoDeposit} className="btn-primary w-full">
@@ -273,7 +273,7 @@ export default function Dashboard() {
   const { user, updateUser, refreshUser } = useAuth()
   const navigate = useNavigate()
   const [toast, setToast] = useState({ msg: '', type: 'success' })
-  const [activeInvestments, setActiveInvestments] = useState([])
+  const [activeNodes, setActiveNodes] = useState([])
   const [showPromo, setShowPromo] = useState(false)
   const [showLoan, setShowLoan] = useState(false)
   const [showContactAdmin, setShowContactAdmin] = useState(false)
@@ -311,7 +311,7 @@ export default function Dashboard() {
         hasClaimedBonusToday(phone, 'spin'),
         getWhatsAppSettings(),
       ])
-      setActiveInvestments((invs || []).filter(i => i.status === 'active'))
+      setActiveNodes((invs || []).filter(i => i.status === 'active'))
       setShortTermInvs((stInvs || []).filter(i => i.status === 'active'))
       setBonusClaimed(bonusStatus)
       setSpinClaimed(spinStatus)
@@ -333,7 +333,7 @@ export default function Dashboard() {
     setStreakBroken(isStreakBroken(phone))
   }, [user])
 
-  const hasActiveInvestment = activeInvestments.length > 0
+  const hasActiveNodes = activeNodes.length > 0
   const userBalance = user?.balance || 0
   const [executingId, setExecutingId] = useState(null)
   const [execStage, setExecStage] = useState(0)
@@ -383,9 +383,9 @@ export default function Dashboard() {
   }
 
   /** Redirect helper: first tell user to invest, then if no balance → top up */
-  function requireInvestment(action) {
-    if (!hasActiveInvestment) {
-      setShowInvestFirst(true)
+function requireProvisioning(action) {
+	    if (!hasActiveNodes) {
+	      setShowInvestFirst(true)
       return false
     }
     return true
@@ -404,7 +404,7 @@ export default function Dashboard() {
   async function handleClaimBonus() {
     if (bonusClaimed || claimingBonus || !user) return
     // Require active investment
-    if (!hasActiveInvestment) {
+    if (!hasActiveNodes) {
       setShowInvestFirst(true)
       return
     }
@@ -434,7 +434,7 @@ export default function Dashboard() {
       showToast('Lucky Spin is available on Mondays and Fridays only!', 'error')
       return
     }
-    if (!hasActiveInvestment) {
+    if (!hasActiveNodes) {
       setShowInvestFirst(true)
       return
     }
@@ -485,7 +485,7 @@ export default function Dashboard() {
   }
 
   function handleOpenPromo() {
-    if (!hasActiveInvestment) {
+    if (!hasActiveNodes) {
       setShowInvestFirst(true)
       return
     }
@@ -514,7 +514,7 @@ export default function Dashboard() {
   }
 
   function handleOpenLoan() {
-    if (!hasActiveInvestment) {
+    if (!hasActiveNodes) {
       setShowInvestFirst(true)
       return
     }
@@ -523,7 +523,7 @@ export default function Dashboard() {
 
   async function handleLoan(amount, purpose) {
     if (!user) throw new Error('Not logged in')
-    if (!hasActiveInvestment) {
+    if (!hasActiveNodes) {
       setShowInvestFirst(true)
       throw new Error('An active investment is required before requesting a loan.')
     }
@@ -553,7 +553,7 @@ export default function Dashboard() {
   return (
     <div className="pt-4 md:pt-20 pb-24 md:pb-8 px-4 max-w-2xl mx-auto">
       <PlatformStats />
-      <SmartNotifications userPhone={user?.phone || user?.id} activeInvestments={activeInvestments} />
+      <SmartNotifications userPhone={user?.phone || user?.id} activeNodes={activeNodes} />
       <WelcomeBanner />
       <Toast msg={toast.msg} type={toast.type} />
 
@@ -575,7 +575,7 @@ export default function Dashboard() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <p className="text-gray-400 text-sm">Welcome back,</p>
-          <h2 className="text-2xl font-black">{user?.name?.split(' ')[0] || 'Investor'} 👋</h2>
+          <h2 className="text-2xl font-black">{user?.name?.split(' ')[0] || 'Operator'} 👋</h2>
         </div>
         <div className="flex items-center gap-2">
           {isAdmin && (
@@ -646,8 +646,8 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Feature 2: Active Investments Summary (Money at Work) */}
-      {hasActiveInvestment && (
+      {/* Feature 2: Compute Fleet Summary (Nodes in Operation) */}
+      {hasActiveNodes && (
         <div className="mb-5">
           <div className="rounded-xl p-4 relative overflow-hidden" style={{ background: 'linear-gradient(135deg, rgba(16,185,129,0.06) 0%, rgba(6,182,212,0.04) 100%)', border: '1px solid rgba(16,185,129,0.15)' }}>
             <div className="flex items-center gap-3 mb-3">
@@ -657,30 +657,30 @@ export default function Dashboard() {
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <p className="text-[10px]" style={{ color: 'var(--text-muted)' }}>Total Deployed</p>
-                <p className="text-lg font-black text-white">KSh {activeInvestments.reduce((s, i) => s + Number(i.amount || 0), 0).toLocaleString()}</p>
+                <p className="text-lg font-black text-white">KSh {activeNodes.reduce((s, i) => s + Number(i.amount || 0), 0).toLocaleString()}</p>
               </div>
               <div>
                 <p className="text-[10px]" style={{ color: 'var(--text-muted)' }}>Daily Earning</p>
-                <p className="text-lg font-black" style={{ color: '#34D399' }}>KSh {activeInvestments.reduce((s, i) => s + Number(i.dailyReturn || 0), 0).toLocaleString()}</p>
+                <p className="text-lg font-black" style={{ color: '#34D399' }}>KSh {activeNodes.reduce((s, i) => s + Number(i.dailyReturn || 0), 0).toLocaleString()}</p>
               </div>
               <div>
                 <p className="text-[10px]" style={{ color: 'var(--text-muted)' }}>Total Earned So Far</p>
-                <p className="text-lg font-black" style={{ color: '#FFD700' }}>KSh {activeInvestments.reduce((s, i) => s + Number(i.profit || 0), 0).toLocaleString()}</p>
+                <p className="text-lg font-black" style={{ color: '#FFD700' }}>KSh {activeNodes.reduce((s, i) => s + Number(i.profit || 0), 0).toLocaleString()}</p>
               </div>
               <div>
                 <p className="text-[10px]" style={{ color: 'var(--text-muted)' }}>60-Day Target</p>
-                <p className="text-lg font-black" style={{ color: '#60A5FA' }}>KSh {activeInvestments.reduce((s, i) => s + Number(i.totalReturn || 0), 0).toLocaleString()}</p>
+                <p className="text-lg font-black" style={{ color: '#60A5FA' }}>KSh {activeNodes.reduce((s, i) => s + Number(i.totalReturn || 0), 0).toLocaleString()}</p>
               </div>
             </div>
             {/* Overall progress */}
             <div className="mt-3">
               <div className="flex justify-between text-[10px] mb-1" style={{ color: 'var(--text-muted)' }}>
                 <span>Overall Progress</span>
-                <span>{Math.round((activeInvestments.reduce((s, i) => s + Number(i.profit || 0), 0) / Math.max(1, activeInvestments.reduce((s, i) => s + Number(i.totalReturn || 0), 0))) * 100)}%</span>
+                <span>{Math.round((activeNodes.reduce((s, i) => s + Number(i.profit || 0), 0) / Math.max(1, activeNodes.reduce((s, i) => s + Number(i.totalReturn || 0), 0))) * 100)}%</span>
               </div>
               <div className="w-full bg-gray-700 rounded-full h-2">
                 <div className="h-2 rounded-full transition-all" style={{
-                  width: `${Math.min(100, Math.round((activeInvestments.reduce((s, i) => s + Number(i.profit || 0), 0) / Math.max(1, activeInvestments.reduce((s, i) => s + Number(i.totalReturn || 0), 0))) * 100))}%`,
+                  width: `${Math.min(100, Math.round((activeNodes.reduce((s, i) => s + Number(i.profit || 0), 0) / Math.max(1, activeNodes.reduce((s, i) => s + Number(i.totalReturn || 0), 0))) * 100))}%`,
                   background: 'linear-gradient(90deg, #22c55e, #FFD700)',
                 }} />
               </div>
@@ -690,7 +690,7 @@ export default function Dashboard() {
       )}
 
       {/* Streak Banner */}
-      {hasActiveInvestment && streak.count > 0 && (
+      {hasActiveNodes && streak.count > 0 && (
         <div className="rounded-xl p-3 mb-4 border border-orange-700/50 bg-orange-900/20 flex items-center gap-3">
           <div className="text-2xl">{streakBroken ? '💔' : '🔥'}</div>
           <div className="flex-1">
@@ -722,13 +722,13 @@ export default function Dashboard() {
       {/* Earnings Panel — Left Animated Card */}
       <EarningsPanel
         user={user}
-        activeInvestments={activeInvestments}
-        hasActiveInvestment={hasActiveInvestment}
+        activeNodes={activeNodes}
+        hasActiveNodes={hasActiveNodes}
         onToast={showToast}
       />
 
-      {/* No Investment Banner */}
-      {!hasActiveInvestment && (
+{/* No Active Nodes Banner */}
+	      {!hasActiveNodes && (
         <div className="rounded-2xl p-4 mb-5 border border-yellow-700/50 bg-yellow-900/20 flex items-center gap-3">
           <span className="text-2xl">⚠️</span>
           <div className="flex-1">
@@ -752,7 +752,7 @@ export default function Dashboard() {
           <div>
             <p className="font-bold flex items-center gap-2"><img src="/icons/compute-bonus.webp" alt="Bonus" className="w-6 h-6 rounded-lg object-cover border border-yellow-500/30" /> Daily Compute Bonus</p>
             <p className="text-xs mt-1 font-semibold">
-              {!hasActiveInvestment
+              {!hasActiveNodes
                 ? <span style={{ color: 'var(--text-muted)' }}>Requires active investment to claim</span>
                 : bonusClaimed
                   ? <><span style={{ color: '#34D399' }}>Claim </span><span style={{ color: '#FFD700', fontSize: '13px' }}>+2%</span><span style={{ color: 'var(--text-secondary)' }}> of your investment shares</span></>
@@ -765,12 +765,12 @@ export default function Dashboard() {
             className={`text-sm px-4 py-2 rounded-xl font-semibold transition-all ${
               bonusClaimed
                 ? 'bg-gray-700 text-gray-500 cursor-not-allowed'
-                : !hasActiveInvestment
+                : !hasActiveNodes
                   ? 'bg-gray-700 text-gray-400 cursor-pointer hover:bg-yellow-800'
                   : 'bg-green-600 hover:bg-green-500 text-white active:scale-95'
             }`}
           >
-            {claimingBonus ? '...' : bonusClaimed ? '✓ Claimed' : !hasActiveInvestment ? '🔒' : 'Claim'}
+            {claimingBonus ? '...' : bonusClaimed ? '✓ Claimed' : !hasActiveNodes ? '🔒' : 'Claim'}
           </button>
           {bonusClaimed && (() => {
             const now = new Date()
@@ -824,7 +824,7 @@ export default function Dashboard() {
               <p className="text-xs mt-0.5" style={{ color: 'var(--text-secondary)' }}>
                 {!todayIsSpinDay
                   ? 'Available on Mondays & Fridays'
-                  : !hasActiveInvestment
+                  : !hasActiveNodes
                     ? 'Requires active investment to spin'
                     : spinClaimed
                       ? 'Already spun today!'
@@ -837,12 +837,12 @@ export default function Dashboard() {
               className={`text-sm px-4 py-2 rounded-xl font-semibold transition-all ${
                 spinClaimed || !todayIsSpinDay
                   ? 'bg-gray-700 text-gray-500 cursor-not-allowed'
-                  : !hasActiveInvestment
+                  : !hasActiveNodes
                     ? 'bg-gray-700 text-gray-400 cursor-pointer hover:bg-yellow-800'
                     : 'bg-yellow-600 hover:bg-yellow-500 text-white active:scale-95'
               }`}
             >
-              {spinClaimed ? '✓ Done' : !hasActiveInvestment ? '🔒' : 'Spin!'}
+              {spinClaimed ? '✓ Done' : !hasActiveNodes ? '🔒' : 'Spin!'}
             </button>
           </div>
         )}
@@ -894,19 +894,25 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Invest CTA */}
-      <div className="card mb-6 flex items-center justify-between bg-gradient-to-r from-gray-900 to-gray-800 border-red-900/40 hover:border-red-700/60 transition-colors">
-        <div>
-          <p className="font-bold">Start Computing</p>
-          <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>3% 24h Compute Yield • 60 days</p>
+      {/* Provision CTA / Free Node Hook */}
+      {!hasActiveNodes && (
+        <div className="card mb-6 p-6 text-center bg-gradient-to-br from-emerald-600/20 to-cyan-600/10 border-emerald-500/30 relative overflow-hidden">
+          <div className="absolute top-0 right-0 bg-emerald-500 text-white text-[10px] font-bold px-3 py-1 rounded-bl-lg uppercase tracking-widest">Welcome Gift</div>
+          <div className="text-4xl mb-3">🎁</div>
+          <h3 className="text-xl font-bold mb-2">Claim Your Free AI Node</h3>
+          <p className="text-sm mb-5 text-gray-400">New operators get a <b>Micro-AI Node (V1)</b> for free to start testing the network.</p>
+          <button 
+            onClick={() => navigate('/plans')} 
+            className="w-full py-3 rounded-xl font-bold text-white transition-all active:scale-95 shadow-lg shadow-emerald-900/20"
+            style={{ background: 'linear-gradient(135deg, #10b981, #059669)' }}
+          >
+            Claim & Provision Free Node
+          </button>
         </div>
-        <button onClick={() => navigate('/plans')} className="btn-primary text-sm py-2 px-5 whitespace-nowrap">
-          Deploy Node →
-        </button>
-      </div>
+      )}
 
       {/* Global Network Status */}
-      {activeInvestments.length > 0 && (
+      {activeNodes.length > 0 && (
         <div className="mb-6">
           <GlobalNetworkStatus />
         </div>
@@ -976,15 +982,15 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Active Investments */}
-      {activeInvestments.length > 0 && (
+{/* Operational Nodes */}
+	      {activeNodes.length > 0 && (
         <div className="card mb-6">
           <h3 className="font-semibold mb-3 flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
             Active AI Nodes
           </h3>
           <div className="space-y-3">
-            {activeInvestments.slice(0, 3).map(inv => {
+            {activeNodes.slice(0, 3).map(inv => {
               const startDate = inv.startedAt ? new Date(inv.startedAt) : new Date(inv.date)
               const endDate = inv.endsAt ? new Date(inv.endsAt) : new Date(startDate.getTime() + 60 * 86400000)
               const now = new Date()
@@ -1095,21 +1101,21 @@ export default function Dashboard() {
       )}
 
       {/* Transaction Log */}
-      {activeInvestments.length > 0 && (
+      {activeNodes.length > 0 && (
         <div className="mb-6">
           <TransactionLog userPhone={user?.phone || user?.id} />
         </div>
       )}
 
       {/* Yield Claim History */}
-      {activeInvestments.length > 0 && (
+      {activeNodes.length > 0 && (
         <div className="mb-6">
           <YieldClaimHistory userPhone={user?.phone || user?.id} />
         </div>
       )}
 
       {/* API Rate Limiter */}
-      {activeInvestments.length > 0 && (
+      {activeNodes.length > 0 && (
         <div className="mb-6">
           <ApiRateLimiter />
         </div>
