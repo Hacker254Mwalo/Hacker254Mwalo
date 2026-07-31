@@ -255,10 +255,13 @@ function NumberWallRow({ plan, workload, onClick, isCritical, slots }) {
 /* ── Confirm Modal ─────────────────────────────────────────────────────── */
 function ConfirmModal({ plan, workload, balance, onConfirm, onClose, confirming, onDeposit, amount }) {
   if (!plan) return null
-  const enough = balance >= amount
-  const daily = getWorkloadYield(plan.amount, workload)
-  const total = getWorkloadTotalReturn(plan.amount, workload)
-  const roi = Math.round((total / plan.amount - 1) * 100)
+  const numAmount = parseFloat(amount) || 0
+  const enough = balance >= numAmount
+  // For short-term plans use the user-entered amount; for standard plans use plan.amount
+  const baseAmount = plan.id && plan.id.startsWith('st') ? numAmount : (plan.amount || numAmount)
+  const daily = getWorkloadYield(baseAmount, workload)
+  const total = getWorkloadTotalReturn(baseAmount, workload)
+  const roi = baseAmount > 0 ? Math.round((total / baseAmount - 1) * 100) : 0
   const planImage = PLAN_IMAGES[plan.id]
   const w = WORKLOAD_MULTIPLIERS[workload] || { multiplier: 1, icon: '⚡', name: 'Standard' }
 
@@ -280,9 +283,9 @@ function ConfirmModal({ plan, workload, balance, onConfirm, onClose, confirming,
             ['Plan', plan.name, ''],
             ['Workload', `${w.icon} ${w.name}`, 'text-cyan-400'],
             ['Multiplier', `${w.multiplier >= 1 ? '+' : ''}${Math.round((w.multiplier - 1) * 100)}%`, w.multiplier >= 1 ? 'text-green-400' : 'text-yellow-400'],
-            ['Share Worth', `KSh ${amount.toLocaleString()}`, 'text-red-400'],
+            ['Share Worth', `KSh ${numAmount.toLocaleString()}`, 'text-red-400'],
             ['24h Compute Yield', `KSh ${daily.toLocaleString()}`, 'text-green-400'],
-            ['Total Payout', `KSh ${(amount * (1 + parseFloat(plan.rate) / 100)).toLocaleString()}`, 'text-yellow-400'],
+            ['Total Payout', `KSh ${(numAmount * (1 + parseFloat(plan.rate || 0) / 100)).toLocaleString()}`, 'text-yellow-400'],
             ['ROI', `${roi}%`, 'text-cyan-400'],
           ].map(([label, value, cls]) => (
             <div key={label} className="flex justify-between text-sm">
@@ -306,7 +309,7 @@ function ConfirmModal({ plan, workload, balance, onConfirm, onClose, confirming,
         {!enough && (
           <div className="bg-red-900/40 border border-red-700 text-red-300 text-sm rounded-lg px-4 py-3 mb-4">
             <p className="font-semibold mb-2">Insufficient balance</p>
-            <p className="text-xs mb-3">You need KSh {(amount - balance).toLocaleString()} more. Top up via M-Pesa to continue.</p>
+            <p className="text-xs mb-3">You need KSh {(numAmount - balance).toLocaleString()} more. Top up via M-Pesa to continue.</p>
             <button
               onClick={onDeposit}
               className="w-full bg-red-700 hover:bg-red-600 text-white text-xs font-semibold py-2 px-4 rounded-lg transition-colors"
@@ -461,6 +464,14 @@ export default function PlansPage() {
       showToast('Please enter a valid amount.', 'error')
       return
     }
+    if (amount < 3500) {
+      showToast('Minimum amount is KSh 3,500.', 'error')
+      return
+    }
+    if (amount > 75000) {
+      showToast('Maximum amount is KSh 75,000.', 'error')
+      return
+    }
     if ((user?.balance || 0) < amount) {
       showToast('Insufficient balance for this node.', 'error')
       return
@@ -482,9 +493,10 @@ export default function PlansPage() {
       setTimeout(() => navigate('/dashboard'), 1500)
     } catch (err) {
       showToast(err.message || 'Deployment failed', 'error')
+      setConfirming(false)
+      // Do NOT close modal on error — keep user on the page
     } finally {
       setConfirming(false)
-      setSelectedPlan(null)
     }
   }
 
