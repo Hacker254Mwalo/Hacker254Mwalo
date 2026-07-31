@@ -4,10 +4,9 @@ const supabaseUrl = process.env.VITE_SUPABASE_URL
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 
 export default async function handler(req, res) {
-  // Simple auth check if needed, or rely on Vercel cron secret
-  // if (req.headers.authorization !== `Bearer ${process.env.CRON_SECRET}`) {
-  //   return res.status(401).json({ error: 'Unauthorized' })
-  // }
+  if (req.headers['x-vercel-cron'] !== '1') {
+    return res.status(401).json({ error: 'Unauthorized' })
+  }
 
   if (!supabaseUrl || !supabaseServiceKey) {
     return res.status(500).json({ error: 'Missing environment variables' })
@@ -16,12 +15,12 @@ export default async function handler(req, res) {
   const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
   try {
-    // 1. Find expired active short-term investments
+    // 1. Find expired active short-term investments (use snake_case column name)
     const { data: expired, error: fetchError } = await supabase
       .from('short_term_investments')
       .select('*')
       .eq('status', 'active')
-      .lt('endsAt', new Date().toISOString())
+      .lt('ends_at', new Date().toISOString())
 
     if (fetchError) throw fetchError
 
@@ -34,11 +33,10 @@ export default async function handler(req, res) {
     // 2. Process each one (credit user and update status)
     for (const inv of expired) {
       try {
-        // Use a transaction/RPC for safety
         const { data, error: rpcError } = await supabase.rpc('complete_short_term_investment', {
           p_investment_id: inv.id,
           p_user_phone: inv.user_phone,
-          p_payout_amount: inv.totalReturn
+          p_payout_amount: inv.total_return
         })
 
         if (rpcError) throw rpcError
