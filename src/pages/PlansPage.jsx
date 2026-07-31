@@ -136,6 +136,117 @@ function HapticButton({ children, onClick, className, disabled, style }) {
   )
 }
 
+/* ── Revenue Stream Simulator ─────────────────────────────────────────── */
+function RevenueSimulator({ balance }) {
+  const [allocation, setAllocation] = useState(2000)
+  const [workload, setWorkload] = useState('healthcare')
+  
+  const daily = getWorkloadYield(allocation, workload)
+  const total = getWorkloadTotalReturn(allocation, workload)
+  const roi = Math.round((total / allocation - 1) * 100)
+  const w = WORKLOAD_MULTIPLIERS[workload]
+  
+  return (
+    <div className="card mb-6 p-5 relative overflow-hidden" style={{ background: 'linear-gradient(135deg, rgba(16,185,129,0.1) 0%, rgba(6,182,212,0.05) 100%)', border: '1px solid rgba(16,185,129,0.2)' }}>
+      <div className="absolute top-0 right-0 p-2">
+        <span className="text-[8px] font-bold px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 uppercase tracking-tighter">Live Calculator</span>
+      </div>
+      
+      <h3 className="text-sm font-black mb-4 uppercase tracking-wider text-emerald-400">Compute Revenue Simulator</h3>
+      
+      <div className="space-y-6">
+        {/* Allocation Slider */}
+        <div>
+          <div className="flex justify-between items-end mb-2">
+            <label className="text-[10px] uppercase font-bold text-gray-400">Node Allocation Amount</label>
+            <span className="text-lg font-black text-white">KSh {allocation.toLocaleString()}</span>
+          </div>
+          <input 
+            type="range" min="200" max="100000" step="100" 
+            value={allocation} 
+            onChange={(e) => setAllocation(parseInt(e.target.value))}
+            className="w-full h-1.5 bg-gray-800 rounded-lg appearance-none cursor-pointer accent-emerald-500"
+          />
+          <div className="flex justify-between mt-1 text-[8px] text-gray-500 font-mono">
+            <span>MIN: 200</span>
+            <span>MAX: 100,000</span>
+          </div>
+        </div>
+
+        {/* Workload Selector */}
+        <div className="grid grid-cols-3 gap-2">
+          {Object.entries(WORKLOAD_MULTIPLIERS).map(([key, info]) => (
+            <button
+              key={key}
+              onClick={() => setWorkload(key)}
+              className={`py-2 rounded-lg text-[10px] font-bold transition-all border ${
+                workload === key 
+                  ? 'bg-emerald-600 border-emerald-400 text-white shadow-lg shadow-emerald-900/40' 
+                  : 'bg-gray-900/50 border-gray-800 text-gray-500 hover:border-gray-700'
+              }`}
+            >
+              <span className="block text-sm mb-0.5">{info.icon}</span>
+              {info.name}
+            </button>
+          ))}
+        </div>
+
+        {/* Result Metrics */}
+        <div className="grid grid-cols-2 gap-3 pt-2">
+          <div className="rounded-xl p-3 bg-black/40 border border-white/5">
+            <p className="text-[9px] uppercase text-gray-500 mb-1">Daily Revenue</p>
+            <p className="text-xl font-black text-emerald-400">+KSh {daily.toLocaleString()}</p>
+            <p className="text-[8px] text-gray-500 mt-1">Direct to balance</p>
+          </div>
+          <div className="rounded-xl p-3 bg-black/40 border border-white/5">
+            <p className="text-[9px] uppercase text-gray-500 mb-1">60-Day Payout</p>
+            <p className="text-xl font-black text-yellow-400">KSh {total.toLocaleString()}</p>
+            <p className="text-[8px] text-gray-500 mt-1">{roi}% Net Yield</p>
+          </div>
+        </div>
+
+        <div className="text-[9px] text-center text-gray-500 italic">
+          "Based on current {w.name} workload demand multipliers"
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/* ── Enterprise Client Wall ───────────────────────────────────────────── */
+function EnterpriseClientWall() {
+  const clients = [
+    { name: 'MedScan AI', sector: 'Healthcare', load: 'High' },
+    { name: 'FinModel Pro', sector: 'Finance', load: 'Critical' },
+    { name: 'UrbanDrive', sector: 'Autonomous', load: 'Stable' },
+    { name: 'SecureGov', sector: 'Public Sector', load: 'High' },
+    { name: 'AgriSense', sector: 'Agriculture', load: 'Moderate' },
+    { name: 'RetailFlow', sector: 'E-commerce', load: 'High' }
+  ]
+
+  return (
+    <div className="mt-12 mb-8 text-center">
+      <p className="text-[10px] uppercase tracking-[0.2em] font-black text-gray-500 mb-6">
+        Compute Capacity Powering Enterprise AI
+      </p>
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-4 opacity-40 grayscale hover:grayscale-0 transition-all duration-700">
+        {clients.map(client => (
+          <div key={client.name} className="flex flex-col items-center p-3 rounded-xl border border-white/5 bg-white/[0.02]">
+            <p className="text-sm font-black text-white tracking-tighter">{client.name}</p>
+            <div className="flex items-center gap-1 mt-1">
+              <span className="w-1 h-1 rounded-full bg-emerald-500"></span>
+              <p className="text-[8px] text-gray-500 font-bold uppercase">{client.sector}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+      <p className="text-[9px] text-gray-600 mt-6 italic">
+        * Nodes provisioned by operators are dynamically allocated to active enterprise contracts based on compute demand.
+      </p>
+    </div>
+  )
+}
+
 /* ── Market Pulse ────────────────────────────────────────────────────── */
 function MarketPulse() {
   const [metrics, setMetrics] = useState([
@@ -541,8 +652,8 @@ export default function PlansPage() {
 
       const freshInvs = await getInvestments(userPhone)
       setInvestments(freshInvs)
+      setIsProvisioning(true)
       setSelectedPlan(null)
-      showToast(`✅ Provisioned KSh ${plan.amount.toLocaleString()} in ${plan.name} (${selectedWorkload})!`)
     } catch (err) {
       console.error('Investment error:', err)
       showToast(`❌ ${err.message || 'Investment failed. Please try again.'}`, 'error')
@@ -604,6 +715,9 @@ export default function PlansPage() {
       {/* Market Pulse */}
       <MarketPulse />
 
+      {/* Revenue Simulator */}
+      <RevenueSimulator balance={user?.balance || 0} />
+
       {/* Global Demand Bar */}
       <GlobalDemandBar />
 
@@ -628,6 +742,9 @@ export default function PlansPage() {
 
       {/* Data Center Status */}
       <DataCenterInfo />
+
+      {/* Enterprise Wall */}
+      <EnterpriseClientWall />
 
       {/* Balance */}
       <div className="balance-gradient rounded-xl px-5 py-4 mb-6 flex items-center justify-between">
@@ -730,11 +847,19 @@ export default function PlansPage() {
 	                      <p className="text-cyan-400 font-bold text-xs">{roi}%</p>
 	                      <p className="text-[8px] text-gray-500">Yield</p>
 	                    </div>
-                    <div className="text-center">
-                      <p className={`font-bold text-xs ${isCritical ? 'num-pulse-red' : 'text-gray-300'}`}>
-                        {isCritical ? '🔴' : '🟢'} {getSlots(plan)}
-                      </p>
-                      <p className="text-[8px] text-gray-500">Left</p>
+                    <div className="text-center min-w-[50px]">
+                      <div className="flex flex-col items-center">
+                        <p className={`font-black text-xs ${isCritical ? 'text-red-400 animate-pulse' : 'text-emerald-400'}`}>
+                          {getSlots(plan)}
+                        </p>
+                        <div className="w-8 h-1 bg-gray-800 rounded-full mt-0.5 overflow-hidden">
+                          <div 
+                            className={`h-full rounded-full ${isCritical ? 'bg-red-500' : 'bg-emerald-500'}`} 
+                            style={{ width: `${(getSlots(plan) / 12) * 100}%` }} 
+                          />
+                        </div>
+                        <p className="text-[7px] text-gray-500 uppercase mt-0.5 font-bold">Capacity</p>
+                      </div>
                     </div>
                     <div className="text-center">
                       <button
