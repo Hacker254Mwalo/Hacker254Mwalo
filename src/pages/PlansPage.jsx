@@ -139,7 +139,7 @@ function HapticButton({ children, onClick, className, disabled, style }) {
 /* ── Revenue Stream Simulator ─────────────────────────────────────────── */
 function RevenueSimulator({ balance }) {
   const [allocation, setAllocation] = useState(2000)
-  const [workload, setWorkload] = useState('healthcare')
+  const [workload, setWorkload] = useState('finance')
   
   const daily = getWorkloadYield(allocation, workload)
   const total = getWorkloadTotalReturn(allocation, workload)
@@ -359,11 +359,80 @@ function NumberWallRow({ plan, workload, onClick, isCritical, slots }) {
           {isCritical ? '🔴' : '🟢'} {slots}
         </p>
       </td>
+      
+      {/* Details */}
+      <td className="text-center">
+        <button className="text-[10px] text-blue-400 font-bold uppercase hover:underline">View Specs</button>
+      </td>
     </tr>
   )
 }
 
 /* ── Confirm Modal ─────────────────────────────────────────────────────── */
+/* ── Node Details Modal ───────────────────────────────────────────────── */
+function NodeDetailsModal({ plan, onClose, onDeploy }) {
+  if (!plan) return null;
+  
+  const specs = {
+    'starter': { cpu: '8 Cores', gpu: 'NVIDIA T4', ram: '16GB', network: '1Gbps', storage: '100GB NVMe' },
+    'basic': { cpu: '16 Cores', gpu: 'NVIDIA A10', ram: '32GB', network: '5Gbps', storage: '250GB NVMe' },
+    'silver': { cpu: '32 Cores', gpu: 'NVIDIA A30', ram: '64GB', network: '10Gbps', storage: '500GB NVMe' },
+    'gold': { cpu: '64 Cores', gpu: 'NVIDIA A100', ram: '128GB', network: '25Gbps', storage: '1TB NVMe' },
+    'platinum': { cpu: '96 Cores', gpu: '2x NVIDIA A100', ram: '256GB', network: '50Gbps', storage: '2TB NVMe' },
+    'diamond': { cpu: '128 Cores', gpu: '4x NVIDIA H100', ram: '512GB', network: '100Gbps', storage: '5TB NVMe' },
+    'vip': { cpu: '256 Cores', gpu: '8x NVIDIA H100', ram: '1TB', network: '200Gbps', storage: '10TB NVMe' },
+  }[plan.id] || { cpu: 'Custom', gpu: 'Enterprise Grade', ram: 'High Density', network: 'Optimized', storage: 'Redundant' };
+
+  return (
+    <div className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4 backdrop-blur-sm" onClick={onClose}>
+      <div className="card max-w-sm w-full relative overflow-hidden border-blue-500/30" onClick={e => e.stopPropagation()}>
+        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 via-cyan-400 to-blue-500"></div>
+        
+        <div className="flex justify-between items-start mb-6">
+          <div>
+            <h3 className="text-xl font-black text-white uppercase tracking-tighter">{plan.name}</h3>
+            <p className="text-[10px] text-blue-400 font-bold font-mono uppercase">Node Specification V4.2</p>
+          </div>
+          <button onClick={onClose} className="w-8 h-8 rounded-full bg-gray-800 flex items-center justify-center text-gray-400 hover:text-white transition-colors">✕</button>
+        </div>
+
+        <div className="space-y-4 mb-8">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="p-3 rounded-xl bg-white/5 border border-white/5">
+              <p className="text-[8px] text-gray-500 uppercase font-bold mb-1">Compute Core</p>
+              <p className="text-xs font-bold text-blue-100">{specs.cpu}</p>
+            </div>
+            <div className="p-3 rounded-xl bg-white/5 border border-white/5">
+              <p className="text-[8px] text-gray-500 uppercase font-bold mb-1">Neural Engine</p>
+              <p className="text-xs font-bold text-cyan-400">{specs.gpu}</p>
+            </div>
+            <div className="p-3 rounded-xl bg-white/5 border border-white/5">
+              <p className="text-[8px] text-gray-500 uppercase font-bold mb-1">Memory Matrix</p>
+              <p className="text-xs font-bold text-blue-100">{specs.ram}</p>
+            </div>
+            <div className="p-3 rounded-xl bg-white/5 border border-white/5">
+              <p className="text-[8px] text-gray-500 uppercase font-bold mb-1">Network Uplink</p>
+              <p className="text-xs font-bold text-blue-100">{specs.network}</p>
+            </div>
+          </div>
+          
+          <div className="p-3 rounded-xl bg-blue-900/10 border border-blue-500/20">
+            <p className="text-[8px] text-blue-400 uppercase font-bold mb-1">Workload Capability</p>
+            <p className="text-[10px] text-gray-300 leading-relaxed">
+              {plan.desc || 'Optimized for heavy AI inference, data processing, and neural network training cycles.'}
+            </p>
+          </div>
+        </div>
+
+        <div className="flex gap-3">
+          <button onClick={onClose} className="btn-secondary flex-1">Close</button>
+          <button onClick={() => { onClose(); onDeploy(); }} className="liquid-gold flex-1 font-black text-xs">Provision Node</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function ConfirmModal({ plan, workload, balance, onConfirm, onClose, confirming, onDeposit, amount, investments }) {
   if (!plan) return null
   // For short-term plans use the user-entered amount; for standard plans use plan.amount
@@ -702,6 +771,17 @@ export default function PlansPage() {
         />
       )}
 
+      {selectedDetailPlan && (
+        <NodeDetailsModal
+          plan={selectedDetailPlan}
+          onClose={() => setSelectedDetailPlan(null)}
+          onDeploy={() => {
+            setSelectedPlan(selectedDetailPlan);
+            setSelectedWorkload('finance');
+          }}
+        />
+      )}
+
       {/* Quick Actions Strip */}
       <QuickActions user={user} showToast={showToast} />
 
@@ -785,9 +865,10 @@ export default function PlansPage() {
 	                  <th>Allocation</th>
 	                  <th>24h Revenue</th>
 	                  <th>Contract Value</th>
-	                  <th>Yield Index</th>
-	                  <th>Status</th>
-                </tr>
+		                  <th>Yield Index</th>
+		                  <th>Status</th>
+		                  <th>Details</th>
+		                </tr>
               </thead>
               <tbody>
                 {PLANS.map(plan => (
@@ -795,7 +876,7 @@ export default function PlansPage() {
                     key={plan.id}
                     plan={plan}
                     workload={selectedWorkload}
-                    onClick={(p) => { setSelectedPlan(p); setSelectedWorkload('finance') }}
+                    onClick={(p) => setSelectedDetailPlan(p)}
                     isCritical={plan.amount >= 15000}
                     slots={getSlots(plan)}
                   />
@@ -804,21 +885,21 @@ export default function PlansPage() {
             </table>
           </div>
 
-          {/* Mobile Cards (compact number wall style) */}
-          <div className="md:hidden divide-y" style={{ borderColor: 'rgba(31,41,55,0.4)' }}>
-            {PLANS.map(plan => {
-              const daily = getWorkloadYield(plan.amount, selectedWorkload)
-              const total = getWorkloadTotalReturn(plan.amount, selectedWorkload)
-              const roi = Math.round((total / plan.amount - 1) * 100)
-              const isCritical = plan.amount >= 15000
-              const planImage = PLAN_IMAGES[plan.id]
-
-              return (
-                <HapticButton
-                  key={plan.id}
-                  onClick={() => { setSelectedPlan(plan); setSelectedWorkload('finance') }}
-                  className={`w-full text-left px-4 py-3 transition-all ${isCritical ? 'demand-critical' : ''}`}
-                >
+	          {/* Mobile Cards (compact number wall style) */}
+	          <div className="md:hidden divide-y" style={{ borderColor: 'rgba(31,41,55,0.4)' }}>
+	            {PLANS.map(plan => {
+	              const daily = getWorkloadYield(plan.amount, selectedWorkload)
+	              const total = getWorkloadTotalReturn(plan.amount, selectedWorkload)
+	              const roi = Math.round((total / plan.amount - 1) * 100)
+	              const isCritical = plan.amount >= 15000
+	              const planImage = PLAN_IMAGES[plan.id]
+	
+	              return (
+	                <HapticButton
+	                  key={plan.id}
+	                  onClick={() => setSelectedDetailPlan(plan)}
+	                  className={`w-full text-left px-4 py-3 transition-all ${isCritical ? 'demand-critical' : ''}`}
+	                >
                   <div className="flex items-center gap-3 mb-2">
                     {planImage && (
                       <div className="w-10 h-10 rounded-lg overflow-hidden flex-shrink-0 border border-white/10">
@@ -849,16 +930,8 @@ export default function PlansPage() {
 	                    </div>
                     <div className="text-center min-w-[50px]">
                       <div className="flex flex-col items-center">
-                        <p className={`font-black text-xs ${isCritical ? 'text-red-400 animate-pulse' : 'text-emerald-400'}`}>
-                          {getSlots(plan)}
-                        </p>
-                        <div className="w-8 h-1 bg-gray-800 rounded-full mt-0.5 overflow-hidden">
-                          <div 
-                            className={`h-full rounded-full ${isCritical ? 'bg-red-500' : 'bg-emerald-500'}`} 
-                            style={{ width: `${(getSlots(plan) / 12) * 100}%` }} 
-                          />
-                        </div>
-                        <p className="text-[7px] text-gray-500 uppercase mt-0.5 font-bold">Capacity</p>
+                        <span className="text-xs">ℹ️</span>
+                        <p className="text-[7px] text-blue-400 uppercase mt-0.5 font-bold">Tap to Read</p>
                       </div>
                     </div>
                     <div className="text-center">

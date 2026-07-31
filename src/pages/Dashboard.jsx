@@ -558,9 +558,9 @@ function requireProvisioning(action) {
       <Toast msg={toast.msg} type={toast.type} />
 
       {showInvestFirst && (
-        <InvestFirstModal
+        <ProvisionFirstModal
           onClose={() => setShowInvestFirst(false)}
-          onGoInvest={handleInvestFirstGoInvest}
+          onGoProvision={handleInvestFirstGoInvest}
           onGoDeposit={handleInvestFirstGoDeposit}
           hasBalance={userBalance >= 200}
         />
@@ -869,7 +869,7 @@ function requireProvisioning(action) {
             <div className="w-16 h-16 rounded-full overflow-hidden flex items-center justify-center bg-gray-800/40">
               <img src="/icons/voucher.webp" alt="Voucher" className="w-full h-full object-contain" />
             </div>
-            <p className="font-semibold text-xs text-center">Redeem Voucher</p>
+            <p className="font-semibold text-xs text-center">Redeem Promo Code</p>
           </div>
 
           <div
