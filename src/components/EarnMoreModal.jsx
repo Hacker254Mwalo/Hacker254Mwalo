@@ -31,13 +31,13 @@ const STEPS = [
     id: 'invest',
     icon: '🖥️',
     title: 'Deploy Your First AI Node',
-    desc: 'Start with just KSh 200. Your node runs 24/7 processing AI tasks for enterprise clients. Earn 3% daily yield.',
+    desc: 'Buy any platform share to get started. Your node runs 24/7 processing AI tasks for enterprise clients. Earn daily yield.',
     action: '/plans',
     actionLabel: 'Choose Plan',
     color: 'from-red-500 to-pink-500',
     bg: 'rgba(239,68,68,0.08)',
     border: 'rgba(239,68,68,0.2)',
-    tip: 'KSh 200 investment = KSh 6/day = KSh 180/month passive income',
+    tip: 'Pick any share that fits your budget — even the smallest one starts earning you daily',
   },
   {
     id: 'execute',
@@ -155,7 +155,7 @@ export default function EarnMoreModal() {
           </p>
           {!hasInvestment && (
             <p className="text-[10px] mt-1 px-3 py-1 rounded-full inline-block" style={{ background: 'rgba(239,68,68,0.1)', color: '#f87171', border: '1px solid rgba(239,68,68,0.2)' }}>
-              🔒 No active investment — unlock all features by investing KSh 200
+              🔒 New to the platform? Buy any share to unlock all features.
             </p>
           )}
         </div>
@@ -217,7 +217,7 @@ export default function EarnMoreModal() {
               className="w-full block text-center py-3 rounded-xl font-bold text-sm"
               style={{ background: 'linear-gradient(135deg, #FFD700, #DAA520)', color: '#000' }}
             >
-              Start Earning — Invest KSh 200 →
+              Start Earning — Buy Your First Share →
             </a>
           )}
           {hasInvestment && (

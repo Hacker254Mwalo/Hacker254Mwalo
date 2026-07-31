@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useAuth } from '../context/AuthContext'
-import { getInvestments, getDeposits, getWithdrawals, getUserLoans } from '../lib/db'
+import { getInvestments, getDeposits, getWithdrawals, getUserLoans, getShortTermInvestments } from '../lib/db'
 import { PLANS } from '../lib/plans'
 
 const PLAN_NAME_MAP = {
@@ -45,6 +45,7 @@ function EmptyState({ icon, title, subtitle }) {
 export default function HistoryPage() {
   const { user } = useAuth()
   const [investments, setInvestments] = useState([])
+  const [shortTermInvestments, setShortTermInvestments] = useState([])
   const [deposits, setDeposits] = useState([])
   const [withdrawals, setWithdrawals] = useState([])
   const [loans, setLoans] = useState([])
@@ -63,6 +64,7 @@ export default function HistoryPage() {
   useEffect(() => {
     if (!user) return
     getInvestments(phone).then(setInvestments).catch(() => {})
+    getShortTermInvestments(phone).then(setShortTermInvestments).catch(() => {})
     getDeposits(phone).then(setDeposits).catch(() => {})
     getWithdrawals(phone).then(setWithdrawals).catch(() => {})
     getUserLoans(phone).then(setLoans).catch(() => {})
@@ -72,14 +74,16 @@ export default function HistoryPage() {
     if (!user) return
     const interval = setInterval(async () => {
       try {
-        const [deps, withs, lns] = await Promise.all([
+        const [deps, withs, lns, stInvs] = await Promise.all([
           getDeposits(phone), 
           getWithdrawals(phone),
-          getUserLoans(phone)
+          getUserLoans(phone),
+          getShortTermInvestments(phone)
         ])
         setDeposits(deps)
         setWithdrawals(withs)
         setLoans(lns)
+        setShortTermInvestments(stInvs)
       } catch { }
     }, 10000)
     return () => clearInterval(interval)
@@ -119,7 +123,8 @@ export default function HistoryPage() {
 
   const tabs = [
     { id: 'ledger', label: 'Ledger', count: combinedLedger.length },
-    { id: 'investments', label: 'Investments', count: investments.length },
+    { id: 'investments', label: '60D Nodes', count: investments.length },
+    { id: 'quick-returns', label: 'Quick Returns', count: shortTermInvestments.length },
     { id: 'deposits', label: 'Top Ups', count: deposits.length },
     { id: 'withdrawals', label: 'Withdrawals', count: withdrawals.length },
     { id: 'loans', label: 'Loans', count: loans.length },
@@ -295,6 +300,70 @@ export default function HistoryPage() {
               )
               })}
             </>
+          )}
+        </div>
+      )}
+
+      {/* Quick Returns Tab (Short-Term Nodes) */}
+      {tab === 'quick-returns' && (
+        <div className="space-y-3 animate-fadeIn">
+          {shortTermInvestments.length === 0 ? (
+            <EmptyState icon="⚡" title="No Quick Return nodes yet" subtitle="Deploy a short-term compute node from the Plans page" />
+          ) : (
+            shortTermInvestments.map(inv => {
+              const startDate = inv.startedAt ? new Date(inv.startedAt) : new Date(inv.created_at)
+              const endDate = inv.endsAt ? new Date(inv.endsAt) : new Date(startDate.getTime() + inv.duration_hours * 3600000)
+              const now = new Date()
+              const isExpired = endDate <= now
+              const statusLabel = inv.status === 'completed' ? 'completed' : isExpired ? 'active' : 'active'
+              const totalDays = Math.max(1, Math.ceil((endDate - startDate) / 86400000))
+              const daysPassed = isExpired ? totalDays : Math.max(0, Math.floor((now - startDate) / 86400000))
+              const progress = totalDays > 0 ? Math.min(100, Math.round((daysPassed / totalDays) * 100)) : 0
+
+              return (
+                <div key={inv.id} className="card hover:border-gray-600 transition-colors">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-2">
+                        <StatusBadge status={statusLabel} />
+                        {inv.nodeId && (
+                          <span className="text-[10px] font-mono px-2 py-0.5 rounded" style={{ background: 'rgba(59,130,246,0.15)', color: '#60a5fa' }}>
+                            {inv.nodeId}
+                          </span>
+                        )}
+                      </div>
+                      <p className="font-semibold">{inv.planName}</p>
+                      <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>{fmt(inv.created_at)}</p>
+                      <p className="text-[10px] mt-0.5" style={{ color: 'var(--text-secondary)' }}>
+                        {inv.duration_hours}h cycle · {(Math.round((inv.multiplier - 1) * 100))}% return
+                      </p>
+                    </div>
+                    <div className="text-right flex-shrink-0">
+                      <p className="font-bold text-blue-400">-KSh {Number(inv.amount).toLocaleString()}</p>
+                      <p className="text-emerald-400 text-xs">+KSh {Number(inv.totalReturn - inv.amount).toLocaleString()} profit</p>
+                      <p className="text-yellow-400 text-xs">Total: KSh {Number(inv.totalReturn).toLocaleString()}</p>
+                    </div>
+                  </div>
+                  <div className="mt-3 rounded-lg px-3 py-2" style={{ background: 'rgba(0,0,0,0.2)' }}>
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="text-xs" style={{ color: 'var(--text-secondary)' }}>Progress</span>
+                      <span className="text-emerald-400 font-bold text-sm">
+                        {inv.status === 'completed' ? 'Completed ✓' : isExpired ? 'Maturing...' : `${daysPassed}d of ${totalDays}d`}
+                      </span>
+                    </div>
+                    <div className="flex justify-between text-xs mb-1" style={{ color: 'var(--text-muted)' }}>
+                      <span>{progress}% complete</span>
+                    </div>
+                    <div className="h-1.5 rounded-full" style={{ background: 'var(--bg-input)' }}>
+                      <div
+                        className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-cyan-500 transition-all"
+                        style={{ width: `${progress}%` }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              )
+            })
           )}
         </div>
       )}

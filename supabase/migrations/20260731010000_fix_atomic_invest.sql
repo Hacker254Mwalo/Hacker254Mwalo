@@ -65,7 +65,7 @@ begin
     workload
   ) values (
     p_user_phone, p_plan_id, p_plan_name, p_amount, 0,
-    p_daily_return, p_total_return, 'active', now(), now() + interval '90 days', now(),
+    p_daily_return, p_total_return, 'active', now(), now() + interval '60 days', now(),
     p_plan_id
   )
   returning id into v_investment_id;

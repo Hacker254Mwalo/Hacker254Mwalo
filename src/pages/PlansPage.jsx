@@ -612,13 +612,13 @@ export default function PlansPage() {
           onClick={() => setActiveTab('standard')}
           className={`flex-1 py-2.5 text-xs font-bold rounded-lg transition-all ${activeTab === 'standard' ? 'bg-red-600 text-white shadow-lg shadow-red-600/20' : 'text-gray-500 hover:text-gray-300'}`}
         >
-          AI Nodes — 60D
+          AI Nodes — 60D Earn
         </button>
         <button 
           onClick={() => setActiveTab('short-term')}
           className={`flex-1 py-2.5 text-xs font-bold rounded-lg transition-all ${activeTab === 'short-term' ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/20' : 'text-gray-500 hover:text-gray-300'}`}
         >
-          Quick Returns — 24h to 7D
+          Quick Returns — 24h to 7D Earn
         </button>
       </div>
 
@@ -755,9 +755,9 @@ export default function PlansPage() {
           <div className="rounded-xl px-4 py-3 mb-2" style={{ background: 'linear-gradient(135deg, rgba(16,185,129,0.08), rgba(6,182,212,0.05))', border: '1px solid rgba(16,185,129,0.2)' }}>
             <div className="flex items-center gap-2 mb-1">
               <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-              <p className="text-[10px] uppercase tracking-widest font-bold text-emerald-400">Quick Returns · No 60-Day Lock</p>
+              <p className="text-[10px] uppercase tracking-widest font-bold text-emerald-400">Quick Returns · Independent from 60D Nodes</p>
             </div>
-            <p className="text-[10px] text-gray-400">Set your amount. Get your return at maturity. Funds return to your balance automatically.</p>
+            <p className="text-[10px] text-gray-400">Deploy a short-term compute node. Your capital and returns are fully independent from 60D investments. Funds return to your balance automatically at maturity.</p>
           </div>
 
           {/* 24h Rapid Inference */}
@@ -770,7 +770,7 @@ export default function PlansPage() {
                   </div>
                   <div>
                     <h3 className="font-bold text-white text-sm">24h Rapid Inference</h3>
-                    <p className="text-[9px] text-gray-400 uppercase tracking-widest">24-Hour Lock · Get Paid Tomorrow</p>
+                    <p className="text-[9px] text-emerald-400 uppercase tracking-widest font-semibold">24-Hour Cycle · +3% at Maturity</p>
                   </div>
                 </div>
                 <div className="text-right">
@@ -834,7 +834,7 @@ export default function PlansPage() {
                   </div>
                   <div>
                     <h3 className="font-bold text-white text-sm">3D Neural Cluster</h3>
-                    <p className="text-[9px] text-gray-400 uppercase tracking-widest">72-Hour Lock · 3-Day Sprint</p>
+                    <p className="text-[9px] text-blue-400 uppercase tracking-widest font-semibold">72-Hour Cycle · +8% at Maturity</p>
                   </div>
                 </div>
                 <div className="text-right">
@@ -898,7 +898,7 @@ export default function PlansPage() {
                   </div>
                   <div>
                     <h3 className="font-bold text-white text-sm">7D Enterprise Backbone</h3>
-                    <p className="text-[9px] text-gray-400 uppercase tracking-widest">168-Hour Lock · Highest Return</p>
+                    <p className="text-[9px] text-purple-400 uppercase tracking-widest font-semibold">168-Hour Cycle · +18% at Maturity</p>
                   </div>
                 </div>
                 <div className="text-right">

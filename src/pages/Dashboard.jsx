@@ -626,10 +626,20 @@ export default function Dashboard() {
 
         {/* Content (above animations) */}
         <div className="relative z-10">
+          <p className="text-xs font-bold uppercase tracking-widest mb-2" style={{ background: 'linear-gradient(90deg, #FFD700, #DAA520)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+            AI RENT MARKET S
+          </p>
           <p className="text-gray-400 text-sm mb-1">Available Balance</p>
           <p className="text-3xl font-black balance-text-glow">KSh {(user?.balance || 0).toLocaleString()}</p>
           {(user?.bonusBalance || 0) > 0 && (
             <p className="text-yellow-400 text-sm mt-1">+ KSh {(user.bonusBalance || 0).toLocaleString()} bonus</p>
+          )}
+          {shortTermInvs.length > 0 && (
+            <div className="mt-3 px-3 py-2 rounded-lg" style={{ background: 'rgba(59,130,246,0.12)', border: '1px solid rgba(59,130,246,0.25)' }}>
+              <p className="text-[10px] uppercase tracking-wider text-blue-400 font-bold mb-1">🔒 Locked in AI Short-Term Nodes</p>
+              <p className="text-sm font-black text-white">KSh {shortTermInvs.reduce((s, i) => s + Number(i.amount || 0), 0).toLocaleString()}</p>
+              <p className="text-[10px] text-emerald-400 mt-0.5">+ KSh {shortTermInvs.reduce((s, i) => s + Number((i.totalReturn || 0) - (i.amount || 0)), 0).toLocaleString()} expected profit</p>
+            </div>
           )}
           <div className="flex gap-3 mt-4">
             <button onClick={() => navigate('/plans')} className="btn-primary flex-1 text-sm py-2.5">Deploy Node</button>
