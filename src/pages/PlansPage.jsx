@@ -253,7 +253,7 @@ function NumberWallRow({ plan, workload, onClick, isCritical, slots }) {
 }
 
 /* ── Confirm Modal ─────────────────────────────────────────────────────── */
-function ConfirmModal({ plan, workload, balance, onConfirm, onClose, confirming, onDeposit, amount }) {
+function ConfirmModal({ plan, workload, balance, onConfirm, onClose, confirming, onDeposit, amount, investments }) {
   if (!plan) return null
   const numAmount = parseFloat(amount) || 0
   const enough = balance >= numAmount
@@ -264,6 +264,8 @@ function ConfirmModal({ plan, workload, balance, onConfirm, onClose, confirming,
   const roi = baseAmount > 0 ? Math.round((total / baseAmount - 1) * 100) : 0
   const planImage = PLAN_IMAGES[plan.id]
   const w = WORKLOAD_MULTIPLIERS[workload] || { multiplier: 1, icon: '⚡', name: 'Standard' }
+  const alreadyUsed = plan.once && investments?.some(i => i.planId === plan.id)
+
 
   return (
     <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4" onClick={onClose}>
@@ -306,6 +308,13 @@ function ConfirmModal({ plan, workload, balance, onConfirm, onClose, confirming,
           {plan.description}
         </p>
 
+        {alreadyUsed && (
+          <div className="bg-yellow-900/40 border border-yellow-700 text-yellow-300 text-sm rounded-lg px-4 py-3 mb-4">
+            <p className="font-semibold">Already Deployed</p>
+            <p className="text-xs">This is a one-time node. You already own it and it's earning daily.</p>
+          </div>
+        )}
+
         {!enough && (
           <div className="bg-red-900/40 border border-red-700 text-red-300 text-sm rounded-lg px-4 py-3 mb-4">
             <p className="font-semibold mb-2">Insufficient balance</p>
@@ -321,7 +330,7 @@ function ConfirmModal({ plan, workload, balance, onConfirm, onClose, confirming,
 
         <div className="flex gap-3">
           <button onClick={onClose} className="btn-secondary flex-1">Cancel</button>
-          <button onClick={onConfirm} disabled={!enough || confirming} className="btn-primary flex-1">
+          <button onClick={onConfirm} disabled={!enough || confirming || alreadyUsed} className="btn-primary flex-1">
             {confirming ? 'Processing...' : 'Confirm & Deploy'}
           </button>
         </div>
@@ -577,6 +586,7 @@ export default function PlansPage() {
           confirming={confirming}
           onDeposit={() => { setSelectedPlan(null); navigate("/profile?deposit=1") }}
           amount={selectedPlan.id.startsWith('st') ? shortTermAmounts[selectedPlan.id] : selectedPlan.amount}
+          investments={investments}
         />
       )}
 
