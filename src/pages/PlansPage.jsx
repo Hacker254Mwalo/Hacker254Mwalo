@@ -458,7 +458,7 @@ export default function PlansPage() {
     }
   }
 
-  const confirmShortTermInvest = async () => {
+    const confirmShortTermInvest = async () => {
     const amount = parseFloat(shortTermAmounts[selectedPlan.id])
     if (!amount || amount <= 0) {
       showToast('Please enter a valid amount.', 'error')
@@ -476,7 +476,6 @@ export default function PlansPage() {
       showToast('Insufficient balance for this node.', 'error')
       return
     }
-    
     setConfirming(true)
     try {
       const { supabase } = await import('../lib/supabase')
@@ -485,14 +484,21 @@ export default function PlansPage() {
         p_duration_hours: selectedPlan.duration,
         p_amount: amount
       })
-      
-      if (error) throw error
-      
-      if (refreshUser) await refreshUser()
+      if (error) throw new Error(error.message)
+      // Update balance from RPC response
+      if (data?.new_balance !== undefined) {
+        updateUser({ balance: data.new_balance })
+      } else if (refreshUser) {
+        await refreshUser()
+      }
       showToast('AI Node Deployed Successfully!', 'success')
-      setTimeout(() => navigate('/dashboard'), 1500)
+      setTimeout(() => {
+        setSelectedPlan(null)
+        navigate('/dashboard')
+      }, 1500)
     } catch (err) {
-      showToast(err.message || 'Deployment failed', 'error')
+      const msg = err.message || 'Deployment failed'
+      showToast(msg, 'error')
       setConfirming(false)
       // Do NOT close modal on error — keep user on the page
     } finally {
