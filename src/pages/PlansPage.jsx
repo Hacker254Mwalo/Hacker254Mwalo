@@ -256,7 +256,7 @@ function NumberWallRow({ plan, workload, onClick, isCritical, slots }) {
 function ConfirmModal({ plan, workload, balance, onConfirm, onClose, confirming, onDeposit, amount, investments }) {
   if (!plan) return null
   // For short-term plans use the user-entered amount; for standard plans use plan.amount
-  const isShortTerm = plan.id && plan.id.startsWith('st')
+  const isShortTerm = plan.id && ['st1', 'st2', 'st3'].includes(plan.id)
   const numAmount = isShortTerm ? (parseFloat(amount) || 0) : (plan.amount || 0)
   const enough = balance >= numAmount
   const baseAmount = numAmount
@@ -582,11 +582,11 @@ export default function PlansPage() {
           plan={selectedPlan}
           workload={selectedWorkload}
           balance={user?.balance || 0}
-          onConfirm={selectedPlan.id.startsWith('st') ? confirmShortTermInvest : confirmInvest}
+          onConfirm={['st1', 'st2', 'st3'].includes(selectedPlan.id) ? confirmShortTermInvest : confirmInvest}
           onClose={() => setSelectedPlan(null)}
           confirming={confirming}
           onDeposit={() => { setSelectedPlan(null); navigate("/profile?deposit=1") }}
-          amount={selectedPlan.id.startsWith('st') ? shortTermAmounts[selectedPlan.id] : selectedPlan.amount}
+          amount={['st1', 'st2', 'st3'].includes(selectedPlan.id) ? shortTermAmounts[selectedPlan.id] : selectedPlan.amount}
           investments={investments}
         />
       )}
