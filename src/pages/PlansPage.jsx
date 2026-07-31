@@ -596,13 +596,13 @@ export default function PlansPage() {
           onClick={() => setActiveTab('standard')}
           className={`flex-1 py-2.5 text-xs font-bold rounded-lg transition-all ${activeTab === 'standard' ? 'bg-red-600 text-white shadow-lg shadow-red-600/20' : 'text-gray-500 hover:text-gray-300'}`}
         >
-          Standard Nodes (60D)
+          AI Nodes — 60D
         </button>
         <button 
           onClick={() => setActiveTab('short-term')}
-          className={`flex-1 py-2.5 text-xs font-bold rounded-lg transition-all ${activeTab === 'short-term' ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' : 'text-gray-500 hover:text-gray-300'}`}
+          className={`flex-1 py-2.5 text-xs font-bold rounded-lg transition-all ${activeTab === 'short-term' ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/20' : 'text-gray-500 hover:text-gray-300'}`}
         >
-          Short-Term Nodes (24h-7D)
+          Quick Returns — 24h to 7D
         </button>
       </div>
 
@@ -735,66 +735,211 @@ export default function PlansPage() {
         </div>
       ) : (
         <div className="space-y-4 mb-6">
-          {[
-            { id: 'st1', name: '24h Rapid Inference', duration: 24, rate: '3%', color: 'blue', desc: 'Optimized for real-time AI inference and high-frequency data validation.', resource: 'NVIDIA H100' },
-            { id: 'st2', name: '3D Neural Cluster', duration: 72, rate: '8%', color: 'indigo', desc: 'Scalable multi-node environment for deep learning model validation and testing.', resource: 'Multi-GPU Cluster' },
-            { id: 'st3', name: '7D Enterprise Backbone', duration: 168, rate: '18%', color: 'purple', desc: 'Dedicated infrastructure for large-scale model training and high-availability datasets.', resource: 'Bare Metal Node' },
-          ].map(plan => (
-            <div key={plan.id} className="card border-blue-500/20 bg-blue-900/5 hover:border-blue-500/40 transition-all">
+          {/* Section Header */}
+          <div className="rounded-xl px-4 py-3 mb-2" style={{ background: 'linear-gradient(135deg, rgba(16,185,129,0.08), rgba(6,182,212,0.05))', border: '1px solid rgba(16,185,129,0.2)' }}>
+            <div className="flex items-center gap-2 mb-1">
+              <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+              <p className="text-[10px] uppercase tracking-widest font-bold text-emerald-400">Quick Returns · No 60-Day Lock</p>
+            </div>
+            <p className="text-[10px] text-gray-400">Set your amount. Get your return at maturity. Funds return to your balance automatically.</p>
+          </div>
+
+          {/* 24h Rapid Inference */}
+          <div className="rounded-xl overflow-hidden" style={{ background: 'linear-gradient(135deg, rgba(10,12,30,0.95), rgba(6,8,20,0.98))', border: '1px solid rgba(16,185,129,0.15)' }}>
+            <div className="px-4 pt-4 pb-2">
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-3">
-                  <div className={`w-10 h-10 rounded-xl bg-blue-600/20 flex items-center justify-center text-xl border border-blue-500/30`}>
-                    {plan.duration === 24 ? '⚡' : plan.duration === 72 ? '🛠️' : '📡'}
+                  <div className="w-11 h-11 rounded-xl flex items-center justify-center text-xl" style={{ background: 'rgba(16,185,129,0.15)', border: '1px solid rgba(16,185,129,0.3)' }}>
+                    ⚡
                   </div>
                   <div>
-                    <h3 className="font-bold text-blue-100">{plan.name}</h3>
-                    <p className="text-[10px] text-gray-500 uppercase tracking-widest">{plan.duration} Hour Lock</p>
+                    <h3 className="font-bold text-white text-sm">24h Rapid Inference</h3>
+                    <p className="text-[9px] text-gray-400 uppercase tracking-widest">24-Hour Lock · Get Paid Tomorrow</p>
                   </div>
                 </div>
                 <div className="text-right">
-                  <div className="flex items-center gap-1">
-                    <p className="text-lg font-black text-blue-400">KSh</p>
-                    <input
-                      type="number"
-                      min="1"
-                      step="100"
-                      placeholder="0"
-                      value={shortTermAmounts[plan.id]}
-                      onChange={(e) => setShortTermAmounts({ ...shortTermAmounts, [plan.id]: e.target.value })}
-                      className="w-28 bg-transparent text-lg font-black text-blue-400 text-right outline-none focus:ring-0"
-                    />
-                  </div>
-                  <p className="text-[10px] text-gray-500 uppercase">Enter amount</p>
+                  <p className="text-lg font-black text-emerald-400">+3%</p>
+                  <p className="text-[9px] text-gray-500">Return at maturity</p>
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-3 mb-4">
-                <div className="bg-black/40 rounded-lg p-2 text-center border border-white/5">
-                  <p className="text-[10px] text-gray-500 uppercase">Return</p>
-                  <p className="text-sm font-bold text-emerald-400">+{plan.rate}</p>
+              <p className="text-[10px] text-gray-400 mb-3 leading-relaxed">Optimized for real-time AI inference and high-frequency data validation. Your capital is locked for 24 hours then returned with profit.</p>
+            </div>
+            <div className="px-4 pb-4">
+              <div className="bg-black/40 rounded-lg p-3 border border-white/5 mb-3">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-[10px] text-gray-500 uppercase">Your Investment</p>
+                  <p className="text-[10px] text-gray-500">Min KSh 3,500 · Max KSh 75,000</p>
                 </div>
-                <div className="bg-black/40 rounded-lg p-2 text-center border border-white/5">
-                  <p className="text-[10px] text-gray-500 uppercase">Total Payout</p>
-                  <p className="text-sm font-bold text-yellow-400">{shortTermAmounts[plan.id] ? `KSh ${((parseFloat(shortTermAmounts[plan.id]) || 0) * (1 + parseFloat(plan.rate) / 100)).toLocaleString()}` : '—'}</p>
+                <div className="flex items-center gap-2">
+                  <p className="text-sm font-black text-emerald-400">KSh</p>
+                  <input
+                    type="number"
+                    min="1"
+                    step="100"
+                    placeholder="Enter amount"
+                    value={shortTermAmounts.st1}
+                    onChange={(e) => setShortTermAmounts({ ...shortTermAmounts, st1: e.target.value })}
+                    className="flex-1 bg-transparent text-lg font-black text-white text-right outline-none focus:ring-0 placeholder:text-gray-600"
+                  />
                 </div>
               </div>
-              <p className="text-[10px] text-gray-400 mb-2 px-1 italic">{plan.desc}</p>
-              <div className="flex items-center justify-center mb-4">
-                <span className="text-[9px] uppercase tracking-widest font-bold text-gray-500 mr-2">Resource:</span>
-                <span className="text-[10px] font-semibold text-blue-300">{plan.resource}</span>
+              <div className="grid grid-cols-3 gap-2 mb-3">
+                <div className="bg-emerald-900/20 rounded-lg p-2 text-center border border-emerald-500/20">
+                  <p className="text-[9px] text-gray-500 uppercase">Duration</p>
+                  <p className="text-sm font-bold text-white">24h</p>
+                </div>
+                <div className="bg-emerald-900/20 rounded-lg p-2 text-center border border-emerald-500/20">
+                  <p className="text-[9px] text-gray-500 uppercase">Profit</p>
+                  <p className="text-sm font-bold text-emerald-400">{shortTermAmounts.st1 ? `KSh ${((parseFloat(shortTermAmounts.st1) || 0) * 0.03).toLocaleString()}` : '—'}</p>
+                </div>
+                <div className="bg-emerald-900/20 rounded-lg p-2 text-center border border-emerald-500/20">
+                  <p className="text-[9px] text-gray-500 uppercase">You Receive</p>
+                  <p className="text-sm font-bold text-yellow-400">{shortTermAmounts.st1 ? `KSh ${((parseFloat(shortTermAmounts.st1) || 0) * 1.03).toLocaleString()}` : '—'}</p>
+                </div>
               </div>
               <button 
-                onClick={() => handleShortTermInvest(plan.duration, shortTermAmounts[plan.id])}
+                onClick={() => handleShortTermInvest(24, parseFloat(shortTermAmounts.st1) || 0)}
                 disabled={confirming}
-                className="w-full py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-sm shadow-lg shadow-blue-600/20 transition-all active:scale-95 disabled:opacity-50"
+                className="w-full py-2.5 rounded-xl font-bold text-sm text-white transition-all active:scale-95 disabled:opacity-50"
+                style={{ background: 'linear-gradient(135deg, #10b981, #059669)', boxShadow: '0 4px 20px rgba(16,185,129,0.25)' }}
               >
-                {confirming ? 'Deploying...' : 'Deploy Short-Term Node'}
+                {confirming ? 'Deploying Node...' : 'Deploy 24h Node'}
               </button>
             </div>
-          ))}
+          </div>
+
+          {/* 72h Neural Cluster */}
+          <div className="rounded-xl overflow-hidden" style={{ background: 'linear-gradient(135deg, rgba(10,12,30,0.95), rgba(6,8,20,0.98))', border: '1px solid rgba(59,130,246,0.15)' }}>
+            <div className="px-4 pt-4 pb-2">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-11 h-11 rounded-xl flex items-center justify-center text-xl" style={{ background: 'rgba(59,130,246,0.15)', border: '1px solid rgba(59,130,246,0.3)' }}>
+                    🛠️
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-white text-sm">3D Neural Cluster</h3>
+                    <p className="text-[9px] text-gray-400 uppercase tracking-widest">72-Hour Lock · 3-Day Sprint</p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <p className="text-lg font-black text-blue-400">+8%</p>
+                  <p className="text-[9px] text-gray-500">Return at maturity</p>
+                </div>
+              </div>
+              <p className="text-[10px] text-gray-400 mb-3 leading-relaxed">Scalable multi-node environment for deep learning model validation. Higher yield, 3-day commitment.</p>
+            </div>
+            <div className="px-4 pb-4">
+              <div className="bg-black/40 rounded-lg p-3 border border-white/5 mb-3">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-[10px] text-gray-500 uppercase">Your Investment</p>
+                  <p className="text-[10px] text-gray-500">Min KSh 3,500 · Max KSh 75,000</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <p className="text-sm font-black text-blue-400">KSh</p>
+                  <input
+                    type="number"
+                    min="1"
+                    step="100"
+                    placeholder="Enter amount"
+                    value={shortTermAmounts.st2}
+                    onChange={(e) => setShortTermAmounts({ ...shortTermAmounts, st2: e.target.value })}
+                    className="flex-1 bg-transparent text-lg font-black text-white text-right outline-none focus:ring-0 placeholder:text-gray-600"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-3 gap-2 mb-3">
+                <div className="bg-blue-900/20 rounded-lg p-2 text-center border border-blue-500/20">
+                  <p className="text-[9px] text-gray-500 uppercase">Duration</p>
+                  <p className="text-sm font-bold text-white">72h</p>
+                </div>
+                <div className="bg-blue-900/20 rounded-lg p-2 text-center border border-blue-500/20">
+                  <p className="text-[9px] text-gray-500 uppercase">Profit</p>
+                  <p className="text-sm font-bold text-emerald-400">{shortTermAmounts.st2 ? `KSh ${((parseFloat(shortTermAmounts.st2) || 0) * 0.08).toLocaleString()}` : '—'}</p>
+                </div>
+                <div className="bg-blue-900/20 rounded-lg p-2 text-center border border-blue-500/20">
+                  <p className="text-[9px] text-gray-500 uppercase">You Receive</p>
+                  <p className="text-sm font-bold text-yellow-400">{shortTermAmounts.st2 ? `KSh ${((parseFloat(shortTermAmounts.st2) || 0) * 1.08).toLocaleString()}` : '—'}</p>
+                </div>
+              </div>
+              <button 
+                onClick={() => handleShortTermInvest(72, parseFloat(shortTermAmounts.st2) || 0)}
+                disabled={confirming}
+                className="w-full py-2.5 rounded-xl font-bold text-sm text-white transition-all active:scale-95 disabled:opacity-50"
+                style={{ background: 'linear-gradient(135deg, #3b82f6, #2563eb)', boxShadow: '0 4px 20px rgba(59,130,246,0.25)' }}
+              >
+                {confirming ? 'Deploying Node...' : 'Deploy 72h Node'}
+              </button>
+            </div>
+          </div>
+
+          {/* 7D Enterprise Backbone */}
+          <div className="rounded-xl overflow-hidden" style={{ background: 'linear-gradient(135deg, rgba(10,12,30,0.95), rgba(6,8,20,0.98))', border: '1px solid rgba(168,85,247,0.15)' }}>
+            <div className="px-4 pt-4 pb-2">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-11 h-11 rounded-xl flex items-center justify-center text-xl" style={{ background: 'rgba(168,85,247,0.15)', border: '1px solid rgba(168,85,247,0.3)' }}>
+                    📡
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-white text-sm">7D Enterprise Backbone</h3>
+                    <p className="text-[9px] text-gray-400 uppercase tracking-widest">168-Hour Lock · Highest Return</p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <p className="text-lg font-black text-purple-400">+18%</p>
+                  <p className="text-[9px] text-gray-500">Return at maturity</p>
+                </div>
+              </div>
+              <p className="text-[10px] text-gray-400 mb-3 leading-relaxed">Dedicated bare-metal infrastructure for large-scale model training. Maximum yield for a 7-day commitment.</p>
+            </div>
+            <div className="px-4 pb-4">
+              <div className="bg-black/40 rounded-lg p-3 border border-white/5 mb-3">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-[10px] text-gray-500 uppercase">Your Investment</p>
+                  <p className="text-[10px] text-gray-500">Min KSh 3,500 · Max KSh 75,000</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <p className="text-sm font-black text-purple-400">KSh</p>
+                  <input
+                    type="number"
+                    min="1"
+                    step="100"
+                    placeholder="Enter amount"
+                    value={shortTermAmounts.st3}
+                    onChange={(e) => setShortTermAmounts({ ...shortTermAmounts, st3: e.target.value })}
+                    className="flex-1 bg-transparent text-lg font-black text-white text-right outline-none focus:ring-0 placeholder:text-gray-600"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-3 gap-2 mb-3">
+                <div className="bg-purple-900/20 rounded-lg p-2 text-center border border-purple-500/20">
+                  <p className="text-[9px] text-gray-500 uppercase">Duration</p>
+                  <p className="text-sm font-bold text-white">168h</p>
+                </div>
+                <div className="bg-purple-900/20 rounded-lg p-2 text-center border border-purple-500/20">
+                  <p className="text-[9px] text-gray-500 uppercase">Profit</p>
+                  <p className="text-sm font-bold text-emerald-400">{shortTermAmounts.st3 ? `KSh ${((parseFloat(shortTermAmounts.st3) || 0) * 0.18).toLocaleString()}` : '—'}</p>
+                </div>
+                <div className="bg-purple-900/20 rounded-lg p-2 text-center border border-purple-500/20">
+                  <p className="text-[9px] text-gray-500 uppercase">You Receive</p>
+                  <p className="text-sm font-bold text-yellow-400">{shortTermAmounts.st3 ? `KSh ${((parseFloat(shortTermAmounts.st3) || 0) * 1.18).toLocaleString()}` : '—'}</p>
+                </div>
+              </div>
+              <button 
+                onClick={() => handleShortTermInvest(168, parseFloat(shortTermAmounts.st3) || 0)}
+                disabled={confirming}
+                className="w-full py-2.5 rounded-xl font-bold text-sm text-white transition-all active:scale-95 disabled:opacity-50"
+                style={{ background: 'linear-gradient(135deg, #a855f7, #7c3aed)', boxShadow: '0 4px 20px rgba(168,85,247,0.25)' }}
+              >
+                {confirming ? 'Deploying Node...' : 'Deploy 7D Node'}
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
-      {/* Workload Selector (below table, applies globally) */}
+      {/* Workload Selector — Standard Nodes only */}
+      {activeTab === 'standard' && (
       <div className="card mb-4">
         <p className="text-[10px] uppercase tracking-widest font-semibold mb-3" style={{ color: '#00B4FF' }}>
           Select AI Workload (applies to all plans)
@@ -825,6 +970,7 @@ export default function PlansPage() {
           })}
         </div>
       </div>
+      )}
     </div>
   )
 }
