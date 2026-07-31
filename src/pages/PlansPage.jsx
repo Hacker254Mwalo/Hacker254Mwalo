@@ -424,9 +424,9 @@ export default function PlansPage() {
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState('standard')
   const [shortTermAmounts, setShortTermAmounts] = useState({
-    st1: 3500,
-    st2: 3500,
-    st3: 3500,
+    st1: '',
+    st2: '',
+    st3: '',
   }) // 'standard' or 'short-term'
 
   useEffect(() => {
@@ -456,7 +456,11 @@ export default function PlansPage() {
   }
 
   const confirmShortTermInvest = async () => {
-    const amount = shortTermAmounts[selectedPlan.id]
+    const amount = parseFloat(shortTermAmounts[selectedPlan.id])
+    if (!amount || amount <= 0) {
+      showToast('Please enter a valid amount.', 'error')
+      return
+    }
     if ((user?.balance || 0) < amount) {
       showToast('Insufficient balance for this node.', 'error')
       return
@@ -740,14 +744,15 @@ export default function PlansPage() {
                     <p className="text-lg font-black text-blue-400">KSh</p>
                     <input
                       type="number"
-                      min="3500"
+                      min="1"
                       step="100"
+                      placeholder="0"
                       value={shortTermAmounts[plan.id]}
-                      onChange={(e) => setShortTermAmounts({ ...shortTermAmounts, [plan.id]: Math.max(3500, parseInt(e.target.value) || 3500) })}
-                      className="w-24 bg-transparent text-lg font-black text-blue-400 text-right outline-none focus:ring-0"
+                      onChange={(e) => setShortTermAmounts({ ...shortTermAmounts, [plan.id]: e.target.value })}
+                      className="w-28 bg-transparent text-lg font-black text-blue-400 text-right outline-none focus:ring-0"
                     />
                   </div>
-                  <p className="text-[10px] text-gray-500 uppercase">Min KSh 3,500</p>
+                  <p className="text-[10px] text-gray-500 uppercase">Enter amount</p>
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-3 mb-4">
@@ -757,7 +762,7 @@ export default function PlansPage() {
                 </div>
                 <div className="bg-black/40 rounded-lg p-2 text-center border border-white/5">
                   <p className="text-[10px] text-gray-500 uppercase">Total Payout</p>
-                  <p className="text-sm font-bold text-yellow-400">KSh {(shortTermAmounts[plan.id] * (1 + parseFloat(plan.rate) / 100)).toLocaleString()}</p>
+                  <p className="text-sm font-bold text-yellow-400">{shortTermAmounts[plan.id] ? `KSh ${((parseFloat(shortTermAmounts[plan.id]) || 0) * (1 + parseFloat(plan.rate) / 100)).toLocaleString()}` : '—'}</p>
                 </div>
               </div>
               <p className="text-[10px] text-gray-400 mb-2 px-1 italic">{plan.desc}</p>
