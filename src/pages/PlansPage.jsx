@@ -255,10 +255,11 @@ function NumberWallRow({ plan, workload, onClick, isCritical, slots }) {
 /* ── Confirm Modal ─────────────────────────────────────────────────────── */
 function ConfirmModal({ plan, workload, balance, onConfirm, onClose, confirming, onDeposit, amount, investments }) {
   if (!plan) return null
-  const numAmount = parseFloat(amount) || 0
-  const enough = balance >= numAmount
   // For short-term plans use the user-entered amount; for standard plans use plan.amount
-  const baseAmount = plan.id && plan.id.startsWith('st') ? numAmount : (plan.amount || numAmount)
+  const isShortTerm = plan.id && plan.id.startsWith('st')
+  const numAmount = isShortTerm ? (parseFloat(amount) || 0) : (plan.amount || 0)
+  const enough = balance >= numAmount
+  const baseAmount = numAmount
   const daily = getWorkloadYield(baseAmount, workload)
   const total = getWorkloadTotalReturn(baseAmount, workload)
   const roi = baseAmount > 0 ? Math.round((total / baseAmount - 1) * 100) : 0
