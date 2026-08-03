@@ -531,7 +531,7 @@ function DepositModal({ user, onClose, onPending }) {
   const [txError, setTxError] = useState('')
   const [declined, setDeclined] = useState(false)
   const [processing, setProcessing] = useState(false)
-  const [processingStep, setProcessingStep] = useState(0)
+
 
   const currentMin = method ? method.minAmount : 100
   const sym = getCurrencySymbol(currency)
@@ -579,7 +579,6 @@ function DepositModal({ user, onClose, onPending }) {
     if (!kAmount || kAmount < 100) return
     setLoading(true)
     setProcessing(true)
-    setProcessingStep(0)
 
     try {
       const res = await fetch('/api/stk-push', {
@@ -771,11 +770,8 @@ function DepositModal({ user, onClose, onPending }) {
                   </svg>
                 </div>
                 <p className="font-bold text-white text-lg mb-2">Processing Payment</p>
-                <p className="text-sm mb-4" style={{ color: '#10b981' }}>{['Connecting to M-Pesa gateway...', `Sending STK prompt to ${user.phone}...`, 'Awaiting confirmation...'][processingStep]}</p>
-                <div className="w-full rounded-full h-1 mb-2" style={{ background: 'rgba(255,255,255,0.1)' }}>
-                  <div className="h-1 rounded-full transition-all duration-700" style={{ background: '#10b981', width: `${((processingStep + 1) / 3) * 100}%` }} />
-                </div>
-                <p className="text-[10px]" style={{ color: 'var(--text-muted)' }}>Secure payment processing via Dumiropay Pay</p>
+                <p className="text-sm mb-4" style={{ color: '#10b981' }}>Sending M-Pesa request...</p>
+                <p className="text-[10px]" style={{ color: 'var(--text-muted)' }}>Secure payment processing via ZetuPay</p>
               </div>
             ) : !manualMode ? (
               <>
