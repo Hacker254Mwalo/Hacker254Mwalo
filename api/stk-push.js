@@ -1,77 +1,44 @@
 /**
- * Vercel Serverless Function: M-Pesa STK Push Collection via PayKit
+ * Vercel Serverless Function: M-Pesa STK Push Collection via Zetu Pay
  *
- * OAuth2 Token Flow:
- *   POST {PAYKIT_BASE_URL}/v1/oauth/token
- *   grant_type=client_credentials&client_id={PAYKIT_CLIENT_ID}&client_secret={PAYKIT_CLIENT_SECRET}
+ * Zetu Pay Authentication (per-request, no OAuth):
+ *   authorizationKey = base64({ publicKey, privateKey, amount, walletId, timestamp })
  *
- * STK Push Collection:
- *   POST {PAYKIT_BASE_URL}/v1/collection/stkpush
- *   Authorization: Bearer {access_token}
+ * STK Push:
+ *   POST https://pay.zetupay.co.ke/api/v1/payment/initiate
+ *   Body: { authorizationKey, amount, phoneNumber, reference, redirectUrl, identifier, real }
  *
  * Vercel Env Vars:
- *   PAYKIT_CLIENT_ID           — OAuth2 client_id
- *   PAYKIT_CLIENT_SECRET       — OAuth2 client_secret
- *   PAYKIT_BASE_URL            — https://api.sandbox.paykit.africa (or production)
- *   PAYKIT_CALLBACK_URL        — Full public URL of /api/stk-callback
+ *   ZETUPAY_PUBLIC_KEY            — API public key (pk_live_... or pk_test_...)
+ *   ZETUPAY_SECRET_KEY            — API private key (sk_live_... or sk_test_...)
+ *   ZETUPAY_WALLET_ID             — Merchant application appId
+ *   ZETUPAY_BASE_URL              — https://pay.zetupay.co.ke/api/v1 (default)
+ *   ZETUPAY_REDIRECT_URL          — Fully-qualified redirect URL after checkout
+ *   ZETUPAY_CALLBACK_URL          — Full public URL of /api/webhooks/zetupay
  *   SUPABASE_URL
  *   SUPABASE_SERVICE_ROLE_KEY
  */
 
 import { getServerClient } from '../src/lib/supabase.js'
 
-// ── In-memory token cache (per Vercel instance) ──────────────────────────────
-let paykitToken = null
-let paykitTokenExpiresAt = 0
+// ── Zetu Pay authorization key helper ────────────────────────────────────────
+function createAuthorizationKey(amount, walletId) {
+  const publicKey = process.env.ZETUPAY_PUBLIC_KEY
+  const privateKey = process.env.ZETUPAY_SECRET_KEY
 
-async function getPayKitToken() {
-  const now = Date.now()
-  // Refresh 60s before expiry to avoid race conditions
-  if (paykitToken && now < paykitTokenExpiresAt - 60_000) return paykitToken
-
-  // ── TEMP DEBUG: verify env vars are loading (DO NOT REMOVE LINE — check Vercel logs, then remove) ──
-  console.log('[DEBUG-env] PAYKIT_CLIENT_ID:', !!process.env.PAYKIT_CLIENT_ID)
-  console.log('[DEBUG-env] PAYKIT_CLIENT_SECRET:', !!process.env.PAYKIT_CLIENT_SECRET)
-  console.log('[DEBUG-env] PAYKIT_BASE_URL:', !!process.env.PAYKIT_BASE_URL)
-  console.log('[DEBUG-env] PAYKIT_CALLBACK_URL:', !!process.env.PAYKIT_CALLBACK_URL)
-  // ── END TEMP DEBUG ──
-
-  const clientId = process.env.PAYKIT_CLIENT_ID
-  const clientSecret = process.env.PAYKIT_CLIENT_SECRET
-  const baseUrl = process.env.PAYKIT_BASE_URL || 'https://api.sandbox.paykit.africa'
-
-  if (!clientId || !clientSecret) {
-    throw new Error('PAYKIT_CLIENT_ID and PAYKIT_CLIENT_SECRET are required')
+  if (!publicKey || !privateKey) {
+    throw new Error('ZETUPAY_PUBLIC_KEY and ZETUPAY_SECRET_KEY are required')
   }
 
-  const tokenUrl = `${baseUrl}/v1/oauth/token`
-
-  const authRes = await fetch(tokenUrl, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: new URLSearchParams({
-      grant_type: 'client_credentials',
-      client_id: clientId,
-      client_secret: clientSecret,
-    }).toString(),
-  })
-
-  const authData = await authRes.json()
-
-  if (!authRes.ok) {
-    console.error('PayKit token error:', authRes.status, authData)
-    throw new Error(`PayKit OAuth2 failed: ${authData?.error || authRes.statusText}`)
+  const payload = {
+    publicKey,
+    privateKey,
+    amount,
+    walletId,
+    timestamp: Date.now(),
   }
 
-  if (!authData.access_token) {
-    console.error('PayKit auth response missing access_token:', authData)
-    throw new Error('PayKit token fetch failed: no access_token in response')
-  }
-
-  paykitToken = authData.access_token
-  // PayKit tokens expire in ~900s; cache for 840s to refresh safely early
-  paykitTokenExpiresAt = now + (authData.expires_in ? authData.expires_in * 1000 : 840_000)
-  return paykitToken
+  return Buffer.from(JSON.stringify(payload), 'utf8').toString('base64')
 }
 
 // ── Rate limiting ────────────────────────────────────────────────────────────
@@ -97,17 +64,11 @@ function normalizePhone(phone) {
   return /^254\d{9}$/.test(p) ? p : null
 }
 
-// ── Error response helper ────────────────────────────────────────────────────
-function paykitErrorResponse(res, status, paykitError) {
-  const message = paykitError?.error || paykitError?.message || paykitError?.detail || `PayKit error: HTTP ${status}`
-  return res.status(status).json({ success: false, message })
-}
-
 // ── Main handler ─────────────────────────────────────────────────────────────
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' })
 
-  const { phone, amount, userPhone, requestId } = req.body || {}
+  const { phone, amount, userPhone } = req.body || {}
   if (!phone || !amount || !userPhone) {
     return res.status(400).json({ error: 'phone, amount, and userPhone required' })
   }
@@ -129,92 +90,62 @@ export default async function handler(req, res) {
   const supabase = getServerClient(req.headers, process.env.SUPABASE_SERVICE_ROLE_KEY)
 
   try {
-    // 1. Get OAuth2 access token
-    const accessToken = await getPayKitToken()
-    if (!accessToken) {
-      return res.status(500).json({ error: 'PayKit authentication failed' })
+    const walletId = process.env.ZETUPAY_WALLET_ID
+    if (!walletId) {
+      throw new Error('ZETUPAY_WALLET_ID is required')
     }
 
-    // 2. Build the STK push request body per PayKit spec
-    const baseUrl = process.env.PAYKIT_BASE_URL || 'https://api.sandbox.paykit.africa'
-    const callbackUrl = process.env.PAYKIT_CALLBACK_URL ||
-      ('https://' + (process.env.VERCEL_URL || 'localhost:3000') + '/api/stk-callback')
+    const baseUrl = process.env.ZETUPAY_BASE_URL || 'https://pay.zetupay.co.ke/api/v1'
+    const redirectUrl = process.env.ZETUPAY_REDIRECT_URL ||
+      ('https://' + (process.env.VERCEL_URL || 'localhost:3000'))
+    const callbackUrl = process.env.ZETUPAY_CALLBACK_URL ||
+      ('https://' + (process.env.VERCEL_URL || 'localhost:3000') + '/api/webhooks/zetupay')
 
-    const request_id = requestId || crypto.randomUUID()
+    // Generate a unique reference (maps to PayKit request_id)
+    const reference = crypto.randomUUID()
 
-    const stkBody = {
-      collection_channel: 'Mpesa',
+    // 1. Build authorization key (must be generated per-request)
+    const authorizationKey = createAuthorizationKey(numAmount, walletId)
+
+    // 2. Build the STK push request body per Zetu Pay spec
+    const initBody = {
+      authorizationKey,
       amount: numAmount,
-      phone_number: normalPhone,
-      account_reference: 'DUMIROPAY'.slice(0, 12),  // max 12 chars
-      remarks: 'Deposit'.slice(0, 13),               // max 13 chars
-      callback_url: callbackUrl,
-      request_id: request_id,
+      phoneNumber: normalPhone,
+      reference,
+      redirectUrl,
+      currency: 'KES',
+      identifier: userPhone,
+      real: true,
     }
 
-    const stkUrl = `${baseUrl}/v1/collection/stkpush`
+    const initUrl = `${baseUrl}/payment/initiate`
 
     // 3. Send STK push
-    const stkRes = await fetch(stkUrl, {
+    const initRes = await fetch(initUrl, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${accessToken}`,
-      },
-      body: JSON.stringify(stkBody),
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(initBody),
     })
 
-    const stkData = await stkRes.json()
+    const initData = await initRes.json()
 
-    console.log('PayKit STK Response:', stkRes.status, JSON.stringify(stkData))
+    console.log('Zetu Pay STK Response:', initRes.status, JSON.stringify(initData))
 
-    // 4. Handle PayKit error responses
-    if (!stkRes.ok) {
-      console.error('PayKit STK error:', stkRes.status, stkData)
+    // 4. Handle Zetu Pay error responses
+    if (!initRes.ok || !initData?.success) {
+      console.error('Zetu Pay STK error:', initRes.status, initData)
 
-      // 401 = token expired or invalid — retry token fetch once
-      if (stkRes.status === 401) {
-        paykitToken = null
-        paykitTokenExpiresAt = 0
-        const retryToken = await getPayKitToken()
-        if (retryToken) {
-          const retryRes = await fetch(stkUrl, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${retryToken}`,
-            },
-            body: JSON.stringify(stkBody),
-          })
-          const retryData = await retryRes.json()
-          if (retryRes.ok) {
-            return handleSuccess(res, supabase, stkBody, userPhone, retryData)
-          }
-        }
-      }
+      const errorMessage = initData?.error || initData?.message || `Zetu Pay error: HTTP ${initRes.status}`
 
-      if (stkRes.status === 409) {
-        // Duplicate request_id — retry with new UUID
-        const newBody = { ...stkBody, request_id: crypto.randomUUID() }
-        const retryRes = await fetch(stkUrl, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${accessToken}`,
-          },
-          body: JSON.stringify(newBody),
-        })
-        const retryData = await retryRes.json()
-        if (retryRes.ok) {
-          return handleSuccess(res, supabase, newBody, userPhone, retryData)
-        }
-      }
-
-      return paykitErrorResponse(res, stkRes.status, stkData)
+      return res.status(initRes.status || 500).json({
+        success: false,
+        message: errorMessage,
+      })
     }
 
-    // 5. Handle success (201 Created, status: INITIATED)
-    return handleSuccess(res, supabase, stkBody, userPhone, stkData)
+    // 5. Handle success (201 Created, status: "pending")
+    return handleSuccess(res, supabase, initBody, initData, userPhone, reference)
 
   } catch (err) {
     console.error('STK Push error:', err.message, err.stack)
@@ -226,17 +157,18 @@ export default async function handler(req, res) {
 }
 
 // ── Success handler ──────────────────────────────────────────────────────────
-async function handleSuccess(res, supabase, stkBody, userPhone, stkData) {
-  // PayKit returns 201 with status: "INITIATED" on success
-  // We use request_id as the primary tracker (not CheckoutRequestID)
-  const requestId = stkBody.request_id
+async function handleSuccess(res, supabase, initBody, initData, userPhone, reference) {
+  const { paymentKey, waveTransactionId, checkoutUrl } = initData?.data || {}
+
+  // Use reference as checkout_id (maps to PayKit request_id)
+  const requestId = reference
 
   // Save deposit record for tracking
   const { data: deposit, error: depositError } = await supabase
     .rpc('insert_deposit', {
       p_user_phone: userPhone,
-      p_amount: stkBody.amount,
-      p_checkout_id: requestId,          // store request_id as checkout_id
+      p_amount: initBody.amount,
+      p_checkout_id: requestId,
       p_method: 'stk',
     })
 
@@ -247,9 +179,10 @@ async function handleSuccess(res, supabase, stkBody, userPhone, stkData) {
 
   return res.status(200).json({
     success: true,
-    requestId: requestId,
-    checkoutRequestId: stkData?.data?.request_id || requestId,
+    requestId,
+    checkoutRequestId: paymentKey || waveTransactionId || requestId,
     depositId: deposit?.deposit?.id,
+    checkoutUrl,
     message: 'STK Push sent. Enter M-Pesa PIN on your phone.',
   })
 }
