@@ -577,47 +577,9 @@ function DepositModal({ user, onClose, onPending }) {
   async function initiateStkPush() {
     const kAmount = convertToKES(parseInt(amount) || 0, currency)
     if (!kAmount || kAmount < 100) return
-    setLoading(true)
-    setProcessing(true)
-    setProcessingStep(0)
 
-    // Processing animation steps
-    const steps = [
-      'Connecting to M-Pesa gateway...',
-      `Sending STK prompt to ${user.phone}...`,
-      'Awaiting transaction confirmation...',
-    ]
-    for (let i = 0; i < steps.length; i++) {
-      setProcessingStep(i)
-      await new Promise(r => setTimeout(r, 2000))
-    }
-
-    try {
-      const res = await fetch('/api/stk-push', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone: user.phone, amount: kAmount, userPhone: user.phone }),
-      })
-      const data = await res.json()
-      if (data.success || data.checkoutRequestId) {
-        // ZetuPay returns a checkoutUrl — must redirect to trigger STK on phone
-        if (data.checkoutUrl) {
-          window.location.href = data.checkoutUrl
-        } else {
-          setProcessing(false)
-          setSent(true)
-          onPending()
-        }
-      } else {
-        // STK failed → show security warning + cashier
-        setProcessing(false)
-        setManualMode(true)
-      }
-    } catch {
-      setProcessing(false)
-      setManualMode(true)
-    }
-    setLoading(false)
+    // Always show manual paybill — STK gateway is temporarily unavailable
+    setManualMode(true)
   }
 
   async function submitManualCode() {
