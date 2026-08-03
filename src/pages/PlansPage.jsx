@@ -918,16 +918,44 @@ export default function PlansPage() {
       <EnterpriseClientWall />
 
       {/* Balance */}
-      <div className="balance-gradient rounded-xl px-5 py-4 mb-6 flex items-center justify-between">
-        <div>
-          <p className="text-gray-400 text-xs">Available Balance</p>
-          <p className="text-2xl font-black">KSh {(user?.balance || 0).toLocaleString()}</p>
+      <div className="grid gap-3 md:grid-cols-[1.2fr_0.8fr] mb-6">
+        <div className="balance-gradient rounded-xl px-5 py-4 flex items-center justify-between">
+          <div>
+            <p className="text-gray-400 text-xs">Available Balance</p>
+            <p className="text-2xl font-black">KSh {(user?.balance || 0).toLocaleString()}</p>
+            <p className="text-[11px] mt-1 text-gray-300">Top up first, then choose the package that fits your pace.</p>
+          </div>
+          <span className="text-3xl">💰</span>
         </div>
-        <span className="text-3xl">💰</span>
+
+        <div className="rounded-xl px-4 py-4 border border-emerald-500/15 flex flex-col justify-between" style={{ background: 'linear-gradient(135deg, rgba(16,185,129,0.08), rgba(6,182,212,0.04))' }}>
+          <div>
+            <p className="text-[10px] uppercase tracking-[0.18em] font-bold text-emerald-300">How it works</p>
+            <div className="mt-3 space-y-2 text-[12px] text-gray-300">
+              <p><span className="text-white font-semibold">1.</span> Top up wallet</p>
+              <p><span className="text-white font-semibold">2.</span> Compare package returns</p>
+              <p><span className="text-white font-semibold">3.</span> Start and monitor maturity</p>
+            </div>
+          </div>
+          <button
+            onClick={() => navigate('/profile?deposit=1')}
+            className="mt-4 w-full rounded-xl py-2.5 font-bold text-sm text-white border border-white/10 hover:bg-white/5 transition-all"
+          >
+            Top Up & Start
+          </button>
+        </div>
       </div>
 
-      <div className="mb-4 text-xs text-gray-400 text-center">
-        <p>All plans run on enterprise-grade infrastructure with 24/7 monitoring</p>
+      <div className="mb-4 grid gap-3 md:grid-cols-3 text-xs">
+        {[
+          '24/7 monitoring on every package',
+          'Transparent package terms before checkout',
+          'Capital returns automatically at maturity',
+        ].map(item => (
+          <div key={item} className="rounded-xl border border-white/5 bg-white/[0.03] px-4 py-3 text-center text-gray-300">
+            {item}
+          </div>
+        ))}
       </div>
 
       {/* Plans Content */}
@@ -1005,7 +1033,11 @@ export default function PlansPage() {
 	                          <p className="text-[8px] uppercase tracking-wider text-emerald-400">Package price</p>
 	                        </div>
 	                      </div>
-	                      <p className="text-[9px]" style={{ color: 'var(--text-muted)' }}>{plan.specs || 'AI Compute'}</p>
+	                      <div className="flex flex-wrap items-center gap-1.5 mt-1">
+                        <span className="text-[8px] uppercase tracking-wider px-2 py-0.5 rounded-full bg-white/5 text-amber-300 border border-white/8">{plan.badge || 'Package'}</span>
+                        <span className="text-[8px] uppercase tracking-wider px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-300 border border-cyan-500/15">{plan.audience || 'Investors'}</span>
+                      </div>
+                      <p className="text-[9px] mt-1" style={{ color: 'var(--text-muted)' }}>{plan.benefit || plan.specs || 'AI Compute'}</p>
 	                    </div>
 	                  </div>
 	
@@ -1033,7 +1065,7 @@ export default function PlansPage() {
                         onClick={(e) => { e.stopPropagation(); setSelectedPlan(plan); setSelectedWorkload('finance') }}
                         className="liquid-gold text-[9px] font-bold px-3 py-1.5 rounded-lg text-white"
                       >
-                        Start Package
+                        Top Up & Start
                       </button>
                     </div>
                   </div>
