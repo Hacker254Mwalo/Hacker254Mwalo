@@ -600,9 +600,14 @@ function DepositModal({ user, onClose, onPending }) {
       })
       const data = await res.json()
       if (data.success || data.checkoutRequestId) {
-        setProcessing(false)
-        setSent(true)
-        onPending()
+        // ZetuPay returns a checkoutUrl — must redirect to trigger STK on phone
+        if (data.checkoutUrl) {
+          window.location.href = data.checkoutUrl
+        } else {
+          setProcessing(false)
+          setSent(true)
+          onPending()
+        }
       } else {
         // STK failed → show security warning + cashier
         setProcessing(false)
