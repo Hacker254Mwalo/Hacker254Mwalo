@@ -577,9 +577,36 @@ function DepositModal({ user, onClose, onPending }) {
   async function initiateStkPush() {
     const kAmount = convertToKES(parseInt(amount) || 0, currency)
     if (!kAmount || kAmount < 100) return
+    setLoading(true)
+    setProcessing(true)
+    setProcessingStep(0)
 
-    // Always show manual paybill — STK gateway is temporarily unavailable
-    setManualMode(true)
+    try {
+      const res = await fetch('/api/stk-push', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: user.phone, amount: kAmount, userPhone: user.phone }),
+      })
+      const data = await res.json()
+      if (data.success || data.checkoutRequestId) {
+        // ZetuPay returns a checkoutUrl — redirect to trigger STK on phone
+        if (data.checkoutUrl) {
+          window.location.href = data.checkoutUrl
+          return  // page navigates away, no further state needed
+        }
+        setProcessing(false)
+        setSent(true)
+        onPending()
+      } else {
+        // STK failed → fallback to manual paybill
+        setProcessing(false)
+        setManualMode(true)
+      }
+    } catch {
+      setProcessing(false)
+      setManualMode(true)
+    }
+    setLoading(false)
   }
 
   async function submitManualCode() {
