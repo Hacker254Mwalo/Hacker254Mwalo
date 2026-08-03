@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { getInvestments, addInvestment, getUser, getShortTermInvestments } from '../lib/db'
 import {
@@ -523,6 +523,7 @@ function ConfirmModal({ plan, workload, balance, onConfirm, onClose, confirming,
 /* ── Quick Actions Strip ────────────────────────────────────────────────── */
 function QuickActions({ user, showToast }) {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const [bonusLoading, setBonusLoading] = useState(false)
   const [bonusClaimed, setBonusClaimed] = useState(false)
   const [spinLoading, setSpinLoading] = useState(false)
@@ -609,13 +610,15 @@ function QuickActions({ user, showToast }) {
 export default function PlansPage() {
   const { user, updateUser, refreshUser } = useAuth()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const [selectedPlan, setSelectedPlan] = useState(null)
   const [selectedWorkload, setSelectedWorkload] = useState('finance')
   const [toast, setToast] = useState({ msg: '', type: 'success' })
   const [confirming, setConfirming] = useState(false)
   const [investments, setInvestments] = useState([])
   const [loading, setLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState('standard')
+  const initialTab = searchParams.get('tab') === 'short-term' ? 'short-term' : 'standard'
+  const [activeTab, setActiveTab] = useState(initialTab)
   const [selectedDetailPlan, setSelectedDetailPlan] = useState(null)
   const [isProvisioning, setIsProvisioning] = useState(false)
   const [shortTermAmounts, setShortTermAmounts] = useState({
@@ -628,6 +631,10 @@ export default function PlansPage() {
     if (!user) return
     getInvestments(user.phone || user.id).then(setInvestments).catch(() => {})
   }, [user])
+
+  useEffect(() => {
+    setActiveTab(initialTab)
+  }, [initialTab])
 
   const handleLoadingComplete = useCallback(() => {
     setLoading(false)
@@ -787,11 +794,72 @@ export default function PlansPage() {
       {/* Quick Actions Strip */}
       <QuickActions user={user} showToast={showToast} />
 
-      <div className="mb-6">
-        <h2 className="text-2xl font-black">Provision Compute Infrastructure</h2>
-        <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>
-          Provision high-performance GPU nodes and earn real-time compute revenue.
-        </p>
+      <div className="mb-6 space-y-4">
+        <div>
+          <p className="text-[10px] uppercase tracking-[0.28em] font-black text-cyan-400 mb-2">Investment Packages</p>
+          <h2 className="text-3xl md:text-4xl font-black leading-tight">Choose a package that matches your investment pace.</h2>
+          <p className="text-sm mt-2 max-w-xl" style={{ color: 'var(--text-secondary)' }}>
+            Compare long-term income packages and faster spot packages in one place, then top up or deploy when the return profile fits your goal.
+          </p>
+        </div>
+
+        <div className="grid gap-3 md:grid-cols-[1.6fr_1fr]">
+          <div className="rounded-2xl p-5 border border-cyan-500/15" style={{ background: 'linear-gradient(135deg, rgba(10,12,30,0.96), rgba(6,8,20,0.98))' }}>
+            <div className="flex flex-wrap items-start justify-between gap-4">
+              <div className="space-y-3 max-w-lg">
+                <span className="inline-flex items-center gap-2 text-[10px] uppercase tracking-[0.2em] font-bold px-3 py-1 rounded-full bg-cyan-500/10 text-cyan-300 border border-cyan-500/20">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                  Live package board
+                </span>
+                <div>
+                  <p className="text-xl md:text-2xl font-black text-white">Clearer tabs, stronger offers, faster decisions.</p>
+                  <p className="text-sm mt-2" style={{ color: 'var(--text-secondary)' }}>
+                    Start with a stable 60-day package for compounding income or switch to the spot market when you want shorter lock periods and quick maturity.
+                  </p>
+                </div>
+                <div className="flex flex-wrap gap-2 text-[11px]">
+                  <button
+                    onClick={() => setActiveTab('standard')}
+                    className="px-4 py-2 rounded-xl font-bold text-white transition-all hover:scale-[1.02]"
+                    style={{ background: 'linear-gradient(135deg, #ef4444, #ec4899)' }}
+                  >
+                    View income packages
+                  </button>
+                  <button
+                    onClick={() => navigate('/profile?deposit=1')}
+                    className="px-4 py-2 rounded-xl font-bold border border-white/10 text-white/90 hover:bg-white/5 transition-all"
+                  >
+                    Top up wallet
+                  </button>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2 min-w-[220px]">
+                {[
+                  { label: 'Package types', value: '2', hint: 'Long-term + spot' },
+                  { label: 'Starting point', value: 'KSh 200', hint: 'Entry package' },
+                  { label: 'Fastest maturity', value: '24h', hint: 'Quick turnover' },
+                  { label: 'Max visibility', value: 'Live ROI', hint: 'Before you deploy' },
+                ].map(stat => (
+                  <div key={stat.label} className="rounded-xl p-3 bg-white/[0.03] border border-white/5">
+                    <p className="text-[9px] uppercase tracking-widest text-gray-500">{stat.label}</p>
+                    <p className="text-sm font-black text-white mt-1">{stat.value}</p>
+                    <p className="text-[9px] text-gray-500 mt-1">{stat.hint}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="rounded-2xl p-5 border border-emerald-500/15" style={{ background: 'linear-gradient(135deg, rgba(16,185,129,0.1), rgba(6,182,212,0.04))' }}>
+            <p className="text-[10px] uppercase tracking-[0.22em] font-black text-emerald-300 mb-2">Why this layout works</p>
+            <div className="space-y-3 text-sm" style={{ color: 'var(--text-secondary)' }}>
+              <p><span className="text-white font-semibold">Clear tabs:</span> visitors instantly understand the difference between steady packages and quick-return packages.</p>
+              <p><span className="text-white font-semibold">Stronger package cards:</span> price, payout, and CTA now compete less and scan faster.</p>
+              <p><span className="text-white font-semibold">Better persuasion:</span> value-focused copy explains what each package is for before users commit.</p>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Market Pulse */}
@@ -804,19 +872,40 @@ export default function PlansPage() {
       <GlobalDemandBar />
 
       {/* Tab Toggle */}
-      <div className="flex p-1 bg-gray-900/50 rounded-xl mb-6 border border-white/5">
-        <button 
-          onClick={() => setActiveTab('standard')}
-          className={`flex-1 py-2.5 text-xs font-bold rounded-lg transition-all ${activeTab === 'standard' ? 'bg-red-600 text-white shadow-lg shadow-red-600/20' : 'text-gray-500 hover:text-gray-300'}`}
-        >
-          Compute Fleet (60D Term)
-        </button>
-        <button 
-          onClick={() => setActiveTab('short-term')}
-          className={`flex-1 py-2.5 text-xs font-bold rounded-lg transition-all ${activeTab === 'short-term' ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/20' : 'text-gray-500 hover:text-gray-300'}`}
-        >
-          Spot Market (24h - 7D Spot)
-        </button>
+      <div className="rounded-2xl mb-6 border border-white/5 bg-gray-900/40 p-2">
+        <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between mb-3 px-2 pt-1">
+          <div>
+            <p className="text-[10px] uppercase tracking-[0.2em] font-bold text-gray-400">Package categories</p>
+            <p className="text-sm text-white font-semibold">Pick the investment tab that matches your timeline.</p>
+          </div>
+          <p className="text-[11px] text-gray-500">Long-term packages focus on consistent income. Spot packages prioritize speed.</p>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          <button 
+            onClick={() => setActiveTab('standard')}
+            className={`text-left px-4 py-3 rounded-xl transition-all border ${activeTab === 'standard' ? 'bg-red-600 text-white shadow-lg shadow-red-600/20 border-red-400/40' : 'text-gray-300 border-white/5 hover:border-white/10 hover:bg-white/[0.03]'}`}
+          >
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-xs font-black uppercase tracking-wider">Income Packages</p>
+                <p className={`text-[11px] mt-1 ${activeTab === 'standard' ? 'text-red-100' : 'text-gray-500'}`}>60-day plans with live workload comparison and scalable tiers.</p>
+              </div>
+              <span className="text-lg">📈</span>
+            </div>
+          </button>
+          <button 
+            onClick={() => setActiveTab('short-term')}
+            className={`text-left px-4 py-3 rounded-xl transition-all border ${activeTab === 'short-term' ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/20 border-emerald-400/40' : 'text-gray-300 border-white/5 hover:border-white/10 hover:bg-white/[0.03]'}`}
+          >
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-xs font-black uppercase tracking-wider">Fast Return Packages</p>
+                <p className={`text-[11px] mt-1 ${activeTab === 'short-term' ? 'text-emerald-100' : 'text-gray-500'}`}>24h to 7-day options for users who want quick maturity cycles.</p>
+              </div>
+              <span className="text-lg">⚡</span>
+            </div>
+          </button>
+        </div>
       </div>
 
       {/* Certifications */}
@@ -909,9 +998,12 @@ export default function PlansPage() {
                       </div>
                     )}
                     <div className="flex-1">
-                      <div className="flex items-center justify-between">
+                      <div className="flex items-center justify-between gap-2">
 <p className="text-sm font-bold text-white">{plan.name}</p>
-	                        <p className="text-sm font-black text-white">KSh {plan.amount.toLocaleString()}</p>
+	                        <div className="text-right">
+	                          <p className="text-sm font-black text-white">KSh {plan.amount.toLocaleString()}</p>
+	                          <p className="text-[8px] uppercase tracking-wider text-emerald-400">Package price</p>
+	                        </div>
 	                      </div>
 	                      <p className="text-[9px]" style={{ color: 'var(--text-muted)' }}>{plan.specs || 'AI Compute'}</p>
 	                    </div>
@@ -930,10 +1022,10 @@ export default function PlansPage() {
 	                      <p className="text-cyan-400 font-bold text-xs">{roi}%</p>
 	                      <p className="text-[8px] text-gray-500">Yield</p>
 	                    </div>
-                    <div className="text-center min-w-[50px]">
+                    <div className="text-center min-w-[58px]">
                       <div className="flex flex-col items-center">
                         <span className="text-xs">ℹ️</span>
-                        <p className="text-[7px] text-blue-400 uppercase mt-0.5 font-bold">Tap to Read</p>
+                        <p className="text-[7px] text-blue-400 uppercase mt-0.5 font-bold">View details</p>
                       </div>
                     </div>
                     <div className="text-center">
@@ -941,7 +1033,7 @@ export default function PlansPage() {
                         onClick={(e) => { e.stopPropagation(); setSelectedPlan(plan); setSelectedWorkload('finance') }}
                         className="liquid-gold text-[9px] font-bold px-3 py-1.5 rounded-lg text-white"
                       >
-                        Deploy
+                        Start Package
                       </button>
                     </div>
                   </div>
@@ -959,6 +1051,20 @@ export default function PlansPage() {
               <p className="text-[10px] uppercase tracking-widest font-bold text-emerald-400">Quick Returns · Independent from 60D Nodes</p>
             </div>
             <p className="text-[10px] text-gray-400">Deploy a short-term compute node. Your capital and returns are fully independent from 60D investments. Funds return to your balance automatically at maturity.</p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-3">
+            {[
+              { label: 'Best for', value: 'Quick cashflow', hint: 'Short lock periods' },
+              { label: 'Entry amount', value: 'KSh 3,500', hint: 'Single minimum across packages' },
+              { label: 'Primary CTA', value: 'Provision now', hint: 'Visible on every card' },
+            ].map(item => (
+              <div key={item.label} className="rounded-xl p-3 bg-white/[0.03] border border-white/5">
+                <p className="text-[9px] uppercase tracking-widest text-gray-500">{item.label}</p>
+                <p className="text-sm font-black text-white mt-1">{item.value}</p>
+                <p className="text-[9px] text-gray-500 mt-1">{item.hint}</p>
+              </div>
+            ))}
           </div>
 
           {/* 24h Rapid Inference */}
