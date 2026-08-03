@@ -206,7 +206,7 @@ export const PLANS = [
     name: 'Enterprise Compute Matrix',
     tagline: 'Top-tier package for serious users chasing maximum daily potential',
     audience: 'Top-tier investors',
-    benefit: 'Priority access to the platform's strongest earning capacity',
+    benefit: "Priority access to the platform's strongest earning capacity",
     badge: 'VIP',
     description: 'Your KSh 45,000 allocation provisions dedicated capacity reservation across our entire compute network — 256 GPU cores with custom workload scheduling and maximum priority. This means your node gets the highest-paying contracts first, every cycle. The highest revenue tier available — designed for serious operators who want maximum daily yields.',
     amount: 45000,
