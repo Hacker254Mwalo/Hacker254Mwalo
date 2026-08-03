@@ -58,4 +58,5 @@ Dumiropay is a decentralized GPU node infrastructure platform for Kenya. It allo
 - Built `EarningsPanel.jsx` — animated left card showing today's earnings or CTA for no-investment users.
 - Built `LiveActivityFeed.jsx` — realistic random notifications with heartbeat pulse animation.
 - Added admin toggle for activity feed in SettingsTab of AdminPage.jsx.
+- Refined PlansPage package hierarchy with clearer investment tabs, stronger CTA placement, and more persuasive package framing for long-term vs fast-return offers.
 - Added CSS animations: `earningsSlideIn`, `earningsFloat`, `ctaPulse`, `activityHeartbeat`, `activityDotPulse`.
