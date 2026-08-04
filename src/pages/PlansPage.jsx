@@ -834,18 +834,43 @@ export default function PlansPage() {
       <GlobalDemandBar />
 
       {/* Tab Toggle */}
-      <div className="flex p-1 bg-gray-900/50 rounded-xl mb-6 border border-white/5">
+      <div className="flex p-1.5 bg-black/60 rounded-2xl mb-8 border border-white/10 shadow-2xl">
         <button 
           onClick={() => setActiveTab('standard')}
-          className={`flex-1 py-2.5 text-xs font-bold rounded-lg transition-all ${activeTab === 'standard' ? 'bg-red-600 text-white shadow-lg shadow-red-600/20' : 'text-gray-500 hover:text-gray-300'}`}
+          className={`flex-1 flex flex-col items-center justify-center py-3 rounded-xl transition-all duration-300 ${
+            activeTab === 'standard' 
+              ? 'bg-gradient-to-br from-red-600 to-red-700 text-white shadow-[0_0_20px_rgba(220,38,38,0.3)] scale-[1.02]' 
+              : 'text-gray-500 hover:text-gray-300 hover:bg-white/5'
+          }`}
         >
-          Compute Fleet (60D Term)
+          <div className="flex items-center gap-2 mb-0.5">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"></path>
+            </svg>
+            <span className="text-[11px] font-black uppercase tracking-tighter">Compute Fleet</span>
+          </div>
+          <span className={`text-[8px] font-bold uppercase tracking-[0.2em] ${activeTab === 'standard' ? 'text-red-100/70' : 'text-gray-600'}`}>
+            60-Day Fixed Term
+          </span>
         </button>
+        
         <button 
           onClick={() => setActiveTab('short-term')}
-          className={`flex-1 py-2.5 text-xs font-bold rounded-lg transition-all ${activeTab === 'short-term' ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/20' : 'text-gray-500 hover:text-gray-300'}`}
+          className={`flex-1 flex flex-col items-center justify-center py-3 rounded-xl transition-all duration-300 ${
+            activeTab === 'short-term' 
+              ? 'bg-gradient-to-br from-emerald-600 to-emerald-700 text-white shadow-[0_0_20px_rgba(16,185,129,0.3)] scale-[1.02]' 
+              : 'text-gray-500 hover:text-gray-300 hover:bg-white/5'
+          }`}
         >
-          Spot Market (24h - 7D Spot)
+          <div className="flex items-center gap-2 mb-0.5">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path>
+            </svg>
+            <span className="text-[11px] font-black uppercase tracking-tighter">Spot Market</span>
+          </div>
+          <span className={`text-[8px] font-bold uppercase tracking-[0.2em] ${activeTab === 'short-term' ? 'text-emerald-100/70' : 'text-gray-600'}`}>
+            24H - 7D Rapid Yield
+          </span>
         </button>
       </div>
 
