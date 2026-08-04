@@ -1089,11 +1089,6 @@ export default function PlansPage() {
             </div>
           ))}
         </div>
-                {confirming ? 'Initializing...' : 'Provision 7D Node'}
-              </button>
-            </div>
-          </div>
-        </div>
       )}
 
       {/* Workload Selector — Standard Nodes only */}
