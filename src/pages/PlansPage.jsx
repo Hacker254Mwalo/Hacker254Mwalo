@@ -216,33 +216,63 @@ function RevenueSimulator({ balance }) {
 /* ── Enterprise Client Wall ───────────────────────────────────────────── */
 function EnterpriseClientWall() {
   const clients = [
-    { name: 'MedScan AI', sector: 'Healthcare', load: 'High' },
-    { name: 'FinModel Pro', sector: 'Finance', load: 'Critical' },
-    { name: 'UrbanDrive', sector: 'Autonomous', load: 'Stable' },
-    { name: 'SecureGov', sector: 'Public Sector', load: 'High' },
-    { name: 'AgriSense', sector: 'Agriculture', load: 'Moderate' },
-    { name: 'RetailFlow', sector: 'E-commerce', load: 'High' }
+    { name: 'MedScan AI', sector: 'Healthcare', load: '92%', status: 'Active', color: '#10B981' },
+    { name: 'FinModel Pro', sector: 'Finance', load: '98%', status: 'Critical', color: '#EF4444' },
+    { name: 'UrbanDrive', sector: 'Autonomous', load: '84%', status: 'Stable', color: '#3B82F6' },
+    { name: 'SecureGov', sector: 'Public Sector', load: '89%', status: 'Active', color: '#8B5CF6' },
+    { name: 'AgriSense', sector: 'Agriculture', load: '76%', status: 'Stable', color: '#F59E0B' },
+    { name: 'RetailFlow', sector: 'E-commerce', load: '94%', status: 'Active', color: '#EC4899' }
   ]
 
   return (
-    <div className="mt-12 mb-8 text-center">
-      <p className="text-[10px] uppercase tracking-[0.2em] font-black text-gray-500 mb-6">
-        Compute Capacity Powering Enterprise AI
-      </p>
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-4 opacity-40 grayscale hover:grayscale-0 transition-all duration-700">
+    <div className="mt-16 mb-12">
+      <div className="flex items-center gap-3 mb-8">
+        <div className="h-px flex-1 bg-gradient-to-r from-transparent to-white/10"></div>
+        <p className="text-[10px] uppercase tracking-[0.3em] font-black text-gray-500">
+          Enterprise Compute Partners
+        </p>
+        <div className="h-px flex-1 bg-gradient-to-l from-transparent to-white/10"></div>
+      </div>
+      
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
         {clients.map(client => (
-          <div key={client.name} className="flex flex-col items-center p-3 rounded-xl border border-white/5 bg-white/[0.02]">
-            <p className="text-sm font-black text-white tracking-tighter">{client.name}</p>
-            <div className="flex items-center gap-1 mt-1">
-              <span className="w-1 h-1 rounded-full bg-emerald-500"></span>
-              <p className="text-[8px] text-gray-500 font-bold uppercase">{client.sector}</p>
+          <div key={client.name} className="group relative p-4 rounded-xl border border-white/5 bg-white/[0.01] hover:bg-white/[0.03] hover:border-white/10 transition-all duration-500">
+            <div className="flex justify-between items-start mb-3">
+              <div className="w-8 h-8 rounded-lg bg-gray-800/50 flex items-center justify-center border border-white/5 group-hover:scale-110 transition-transform">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={client.color} strokeWidth="2">
+                  <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"></path>
+                </svg>
+              </div>
+              <div className="flex flex-col items-end">
+                <span className="text-[8px] font-bold text-gray-500 uppercase tracking-tighter">Load</span>
+                <span className="text-[10px] font-black text-white">{client.load}</span>
+              </div>
             </div>
+            
+            <p className="text-xs font-black text-white tracking-tight mb-1">{client.name}</p>
+            
+            <div className="flex items-center gap-1.5">
+              <div className="w-1 h-1 rounded-full animate-pulse" style={{ backgroundColor: client.color }}></div>
+              <span className="text-[8px] text-gray-500 font-bold uppercase tracking-widest">{client.sector}</span>
+            </div>
+
+            {/* Subtle glow on hover */}
+            <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-white/[0.02] to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"></div>
           </div>
         ))}
       </div>
-      <p className="text-[9px] text-gray-600 mt-6 italic">
-        * Nodes provisioned by operators are dynamically allocated to active enterprise contracts based on compute demand.
-      </p>
+      
+      <div className="mt-8 flex items-center justify-center gap-4 text-[9px] text-gray-600 font-medium">
+        <div className="flex items-center gap-1">
+          <div className="w-1.5 h-1.5 rounded-full bg-emerald-500/50"></div>
+          <span>REAL-TIME ALLOCATION ACTIVE</span>
+        </div>
+        <div className="w-1 h-1 rounded-full bg-gray-800"></div>
+        <div className="flex items-center gap-1">
+          <div className="w-1.5 h-1.5 rounded-full bg-blue-500/50"></div>
+          <span>24/7 ENTERPRISE UPTIME</span>
+        </div>
+      </div>
     </div>
   )
 }
@@ -951,203 +981,114 @@ export default function PlansPage() {
           </div>
         </div>
       ) : (
-        <div className="space-y-4 mb-6">
-          {/* Section Header */}
-          <div className="rounded-xl px-4 py-3 mb-2" style={{ background: 'linear-gradient(135deg, rgba(16,185,129,0.08), rgba(6,182,212,0.05))', border: '1px solid rgba(16,185,129,0.2)' }}>
-            <div className="flex items-center gap-2 mb-1">
-              <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-              <p className="text-[10px] uppercase tracking-widest font-bold text-emerald-400">Quick Returns · Independent from 60D Nodes</p>
+        <div className="space-y-6 mb-8">
+          {/* Institutional Spot Market Header */}
+          <div className="relative overflow-hidden bg-gradient-to-br from-emerald-900/30 to-blue-900/20 border border-emerald-500/30 rounded-2xl p-5 shadow-2xl shadow-emerald-900/10">
+            <div className="absolute top-0 right-0 p-3">
+              <div className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-emerald-500/20 border border-emerald-500/30">
+                <div className="w-1 h-1 rounded-full bg-emerald-400 animate-pulse"></div>
+                <span className="text-[8px] font-black text-emerald-400 uppercase tracking-tighter">Live Market Active</span>
+              </div>
             </div>
-            <p className="text-[10px] text-gray-400">Deploy a short-term compute node. Your capital and returns are fully independent from 60D investments. Funds return to your balance automatically at maturity.</p>
-          </div>
-
-          {/* 24h Rapid Inference */}
-          <div className="rounded-xl overflow-hidden" style={{ background: 'linear-gradient(135deg, rgba(10,12,30,0.95), rgba(6,8,20,0.98))', border: '1px solid rgba(16,185,129,0.15)' }}>
-            <div className="px-4 pt-4 pb-2">
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-3">
-                  <div className="w-11 h-11 rounded-xl flex items-center justify-center text-xl" style={{ background: 'rgba(16,185,129,0.15)', border: '1px solid rgba(16,185,129,0.3)' }}>
-                    ⚡
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-white text-sm">24h Rapid Inference</h3>
-                    <p className="text-[9px] text-emerald-400 uppercase tracking-widest font-semibold">24-Hour Cycle · +3% at Maturity</p>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <p className="text-lg font-black text-emerald-400">+3%</p>
-                  <p className="text-[9px] text-gray-500">Return at maturity</p>
-                </div>
+            
+            <h3 className="text-emerald-400 font-black text-base mb-2 uppercase tracking-tight">Institutional Spot Market</h3>
+            <p className="text-[11px] text-gray-300 leading-relaxed mb-4 max-w-[90%]">
+              Deploy high-frequency compute nodes for immediate enterprise AI tasks. 
+              <span className="text-emerald-400 font-bold ml-1">Direct Capital Deployment:</span> These contracts require fresh liquidity and operate independently from long-term fleet yields.
+            </p>
+            
+            <div className="flex items-center gap-4 text-[9px] font-bold text-emerald-500/80">
+              <div className="flex items-center gap-1">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><path d="M20 6L9 17l-5-5"/></svg>
+                <span>AUTOMATIC PAYOUT</span>
               </div>
-              <p className="text-[10px] text-gray-400 mb-3 leading-relaxed">Optimized for real-time AI inference and high-frequency data validation. Your capital is locked for 24 hours then returned with profit.</p>
-            </div>
-            <div className="px-4 pb-4">
-              <div className="bg-black/40 rounded-lg p-3 border border-white/5 mb-3">
-                <div className="flex items-center justify-between mb-2">
-                  <p className="text-[10px] text-gray-500 uppercase">Your Investment</p>
-                  <p className="text-[10px] text-gray-500">Min KSh 3,500 · Max KSh 75,000</p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <p className="text-sm font-black text-emerald-400">KSh</p>
-                  <input
-                    type="number"
-                    min="1"
-                    step="100"
-                    placeholder="Enter amount"
-                    value={shortTermAmounts.st1}
-                    onChange={(e) => setShortTermAmounts({ ...shortTermAmounts, st1: e.target.value })}
-                    className="flex-1 bg-transparent text-lg font-black text-white text-right outline-none focus:ring-0 placeholder:text-gray-600"
-                  />
-                </div>
+              <div className="flex items-center gap-1">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><path d="M20 6L9 17l-5-5"/></svg>
+                <span>NO LOCK-UP PERIOD</span>
               </div>
-              <div className="grid grid-cols-3 gap-2 mb-3">
-                <div className="bg-emerald-900/20 rounded-lg p-2 text-center border border-emerald-500/20">
-                  <p className="text-[9px] text-gray-500 uppercase">Duration</p>
-                  <p className="text-sm font-bold text-white">24h</p>
-                </div>
-                <div className="bg-emerald-900/20 rounded-lg p-2 text-center border border-emerald-500/20">
-                  <p className="text-[9px] text-gray-500 uppercase">Profit</p>
-                  <p className="text-sm font-bold text-emerald-400">{shortTermAmounts.st1 ? `KSh ${((parseFloat(shortTermAmounts.st1) || 0) * 0.03).toLocaleString()}` : '—'}</p>
-                </div>
-                <div className="bg-emerald-900/20 rounded-lg p-2 text-center border border-emerald-500/20">
-                  <p className="text-[9px] text-gray-500 uppercase">You Receive</p>
-                  <p className="text-sm font-bold text-yellow-400">{shortTermAmounts.st1 ? `KSh ${((parseFloat(shortTermAmounts.st1) || 0) * 1.03).toLocaleString()}` : '—'}</p>
-                </div>
-              </div>
-              <button 
-                onClick={() => handleShortTermInvest(24, parseFloat(shortTermAmounts.st1) || 0)}
-                disabled={confirming}
-                className="w-full py-2.5 rounded-xl font-bold text-sm text-white transition-all active:scale-95 disabled:opacity-50"
-                style={{ background: 'linear-gradient(135deg, #10b981, #059669)', boxShadow: '0 4px 20px rgba(16,185,129,0.25)' }}
-              >
-                {confirming ? 'Initializing...' : 'Provision 24h Node'}
-              </button>
             </div>
           </div>
 
-          {/* 72h Neural Cluster */}
-          <div className="rounded-xl overflow-hidden" style={{ background: 'linear-gradient(135deg, rgba(10,12,30,0.95), rgba(6,8,20,0.98))', border: '1px solid rgba(59,130,246,0.15)' }}>
-            <div className="px-4 pt-4 pb-2">
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-3">
-                  <div className="w-11 h-11 rounded-xl flex items-center justify-center text-xl" style={{ background: 'rgba(59,130,246,0.15)', border: '1px solid rgba(59,130,246,0.3)' }}>
-                    🛠️
+          {[
+            { id: 'st1', name: '24h Rapid Inference', duration: 24, rate: '3%', color: 'emerald', desc: 'Real-time AI inference & data validation.', resource: 'NVIDIA H100 TENSOR CORE', icon: '⚡' },
+            { id: 'st2', name: '3D Neural Cluster', duration: 72, rate: '8%', color: 'blue', desc: 'Deep learning model validation & testing.', resource: 'MULTI-GPU CLUSTER A100', icon: '🧠' },
+            { id: 'st3', name: '7D Enterprise Backbone', duration: 168, rate: '18%', color: 'purple', desc: 'Large-scale model training infrastructure.', resource: 'BARE METAL AI NODE', icon: '🏢' },
+          ].map(plan => (
+            <div key={plan.id} className="group relative bg-gray-900/40 border border-white/5 hover:border-white/10 rounded-2xl p-5 transition-all duration-500">
+              <div className="absolute top-0 right-0">
+                <div className={`px-4 py-1.5 bg-${plan.color}-600/90 text-white text-[10px] font-black uppercase rounded-bl-xl tracking-tighter`}>
+                  {plan.duration}H DURATION
+                </div>
+              </div>
+              
+              <div className="flex items-center gap-4 mb-6">
+                <div className={`w-14 h-14 rounded-2xl bg-${plan.color}-500/10 flex items-center justify-center border border-${plan.color}-500/20 group-hover:scale-105 transition-transform duration-500 shadow-inner`}>
+                  <span className="text-3xl">{plan.icon}</span>
+                </div>
+                <div>
+                  <h4 className="font-black text-white text-lg tracking-tight">{plan.name}</h4>
+                  <div className="flex items-center gap-2">
+                    <span className={`text-[9px] font-black text-${plan.color}-400 uppercase tracking-widest`}>{plan.resource}</span>
+                    <span className="w-1 h-1 rounded-full bg-gray-700"></span>
+                    <span className="text-[9px] text-gray-500 font-bold uppercase">SECURE UPLINK</span>
                   </div>
-                  <div>
-                    <h3 className="font-bold text-white text-sm">3D Neural Cluster</h3>
-                    <p className="text-[9px] text-blue-400 uppercase tracking-widest font-semibold">72-Hour Cycle · +8% at Maturity</p>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <p className="text-lg font-black text-blue-400">+8%</p>
-                  <p className="text-[9px] text-gray-500">Return at maturity</p>
                 </div>
               </div>
-              <p className="text-[10px] text-gray-400 mb-3 leading-relaxed">Scalable multi-node environment for deep learning model validation. Higher yield, 3-day commitment.</p>
-            </div>
-            <div className="px-4 pb-4">
-              <div className="bg-black/40 rounded-lg p-3 border border-white/5 mb-3">
-                <div className="flex items-center justify-between mb-2">
-                  <p className="text-[10px] text-gray-500 uppercase">Your Investment</p>
-                  <p className="text-[10px] text-gray-500">Min KSh 3,500 · Max KSh 75,000</p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <p className="text-sm font-black text-blue-400">KSh</p>
-                  <input
-                    type="number"
-                    min="1"
-                    step="100"
-                    placeholder="Enter amount"
-                    value={shortTermAmounts.st2}
-                    onChange={(e) => setShortTermAmounts({ ...shortTermAmounts, st2: e.target.value })}
-                    className="flex-1 bg-transparent text-lg font-black text-white text-right outline-none focus:ring-0 placeholder:text-gray-600"
-                  />
-                </div>
-              </div>
-              <div className="grid grid-cols-3 gap-2 mb-3">
-                <div className="bg-blue-900/20 rounded-lg p-2 text-center border border-blue-500/20">
-                  <p className="text-[9px] text-gray-500 uppercase">Duration</p>
-                  <p className="text-sm font-bold text-white">72h</p>
-                </div>
-                <div className="bg-blue-900/20 rounded-lg p-2 text-center border border-blue-500/20">
-                  <p className="text-[9px] text-gray-500 uppercase">Profit</p>
-                  <p className="text-sm font-bold text-emerald-400">{shortTermAmounts.st2 ? `KSh ${((parseFloat(shortTermAmounts.st2) || 0) * 0.08).toLocaleString()}` : '—'}</p>
-                </div>
-                <div className="bg-blue-900/20 rounded-lg p-2 text-center border border-blue-500/20">
-                  <p className="text-[9px] text-gray-500 uppercase">You Receive</p>
-                  <p className="text-sm font-bold text-yellow-400">{shortTermAmounts.st2 ? `KSh ${((parseFloat(shortTermAmounts.st2) || 0) * 1.08).toLocaleString()}` : '—'}</p>
-                </div>
-              </div>
-              <button 
-                onClick={() => handleShortTermInvest(72, parseFloat(shortTermAmounts.st2) || 0)}
-                disabled={confirming}
-                className="w-full py-2.5 rounded-xl font-bold text-sm text-white transition-all active:scale-95 disabled:opacity-50"
-                style={{ background: 'linear-gradient(135deg, #3b82f6, #2563eb)', boxShadow: '0 4px 20px rgba(59,130,246,0.25)' }}
-              >
-                {confirming ? 'Initializing...' : 'Provision 72h Node'}
-              </button>
-            </div>
-          </div>
 
-          {/* 7D Enterprise Backbone */}
-          <div className="rounded-xl overflow-hidden" style={{ background: 'linear-gradient(135deg, rgba(10,12,30,0.95), rgba(6,8,20,0.98))', border: '1px solid rgba(168,85,247,0.15)' }}>
-            <div className="px-4 pt-4 pb-2">
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-3">
-                  <div className="w-11 h-11 rounded-xl flex items-center justify-center text-xl" style={{ background: 'rgba(168,85,247,0.15)', border: '1px solid rgba(168,85,247,0.3)' }}>
-                    📡
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-white text-sm">7D Enterprise Backbone</h3>
-                    <p className="text-[9px] text-purple-400 uppercase tracking-widest font-semibold">168-Hour Cycle · +18% at Maturity</p>
+              <div className="grid grid-cols-2 gap-4 mb-6">
+                <div className="bg-black/40 rounded-xl p-3 border border-white/5 group-hover:border-white/10 transition-colors">
+                  <p className="text-[9px] text-gray-500 uppercase font-black mb-1">Guaranteed Yield</p>
+                  <div className="flex items-baseline gap-1">
+                    <p className={`text-2xl font-black text-${plan.color}-400`}>{plan.rate}</p>
+                    <span className="text-[10px] text-gray-500 font-bold uppercase">Net</span>
                   </div>
                 </div>
-                <div className="text-right">
-                  <p className="text-lg font-black text-purple-400">+18%</p>
-                  <p className="text-[9px] text-gray-500">Return at maturity</p>
+                <div className="bg-black/40 rounded-xl p-3 border border-white/5 group-hover:border-white/10 transition-colors">
+                  <p className="text-[9px] text-gray-500 uppercase font-black mb-1">Node Lifecycle</p>
+                  <div className="flex items-baseline gap-1">
+                    <p className="text-2xl font-black text-white">{plan.duration}</p>
+                    <span className="text-[10px] text-gray-500 font-bold uppercase">Hours</span>
+                  </div>
                 </div>
               </div>
-              <p className="text-[10px] text-gray-400 mb-3 leading-relaxed">Dedicated bare-metal infrastructure for large-scale model training. Maximum yield for a 7-day commitment.</p>
+
+              <div className="space-y-4">
+                <div className="relative">
+                  <div className="flex justify-between items-center mb-2">
+                    <label className="text-[10px] text-gray-400 uppercase font-black tracking-tighter">Allocation Amount</label>
+                    <span className="text-[10px] text-gray-500 font-mono">Min: 3,500 | Max: 75,000</span>
+                  </div>
+                  <div className="relative group/input">
+                    <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 font-black text-sm">KSh</div>
+                    <input
+                      type="number"
+                      placeholder="0.00"
+                      value={shortTermAmounts[plan.id]}
+                      onChange={(e) => setShortTermAmounts(prev => ({ ...prev, [plan.id]: e.target.value }))}
+                      className="w-full bg-black/80 border border-white/10 group-hover/input:border-white/20 rounded-xl py-3.5 pl-12 pr-4 text-base font-black text-white focus:border-emerald-500 outline-none transition-all shadow-inner"
+                    />
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => handleShortTermInvest(plan.duration, parseFloat(shortTermAmounts[plan.id]) || 0)}
+                  disabled={confirming}
+                  className={`w-full py-4 rounded-xl bg-${plan.color}-600 hover:bg-${plan.color}-500 text-white text-xs font-black uppercase tracking-[0.2em] transition-all shadow-xl shadow-${plan.color}-900/30 active:scale-[0.98] relative overflow-hidden group/btn`}
+                >
+                  <span className="relative z-10">{confirming ? 'Initializing...' : 'Provision AI Node'}</span>
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover/btn:animate-shimmer"></div>
+                </button>
+              </div>
+
+              <div className="mt-4 flex items-center justify-center gap-2 opacity-50">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-gray-400">
+                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                </svg>
+                <p className="text-[9px] text-gray-400 font-bold uppercase tracking-widest">Enterprise-Grade Encryption Active</p>
+              </div>
             </div>
-            <div className="px-4 pb-4">
-              <div className="bg-black/40 rounded-lg p-3 border border-white/5 mb-3">
-                <div className="flex items-center justify-between mb-2">
-                  <p className="text-[10px] text-gray-500 uppercase">Your Investment</p>
-                  <p className="text-[10px] text-gray-500">Min KSh 3,500 · Max KSh 75,000</p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <p className="text-sm font-black text-purple-400">KSh</p>
-                  <input
-                    type="number"
-                    min="1"
-                    step="100"
-                    placeholder="Enter amount"
-                    value={shortTermAmounts.st3}
-                    onChange={(e) => setShortTermAmounts({ ...shortTermAmounts, st3: e.target.value })}
-                    className="flex-1 bg-transparent text-lg font-black text-white text-right outline-none focus:ring-0 placeholder:text-gray-600"
-                  />
-                </div>
-              </div>
-              <div className="grid grid-cols-3 gap-2 mb-3">
-                <div className="bg-purple-900/20 rounded-lg p-2 text-center border border-purple-500/20">
-                  <p className="text-[9px] text-gray-500 uppercase">Duration</p>
-                  <p className="text-sm font-bold text-white">168h</p>
-                </div>
-                <div className="bg-purple-900/20 rounded-lg p-2 text-center border border-purple-500/20">
-                  <p className="text-[9px] text-gray-500 uppercase">Profit</p>
-                  <p className="text-sm font-bold text-emerald-400">{shortTermAmounts.st3 ? `KSh ${((parseFloat(shortTermAmounts.st3) || 0) * 0.18).toLocaleString()}` : '—'}</p>
-                </div>
-                <div className="bg-purple-900/20 rounded-lg p-2 text-center border border-purple-500/20">
-                  <p className="text-[9px] text-gray-500 uppercase">You Receive</p>
-                  <p className="text-sm font-bold text-yellow-400">{shortTermAmounts.st3 ? `KSh ${((parseFloat(shortTermAmounts.st3) || 0) * 1.18).toLocaleString()}` : '—'}</p>
-                </div>
-              </div>
-              <button 
-                onClick={() => handleShortTermInvest(168, parseFloat(shortTermAmounts.st3) || 0)}
-                disabled={confirming}
-                className="w-full py-2.5 rounded-xl font-bold text-sm text-white transition-all active:scale-95 disabled:opacity-50"
-                style={{ background: 'linear-gradient(135deg, #a855f7, #7c3aed)', boxShadow: '0 4px 20px rgba(168,85,247,0.25)' }}
-              >
+          ))}
+        </div>
                 {confirming ? 'Initializing...' : 'Provision 7D Node'}
               </button>
             </div>
