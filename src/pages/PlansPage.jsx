@@ -153,7 +153,7 @@ function RevenueSimulator({ balance }) {
         <span className="text-[8px] font-bold px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 uppercase tracking-tighter">Live Calculator</span>
       </div>
       
-      <h3 className="text-sm font-black mb-4 uppercase tracking-wider text-emerald-400">Compute Revenue Simulator</h3>
+      <h3 className="text-sm font-black mb-4 uppercase tracking-wider text-emerald-400">Compute Yield Simulator</h3>
       
       <div className="space-y-6">
         {/* Allocation Slider */}
@@ -195,14 +195,14 @@ function RevenueSimulator({ balance }) {
         {/* Result Metrics */}
         <div className="grid grid-cols-2 gap-3 pt-2">
           <div className="rounded-xl p-3 bg-black/40 border border-white/5">
-            <p className="text-[9px] uppercase text-gray-500 mb-1">Daily Revenue</p>
+            <p className="text-[9px] uppercase text-gray-500 mb-1">Daily Yield</p>
             <p className="text-xl font-black text-emerald-400">+KSh {daily.toLocaleString()}</p>
             <p className="text-[8px] text-gray-500 mt-1">Direct to balance</p>
           </div>
           <div className="rounded-xl p-3 bg-black/40 border border-white/5">
-            <p className="text-[9px] uppercase text-gray-500 mb-1">60-Day Payout</p>
+            <p className="text-[9px] uppercase text-gray-500 mb-1">60-Day Settlement</p>
             <p className="text-xl font-black text-yellow-400">KSh {total.toLocaleString()}</p>
-            <p className="text-[8px] text-gray-500 mt-1">{roi}% Net Yield</p>
+            <p className="text-[8px] text-gray-500 mt-1">{roi}% Net Performance</p>
           </div>
         </div>
 
@@ -265,8 +265,8 @@ function HowItWorksStrip() {
   const steps = [
     { icon: '💻', label: 'Provision a Node', desc: 'Allocate capital to provision GPU compute infrastructure' },
     { icon: '⚡', label: 'AI Jobs Execute', desc: 'Enterprise clients run AI workloads on your provisioned node' },
-    { icon: '💰', label: 'Earn Revenue', desc: 'Revenue from completed compute jobs credited to your balance' },
-    { icon: '🔄', label: 'Scale or Withdraw', desc: 'Reinvest for compound growth or withdraw earnings anytime' },
+    { icon: '💰', label: 'Compute Yield', desc: 'Yield from completed compute jobs credited to your node balance' },
+    { icon: '🔄', label: 'Scale or Withdraw', desc: 'Reallocate for compound growth or withdraw yield anytime' },
   ]
 
   return (
@@ -868,7 +868,7 @@ export default function PlansPage() {
       {/* Market Pulse */}
       <MarketPulse />
 
-      {/* Revenue Simulator */}
+      {/* Compute Yield Simulator */}
       <RevenueSimulator balance={user?.balance || 0} />
 
       {/* Global Demand Bar */}

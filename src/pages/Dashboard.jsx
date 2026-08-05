@@ -16,7 +16,7 @@ import {
   executeComputeCycle,
   getShortTermInvestments,
 } from '../lib/db'
-import EarningsPanel from '../components/EarningsPanel'
+import YieldPanel from '../components/EarningsPanel'
 import LiveActivityFeed from '../components/LiveActivityFeed'
 import WelcomeBanner from '../components/WelcomeBanner'
 import LiveYieldTicker from '../components/LiveYieldTicker'
@@ -76,10 +76,10 @@ function ProvisionFirstModal({ onClose, onGoProvision, onGoDeposit, hasBalance }
           ) : (
             <>
               <button onClick={onGoDeposit} className="btn-primary w-full">
-                💰 Top Up via M-Pesa
+                💳 Fund Node via M-Pesa
               </button>
               <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
-                Minimum top up: KSh 100 · Then invest to unlock all features
+                Minimum funding: KSh 100 · Then provision a node to unlock all features
               </p>
             </>
           )}
@@ -652,7 +652,7 @@ function requireProvisioning(action) {
           <div className="rounded-xl p-4 relative overflow-hidden" style={{ background: 'linear-gradient(135deg, rgba(16,185,129,0.06) 0%, rgba(6,182,212,0.04) 100%)', border: '1px solid rgba(16,185,129,0.15)' }}>
             <div className="flex items-center gap-3 mb-3">
               <span className="w-3 h-3 rounded-full bg-green-500 animate-pulse" />
-              <p className="text-sm font-bold" style={{ color: '#34D399' }}>Your Money is Working</p>
+              <p className="text-sm font-bold" style={{ color: '#34D399' }}>Infrastructure is Active</p>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
@@ -660,11 +660,11 @@ function requireProvisioning(action) {
                 <p className="text-lg font-black text-white">KSh {activeNodes.reduce((s, i) => s + Number(i.amount || 0), 0).toLocaleString()}</p>
               </div>
               <div>
-                <p className="text-[10px]" style={{ color: 'var(--text-muted)' }}>Daily Earning</p>
+                <p className="text-[10px]" style={{ color: 'var(--text-muted)' }}>Daily Yield</p>
                 <p className="text-lg font-black" style={{ color: '#34D399' }}>KSh {activeNodes.reduce((s, i) => s + Number(i.dailyReturn || 0), 0).toLocaleString()}</p>
               </div>
               <div>
-                <p className="text-[10px]" style={{ color: 'var(--text-muted)' }}>Total Earned So Far</p>
+                <p className="text-[10px]" style={{ color: 'var(--text-muted)' }}>Total Compute Revenue</p>
                 <p className="text-lg font-black" style={{ color: '#FFD700' }}>KSh {activeNodes.reduce((s, i) => s + Number(i.profit || 0), 0).toLocaleString()}</p>
               </div>
               <div>
@@ -720,7 +720,7 @@ function requireProvisioning(action) {
       )}
 
       {/* Earnings Panel — Left Animated Card */}
-      <EarningsPanel
+      <YieldPanel
         user={user}
         activeNodes={activeNodes}
         hasActiveNodes={hasActiveNodes}
@@ -1022,7 +1022,7 @@ function requireProvisioning(action) {
                   </div>
                   <div className="rounded-lg p-3 mb-2" style={{ background: 'rgba(0,0,0,0.2)' }}>
                     <div className="flex justify-between items-center mb-1">
-                      <span className="text-xs" style={{ color: 'var(--text-secondary)' }}>Total Earned So Far</span>
+                      <span className="text-xs" style={{ color: 'var(--text-secondary)' }}>Total Compute Revenue</span>
                       <span className="text-green-400 font-bold text-sm">KSh {accumulatedProfit.toLocaleString()}</span>
                     </div>
                     <div className="flex justify-between items-center">
@@ -1040,7 +1040,7 @@ function requireProvisioning(action) {
                   {/* Feature 4: Node Health Indicator */}
                   <div className="flex items-center gap-2 mt-2 mb-2 px-2 py-1.5 rounded-lg" style={{ background: 'rgba(16,185,129,0.05)', border: '1px solid rgba(16,185,129,0.1)' }}>
                     <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-                    <p className="text-[10px] font-semibold" style={{ color: '#34D399' }}>Node Running — Earning KSh {dailyReturn.toLocaleString()}/day</p>
+                    <p className="text-[10px] font-semibold" style={{ color: '#34D399' }}>Node Running — Generating KSh {dailyReturn.toLocaleString()}/day in Yield</p>
                     {daysPassed > 0 && daysPassed < totalDays && (
                       <span className="text-[10px] ml-auto" style={{ color: 'var(--text-muted)' }}>Day {daysPassed}/{totalDays}</span>
                     )}

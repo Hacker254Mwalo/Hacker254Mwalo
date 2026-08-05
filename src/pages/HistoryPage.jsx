@@ -123,7 +123,7 @@ export default function HistoryPage() {
 
   const tabs = [
     { id: 'ledger', label: 'Ledger', count: combinedLedger.length },
-    { id: 'investments', label: 'Compute Fleet', count: nodes.length },
+    { id: 'investments', label: 'Node Fleet', count: nodes.length },
     { id: 'quick-returns', label: 'Spot Market', count: shortTermInvestments.length },
     { id: 'deposits', label: 'Top Ups', count: deposits.length },
     { id: 'withdrawals', label: 'Withdrawals', count: withdrawals.length },
@@ -158,9 +158,9 @@ export default function HistoryPage() {
           <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>From {activeNodes.length} active plan{activeNodes.length !== 1 ? 's' : ''}</p>
         </div>
         <div className="card">
-          <p className="text-xs uppercase tracking-wider mb-1" style={{ color: 'var(--text-muted)' }}>Total Allocated Capacity</p>
+          <p className="text-xs uppercase tracking-wider mb-1" style={{ color: 'var(--text-muted)' }}>Total Network Capacity</p>
           <p className="text-2xl font-black text-red-400">KSh {totalInvested.toLocaleString()}</p>
-          <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>Expected: KSh {totalExpectedReturn.toLocaleString()}</p>
+          <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>Expected Yield: KSh {totalExpectedReturn.toLocaleString()}</p>
         </div>
       </div>
 
@@ -238,11 +238,11 @@ export default function HistoryPage() {
               <div className="grid grid-cols-2 gap-3 mb-4">
                 <div className="card text-center">
                   <p className="text-red-400 text-xl font-black">KSh {totalInvested.toLocaleString()}</p>
-                  <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>Total Allocated Capacity</p>
+                  <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>Total Network Capacity</p>
                 </div>
                 <div className="card text-center">
                   <p className="text-green-400 text-xl font-black">KSh {totalExpectedReturn.toLocaleString()}</p>
-                  <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>Expected Compute Revenue</p>
+                  <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>Expected Compute Yield</p>
                 </div>
               </div>
               {nodes.map(inv => {
@@ -282,7 +282,7 @@ export default function HistoryPage() {
                   </div>
                   <div className="mt-3 rounded-lg px-3 py-2" style={{ background: 'rgba(0,0,0,0.2)' }}>
                     <div className="flex justify-between items-center mb-2">
-                      <span className="text-xs" style={{ color: 'var(--text-secondary)' }}>+ Total Earned</span>
+                      <span className="text-xs" style={{ color: 'var(--text-secondary)' }}>+ Total Yield</span>
                       <span className="text-green-400 font-bold text-sm">KSh {accumulatedProfit.toLocaleString()}</span>
                     </div>
                     <div className="flex justify-between text-xs mb-1" style={{ color: 'var(--text-muted)' }}>

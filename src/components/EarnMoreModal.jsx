@@ -31,19 +31,19 @@ const STEPS = [
     id: 'invest',
     icon: '🖥️',
     title: 'Deploy Your First AI Node',
-    desc: 'Buy any platform share to get started. Your node runs 24/7 processing AI tasks for enterprise clients. Earn daily yield.',
+    desc: 'Provision any compute node to get started. Your node runs 24/7 processing AI tasks for enterprise clients. Receive daily yield.',
     action: '/plans',
     actionLabel: 'Choose Plan',
     color: 'from-red-500 to-pink-500',
     bg: 'rgba(239,68,68,0.08)',
     border: 'rgba(239,68,68,0.2)',
-    tip: 'Pick any share that fits your budget — even the smallest one starts earning you daily',
+    tip: 'Pick any node that fits your capacity — even the smallest one starts generating daily yield',
   },
   {
     id: 'execute',
     icon: '⚡',
     title: 'Run Daily Compute Cycle',
-    desc: 'After investing, execute your 24h compute cycle every day to lock in your yield. One tap.',
+    desc: 'After provisioning, execute your 24h compute cycle every day to lock in your yield. One tap.',
     action: '/dashboard',
     actionLabel: 'Dashboard',
     color: 'from-blue-500 to-cyan-400',
@@ -54,8 +54,8 @@ const STEPS = [
   {
     id: 'refer',
     icon: '👥',
-    title: 'Refer & Earn Commission',
-    desc: 'Share your code. Earn 10% on L1 + 4% on L2 referrals. Every investment they make pays you forever.',
+    title: 'Network Referral Program',
+    desc: 'Share your code. Receive 10% on L1 + 4% on L2 referrals. Every node they provision contributes to your yield.',
     action: '/profile',
     actionLabel: 'Get Code',
     color: 'from-amber-500 to-yellow-400',
@@ -146,16 +146,16 @@ export default function EarnMoreModal() {
         <div className="text-center mb-4">
           <div className="text-3xl mb-1">💡</div>
           <h2 className="text-lg font-black" style={{ background: 'linear-gradient(135deg, #FFD700, #DAA520)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-            Smart Money Guide
+            Network Operation Guide
           </h2>
           <p className="text-[11px] mt-1" style={{ color: 'var(--text-muted)' }}>
             {completedCount > 0
               ? `${completedCount}/${STEPS.length} steps explored — keep going!`
-              : 'Follow these steps to maximize your earnings'}
+              : 'Follow these steps to maximize your compute yield'}
           </p>
           {!hasInvestment && (
             <p className="text-[10px] mt-1 px-3 py-1 rounded-full inline-block" style={{ background: 'rgba(239,68,68,0.1)', color: '#f87171', border: '1px solid rgba(239,68,68,0.2)' }}>
-              🔒 New to the platform? Buy any share to unlock all features.
+              🔒 New to the network? Provision any node to unlock all features.
             </p>
           )}
         </div>
@@ -217,7 +217,7 @@ export default function EarnMoreModal() {
               className="w-full block text-center py-3 rounded-xl font-bold text-sm"
               style={{ background: 'linear-gradient(135deg, #FFD700, #DAA520)', color: '#000' }}
             >
-              Start Earning — Buy Your First Share →
+              Start Computing — Provision Your First Node →
             </a>
           )}
           {hasInvestment && (
@@ -227,7 +227,7 @@ export default function EarnMoreModal() {
               className="w-full block text-center py-3 rounded-xl font-bold text-sm"
               style={{ background: 'linear-gradient(135deg, #22c55e, #16a34a)', color: '#fff' }}
             >
-              Go to Dashboard & Earn →
+              Go to Dashboard & Yield →
             </a>
           )}
         </div>

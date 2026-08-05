@@ -7,7 +7,7 @@ import { executeComputeCycle } from '../lib/db'
  * Shows today's earnings for active investments, or a tempting CTA if no investment.
  * Slides in from the left with a subtle float animation.
  */
-export default function EarningsPanel({ user, activeNodes, hasActiveNodes, onToast }) {
+export default function YieldPanel({ user, activeNodes, hasActiveNodes, onToast }) {
   const navigate = useNavigate()
   const [visible, setVisible] = useState(false)
 
@@ -16,11 +16,11 @@ export default function EarningsPanel({ user, activeNodes, hasActiveNodes, onToa
     return () => clearTimeout(timer)
   }, [])
 
-  // Calculate today's earnings from active investments
-  let todayEarnings = 0
+  // Calculate today's yield from active nodes
+  let todayYield = 0
   if (activeNodes.length > 0) {
-    // Sum daily returns from all active investments
-    todayEarnings = activeNodes.reduce((sum, inv) => sum + Number(inv.dailyReturn || 0), 0)
+    // Sum daily returns from all active nodes
+    todayYield = activeNodes.reduce((sum, inv) => sum + Number(inv.dailyReturn || 0), 0)
   }
 
   if (!visible) return null
@@ -39,7 +39,7 @@ export default function EarningsPanel({ user, activeNodes, hasActiveNodes, onToa
             <div className="flex items-center gap-2">
               <span className="earnings-pulse-dot" />
               <p className="text-xs font-bold tracking-wider uppercase" style={{ color: '#FFD700' }}>
-                Today's Compute Revenue
+                Today's Node Yield
               </p>
             </div>
             <span className="text-[10px] px-2 py-0.5 rounded-full font-semibold" style={{ background: 'rgba(255,215,0,0.15)', color: '#FFD700' }}>
@@ -47,7 +47,7 @@ export default function EarningsPanel({ user, activeNodes, hasActiveNodes, onToa
             </span>
           </div>
           <p className="text-2xl font-black mb-2" style={{ color: '#34D399' }}>
-            KSh {todayEarnings.toLocaleString()}
+            KSh {todayYield.toLocaleString()}
           </p>
           <p className="text-xs mb-3" style={{ color: 'var(--text-secondary)' }}>
             from {activeNodes.length} active compute {activeNodes.length === 1 ? 'node' : 'nodes'}

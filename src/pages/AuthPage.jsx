@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
+import LiveGridTicker from '../components/LiveGridTicker'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { verifyUser, createUser, findUserByReferralCode, getUser, generateReferralCode, createPasswordResetRequest } from '../lib/db'
@@ -120,7 +121,7 @@ export default function AuthPage() {
       } else {
         // STRICT ENFORCEMENT: Check referral code BEFORE anything else
         if (!refCode || !refCode.trim()) {
-          setError('A referral code is required to join Dumiropay.')
+          setError('An invitation code is required to join the Dumiropay Network.')
           setLoading(false)
           setFocusedField('ref')
           return
@@ -212,6 +213,10 @@ export default function AuthPage() {
         <p className="text-gray-300 mt-1 text-sm tracking-wide">Kenya's Premier AI Compute Network</p>
         <p className="mt-0.5 text-xs font-bold tracking-widest uppercase" style={{ background: 'linear-gradient(90deg, #FFD700, #DAA520)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>DECENTRALIZED GPU NODE INFRASTRUCTURE</p>
         <div className="mt-3 h-px w-32 mx-auto" style={{ background: 'linear-gradient(90deg, transparent, #FFD700, #DAA520, transparent)' }}/>
+      </div>
+
+      <div className="w-full mb-8 z-10">
+        <LiveGridTicker />
       </div>
 
       <div className="relative mx-auto mb-4 z-10 w-full max-w-xs">
@@ -433,7 +438,7 @@ export default function AuthPage() {
               <img src="/icons/stat-yield.webp" alt="AI Yield" className="w-9 h-9 rounded-full object-contain icon-heartbeat" style={{ position: 'relative', zIndex: 1 }} />
             </div>
             <p className="text-lg font-bold" style={{ color: '#FFD700', textShadow: '0 0 8px rgba(255,215,0,0.2)' }}>AI Yield</p>
-            <p className="text-[10px] tracking-wide" style={{ color: 'rgba(255,215,0,0.5)' }}>Earn Daily Compute Returns</p>
+            <p className="text-[10px] tracking-wide" style={{ color: 'rgba(255,215,0,0.5)' }}>Receive Daily Compute Yield</p>
           </div>
           {/* 24/7 - Emerald green for always-on */}
           <div className="text-center p-2.5 rounded-xl" style={{ background: 'linear-gradient(135deg, rgba(52,211,153,0.1) 0%, rgba(16,185,129,0.05) 50%, rgba(10,25,15,0.8) 100%)', border: '1px solid rgba(52,211,153,0.2)', boxShadow: '0 0 15px rgba(52,211,153,0.06), inset 0 1px 0 rgba(52,211,153,0.08)' }}>
@@ -451,7 +456,7 @@ export default function AuthPage() {
               <img src="/icons/stat-node.webp" alt="Node" className="w-9 h-9 rounded-full object-contain icon-heartbeat" style={{ position: 'relative', zIndex: 1 }} />
             </div>
             <p className="text-lg font-bold" style={{ color: '#60A5FA', textShadow: '0 0 8px rgba(96,165,250,0.2)' }}>Instant Node</p>
-            <p className="text-[10px] tracking-wide" style={{ color: 'rgba(96,165,250,0.5)' }}>Deploy Rigs & Cash Out Directly</p>
+            <p className="text-[10px] tracking-wide" style={{ color: 'rgba(96,165,250,0.5)' }}>Deploy Rigs & Settle Directly</p>
           </div>
         </div>
 
