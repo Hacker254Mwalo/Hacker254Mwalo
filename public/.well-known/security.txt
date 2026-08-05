@@ -1,0 +1,1 @@
+Contact: security@dumiropay.space\nExpires: 2027-08-05T08:00:00.000Z\nPreferred-Languages: en\nCanonical: https://dumiropay.space/.well-known/security.txt
