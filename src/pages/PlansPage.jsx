@@ -9,6 +9,7 @@ import {
 } from '../lib/plans'
 import PlanCertifications from '../components/PlanCertifications'
 import DataCenterInfo from '../components/DataCenterInfo'
+import EnterpriseClientWall from '../components/EnterpriseClientWall'
 import { hasClaimedBonusToday, claimDailyLoginBonus, claimLuckySpin } from '../lib/db'
 
 const PLAN_IMAGES = {
@@ -213,69 +214,109 @@ function RevenueSimulator({ balance }) {
   )
 }
 
-/* ── Enterprise Client Wall ───────────────────────────────────────────── */
-function EnterpriseClientWall() {
-  const clients = [
-    { name: 'MedScan AI', sector: 'Healthcare', load: '92%', status: 'Active', color: '#10B981' },
-    { name: 'FinModel Pro', sector: 'Finance', load: '98%', status: 'Critical', color: '#EF4444' },
-    { name: 'UrbanDrive', sector: 'Autonomous', load: '84%', status: 'Stable', color: '#3B82F6' },
-    { name: 'SecureGov', sector: 'Public Sector', load: '89%', status: 'Active', color: '#8B5CF6' },
-    { name: 'AgriSense', sector: 'Agriculture', load: '76%', status: 'Stable', color: '#F59E0B' },
-    { name: 'RetailFlow', sector: 'E-commerce', load: '94%', status: 'Active', color: '#EC4899' }
-  ]
+/* ── Live Deployments Ticker ─────────────────────────────────────────── */
+function LiveDeploymentsTicker() {
+  const [count, setCount] = useState(1247)
+  const [recentDeploy, setRecentDeploy] = useState({ phone: '***2384', plan: 'Cloud GPU Rig', amount: 'KSh 500', time: '2s ago' })
+
+  useEffect(() => {
+    const tick = () => {
+      setCount(prev => prev + Math.floor(Math.random() * 3))
+      const phones = ['***2384', '***5671', '***9012', '***4455', '***7788', '***1123', '***6699', '***3344']
+      const plans = ['Micro-AI Node', 'Cloud GPU Rig', 'AI Server Cluster', 'Neural Network Array']
+      const amounts = ['KSh 200', 'KSh 500', 'KSh 1,000', 'KSh 2,000']
+      const times = ['1s ago', '3s ago', '5s ago', '8s ago']
+      const idx = Math.floor(Math.random() * phones.length)
+      setRecentDeploy({
+        phone: phones[idx],
+        plan: plans[Math.floor(Math.random() * plans.length)],
+        amount: amounts[Math.floor(Math.random() * amounts.length)],
+        time: times[Math.floor(Math.random() * times.length)],
+      })
+    }
+    const id = setInterval(tick, 4000)
+    return () => clearInterval(id)
+  }, [])
 
   return (
-    <div className="mt-16 mb-12">
-      <div className="flex items-center gap-3 mb-8">
-        <div className="h-px flex-1 bg-gradient-to-r from-transparent to-white/10"></div>
-        <p className="text-[10px] uppercase tracking-[0.3em] font-black text-gray-500">
-          Enterprise Compute Partners
-        </p>
-        <div className="h-px flex-1 bg-gradient-to-l from-transparent to-white/10"></div>
-      </div>
-      
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-        {clients.map(client => (
-          <div key={client.name} className="group relative p-4 rounded-xl border border-white/5 bg-white/[0.01] hover:bg-white/[0.03] hover:border-white/10 transition-all duration-500">
-            <div className="flex justify-between items-start mb-3">
-              <div className="w-8 h-8 rounded-lg bg-gray-800/50 flex items-center justify-center border border-white/5 group-hover:scale-110 transition-transform">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={client.color} strokeWidth="2">
-                  <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"></path>
-                </svg>
-              </div>
-              <div className="flex flex-col items-end">
-                <span className="text-[8px] font-bold text-gray-500 uppercase tracking-tighter">Load</span>
-                <span className="text-[10px] font-black text-white">{client.load}</span>
-              </div>
-            </div>
-            
-            <p className="text-xs font-black text-white tracking-tight mb-1">{client.name}</p>
-            
-            <div className="flex items-center gap-1.5">
-              <div className="w-1 h-1 rounded-full animate-pulse" style={{ backgroundColor: client.color }}></div>
-              <span className="text-[8px] text-gray-500 font-bold uppercase tracking-widest">{client.sector}</span>
-            </div>
-
-            {/* Subtle glow on hover */}
-            <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-white/[0.02] to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"></div>
-          </div>
-        ))}
-      </div>
-      
-      <div className="mt-8 flex items-center justify-center gap-4 text-[9px] text-gray-600 font-medium">
-        <div className="flex items-center gap-1">
-          <div className="w-1.5 h-1.5 rounded-full bg-emerald-500/50"></div>
-          <span>REAL-TIME ALLOCATION ACTIVE</span>
+    <div className="rounded-xl px-4 py-3 mb-4 flex items-center justify-between"
+      style={{ background: 'linear-gradient(135deg, rgba(10,12,30,0.95), rgba(6,8,20,0.98))', border: '1px solid rgba(16,185,129,0.15)' }}>
+      <div className="flex items-center gap-3">
+        <div className="relative">
+          <div className="w-3 h-3 rounded-full bg-emerald-400" />
+          <div className="absolute inset-0 w-3 h-3 rounded-full animate-ping bg-emerald-400 opacity-30" />
         </div>
-        <div className="w-1 h-1 rounded-full bg-gray-800"></div>
-        <div className="flex items-center gap-1">
-          <div className="w-1.5 h-1.5 rounded-full bg-blue-500/50"></div>
-          <span>24/7 ENTERPRISE UPTIME</span>
+        <div>
+          <p className="text-[10px] uppercase tracking-widest" style={{ color: '#00B4FF' }}>Live Deployments</p>
+          <p className="text-lg font-black text-emerald-400">{count.toLocaleString()} nodes</p>
         </div>
+      </div>
+      <div className="text-right">
+        <p className="text-[9px] text-gray-500">Latest</p>
+        <p className="text-[10px] text-gray-300 font-semibold">{recentDeploy.phone} → {recentDeploy.plan} ({recentDeploy.amount})</p>
+        <p className="text-[8px] text-gray-600">{recentDeploy.time}</p>
       </div>
     </div>
   )
 }
+
+/* ── How It Works Explainer ──────────────────────────────────────────── */
+function HowItWorksStrip() {
+  const steps = [
+    { icon: '💻', label: 'Provision a Node', desc: 'Allocate capital to provision GPU compute infrastructure' },
+    { icon: '⚡', label: 'AI Jobs Execute', desc: 'Enterprise clients run AI workloads on your provisioned node' },
+    { icon: '💰', label: 'Earn Revenue', desc: 'Revenue from completed compute jobs credited to your balance' },
+    { icon: '🔄', label: 'Scale or Withdraw', desc: 'Reinvest for compound growth or withdraw earnings anytime' },
+  ]
+
+  return (
+    <div className="rounded-xl px-4 py-4 mb-4"
+      style={{ background: 'linear-gradient(135deg, rgba(6,182,212,0.06) 0%, rgba(10,12,30,0.95) 100%)', border: '1px solid rgba(6,182,212,0.12)' }}>
+      <p className="text-[10px] uppercase tracking-widest font-bold text-center mb-3" style={{ color: '#00B4FF' }}>How It Works</p>
+      <div className="grid grid-cols-4 gap-2">
+        {steps.map((step, i) => (
+          <div key={i} className="text-center">
+            <span className="text-xl block mb-1">{step.icon}</span>
+            <p className="text-[8px] font-bold text-white uppercase tracking-tight">{step.label}</p>
+            <p className="text-[7px] text-gray-500 mt-0.5 leading-tight hidden sm:block">{step.desc}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+/* ── Spot Market CTA (visible on standard tab) ──────────────────────── */
+function SpotMarketCTA({ onSwitchToSpot }) {
+  return (
+    <div className="rounded-xl px-4 py-3 mb-6 flex items-center justify-between cursor-pointer group"
+      onClick={onSwitchToSpot}
+      style={{ background: 'linear-gradient(135deg, rgba(16,185,129,0.08) 0%, rgba(10,12,30,0.95) 100%)', border: '1px solid rgba(16,185,129,0.2)' }}>
+      <div className="flex items-center gap-3">
+        <div className="relative">
+          <div className="w-8 h-8 rounded-lg flex items-center justify-center"
+            style={{ background: 'rgba(16,185,129,0.15)', border: '1px solid rgba(16,185,129,0.3)' }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#10B981" strokeWidth="2">
+              <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path>
+            </svg>
+          </div>
+        </div>
+        <div>
+          <p className="text-[10px] font-black text-emerald-400 uppercase tracking-tight">Spot Market Available</p>
+          <p className="text-[9px] text-gray-400">24H - 7D nodes · Instant payout · No lock-up</p>
+        </div>
+      </div>
+      <div className="flex items-center gap-1 text-emerald-400 group-hover:translate-x-1 transition-transform">
+        <span className="text-[10px] font-bold uppercase">View</span>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <path d="M5 12h14M12 5l7 7-7 7"/>
+        </svg>
+      </div>
+    </div>
+  )
+}
+
+// EnterpriseClientWall imported from component
 
 /* ── Market Pulse ────────────────────────────────────────────────────── */
 function MarketPulse() {
@@ -833,8 +874,11 @@ export default function PlansPage() {
       {/* Global Demand Bar */}
       <GlobalDemandBar />
 
+      {/* Live Deployments Ticker */}
+      <LiveDeploymentsTicker />
+
       {/* Tab Toggle */}
-      <div className="flex p-1.5 bg-black/60 rounded-2xl mb-8 border border-white/10 shadow-2xl">
+      <div className="flex p-1.5 bg-black/60 rounded-2xl mb-4 border border-white/10 shadow-2xl">
         <button 
           onClick={() => setActiveTab('standard')}
           className={`flex-1 flex flex-col items-center justify-center py-3 rounded-xl transition-all duration-300 ${
@@ -873,6 +917,12 @@ export default function PlansPage() {
           </span>
         </button>
       </div>
+
+      {/* How It Works */}
+      <HowItWorksStrip />
+
+      {/* Spot Market CTA (visible on standard tab) */}
+      {activeTab === 'standard' && <SpotMarketCTA onSwitchToSpot={() => setActiveTab('short-term')} />}
 
       {/* Certifications */}
       <PlanCertifications />
