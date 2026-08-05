@@ -640,7 +640,7 @@ export default function AuthPage() {
         </div>
 
         <p className="text-center text-xs mt-6" style={{ color: 'rgba(218,165,32,0.5)' }}>
-          By using Dumiropay you agree to our Terms & Conditions.
+          By using Dumiropay you agree to our <button type="button" onClick={() => navigate('/terms')} className="underline hover:text-[#FFD700]">Terms & Conditions</button> and <button type="button" onClick={() => navigate('/privacy')} className="underline hover:text-[#FFD700]">Privacy Policy</button>.
         </p>
       </div>
     </div>
