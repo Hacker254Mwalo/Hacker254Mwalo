@@ -1,6 +1,6 @@
 # Dumiropay — Kenya's Premier Investment Platform
 
-A modern React + Vite + Tailwind CSS investment platform for Kenya, featuring M-Pesa integration, referral system, and daily returns.
+A modern React + Vite + Tailwind CSS investment & earn platform for Kenya, featuring M-Pesa integration, referral system, and daily returns.
 
 ## 🚀 Features
 
@@ -9,10 +9,10 @@ A modern React + Vite + Tailwind CSS investment platform for Kenya, featuring M-
 - **Dashboard** — Balance display, daily login bonus (+KSh 50), Lucky Spin (Mon & Fri)
 - **Investment Plans** — 10 plans from KSh 200 to KSh 45,000 @ 3% daily / 90-day duration
 - **M-Pesa Recharge** — Paybill **4091165**
-- **Withdrawal** — 8% processing fee
+- **Withdrawal** — 24/7 withdrawals directly to M-Pesa, 8% processing fee
 - **Referral System** — 10% Level 1 & 4% Level 2 commission on first deposit
-- **Investment History** — Full portfolio tracking with risk disclaimer
-- **LocalStorage** — Demo data persistence (Supabase-ready via env vars)
+- **Investment History** — Full portfolio tracking
+- **LocalStorage** — Data persistence (Supabase-ready via env vars)
 
 ## 🛠 Tech Stack
 
@@ -44,8 +44,4 @@ Without these, the app runs fully on **localStorage**.
 - Lipa na M-Pesa → Paybill
 - Business No: **4091165**
 - Account No: Your phone number
-
-## ⚠️ Risk Disclaimer
-
-This is a **demo platform**. All investment returns shown are illustrative only. Never invest money you cannot afford to lose.
 
