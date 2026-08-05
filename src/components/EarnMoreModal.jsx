@@ -1,103 +1,102 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
-import { getInvestments } from '../lib/db'
 
 const STEPS = [
   {
     id: 'bonus',
     icon: '🎁',
-    title: 'Claim Free Daily Bonus',
-    desc: 'Get KSh 50 every day just for logging in. No node required. Takes 2 seconds.',
+    title: 'Claim Daily Platform Bonus',
+    desc: 'Get a small daily platform bonus just for logging in. Takes 2 seconds.',
     action: '/dashboard',
     actionLabel: 'Claim Now',
     color: 'from-emerald-500 to-green-400',
     bg: 'rgba(16,185,129,0.08)',
     border: 'rgba(16,185,129,0.2)',
-    tip: 'Come back every day — these small amounts add up to KSh 1,500/month for free',
+    tip: 'Return each day to keep up with platform updates and rewards.',
   },
   {
     id: 'spin',
     icon: '🎰',
     title: 'Spin the Lucky Wheel',
-    desc: 'Every Monday & Friday, spin to win up to KSh 5,000 bonus. Works with or without an active node.',
+    desc: 'Every Monday & Friday, spin for a small surprise reward.',
     action: '/dashboard',
     actionLabel: 'Check Spin',
     color: 'from-violet-500 to-purple-400',
     bg: 'rgba(139,92,246,0.08)',
     border: 'rgba(139,92,246,0.2)',
-    tip: 'Monday & Friday are spin days — mark your calendar!',
+    tip: 'Check back on reward days for a new spin.',
   },
   {
-    id: 'invest',
+    id: 'compute',
     icon: '🖥️',
-    title: 'Deploy Your First AI Node',
-    desc: 'Provision any compute node to get started. Your node runs 24/7 processing AI tasks for enterprise clients. Receive daily yield.',
+    title: 'Explore Compute Plans',
+    desc: 'Browse the available GPU compute plans and see what fits your needs.',
     action: '/plans',
     actionLabel: 'Choose Plan',
     color: 'from-red-500 to-pink-500',
     bg: 'rgba(239,68,68,0.08)',
     border: 'rgba(239,68,68,0.2)',
-    tip: 'Pick any node that fits your capacity — even the smallest one starts generating daily yield',
+    tip: 'Compare plans and explore the platform at your own pace.',
   },
   {
-    id: 'execute',
+    id: 'dashboard',
     icon: '⚡',
-    title: 'Run Daily Compute Cycle',
-    desc: 'After provisioning, execute your 24h compute cycle every day to lock in your yield. One tap.',
+    title: 'Open Your Dashboard',
+    desc: 'Visit your dashboard to view platform activity and account details.',
     action: '/dashboard',
     actionLabel: 'Dashboard',
     color: 'from-blue-500 to-cyan-400',
     bg: 'rgba(59,130,246,0.08)',
     border: 'rgba(59,130,246,0.2)',
-    tip: 'Execute daily to maximize your node uptime and yield consistency',
+    tip: 'Use the dashboard to stay up to date with platform activity.',
   },
   {
     id: 'refer',
     icon: '👥',
-    title: 'Network Referral Program',
-    desc: 'Share your code. Receive 10% on L1 + 4% on L2 referrals. Every node they provision contributes to your yield.',
+    title: 'Invite Friends',
+    desc: 'Share your referral code to invite others to the platform.',
     action: '/profile',
     actionLabel: 'Get Code',
     color: 'from-amber-500 to-yellow-400',
     bg: 'rgba(245,158,11,0.08)',
     border: 'rgba(245,158,11,0.2)',
-    tip: '10 referrals each provisioning KSh 200 nodes = KSh 200/month passive commission',
+    tip: 'Invite people who may benefit from the platform.',
   },
   {
-    id: 'promo',
+    id: 'support',
     icon: '🔑',
-    title: 'Enter Promo Keywords',
-    desc: 'Secret codes from the community give instant bonus. Check Dashboard for the entry field.',
+    title: 'Get Support',
+    desc: 'Find help and platform guidance from the dashboard or support page.',
     action: '/dashboard',
     actionLabel: 'Dashboard',
     color: 'from-pink-500 to-rose-400',
     bg: 'rgba(236,72,153,0.08)',
     border: 'rgba(236,72,153,0.2)',
-    tip: 'Codes are shared in the community — join the WhatsApp group to get them',
+    tip: 'Support info is always available if you need help.',
   },
   {
-    id: 'transfer',
-    icon: '⚡',
-    title: 'Transfer Bonus to Balance',
-    desc: 'Move your bonus balance to main balance at 8% network fee. Use for node provisioning or withdrawals.',
+    id: 'account',
+    icon: '⚙️',
+    title: 'Manage Account',
+    desc: 'Update your profile and settings whenever you need to.',
     action: '/profile',
-    actionLabel: 'Transfer',
+    actionLabel: 'Profile',
     color: 'from-cyan-500 to-teal-400',
     bg: 'rgba(6,182,212,0.08)',
     border: 'rgba(6,182,212,0.2)',
-    tip: 'KSh 1,000 bonus → KSh 920 main balance. No minimum required.',
+    tip: 'Keep your profile details up to date.',
   },
   {
-    id: 'withdraw',
+    id: 'activity',
     icon: '💸',
-    title: 'Withdraw to M-Pesa',
-    desc: 'Cash out anytime via M-Pesa STK push. Instant. No waiting period. Minimum KSh 200.',
+    title: 'Review Platform Activity',
+    desc: 'See your recent platform actions and account history in one place.',
     action: '/profile',
-    actionLabel: 'Withdraw',
+    actionLabel: 'Profile',
     color: 'from-green-500 to-emerald-400',
     bg: 'rgba(34,197,94,0.08)',
     border: 'rgba(34,197,94,0.2)',
-    tip: 'Withdrawals are instant — your M-Pesa will ring within seconds',
+    tip: 'Your recent activity is always available in your account area.',
   },
 ]
 
@@ -107,7 +106,6 @@ export default function EarnMoreModal() {
   const [completed, setCompleted] = useState(() => {
     try { return JSON.parse(localStorage.getItem('dp_earn_modal_done') || '{}') } catch { return {} }
   })
-  const [hasInvestment, setHasInvestment] = useState(false)
   const [dismissed, setDismissed] = useState(() => {
     try { return localStorage.getItem('dp_earn_modal_dismissed') === 'true' } catch { return false }
   })
@@ -119,9 +117,6 @@ export default function EarnMoreModal() {
       if (d === 'true') return
     }
     setShow(true)
-    if (user.phone) {
-      getInvestments(user.phone).then(invs => setHasInvestment(invs && invs.length > 0)).catch(() => {})
-    }
   }, [user?.phone])
 
   function markDone(id) {
@@ -142,25 +137,18 @@ export default function EarnMoreModal() {
   return (
     <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4" onClick={handleDismiss}>
       <div className="card max-w-sm w-full max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()} style={{ animation: 'fadeIn 0.3s ease-out' }}>
-        {/* Header */}
         <div className="text-center mb-4">
           <div className="text-3xl mb-1">💡</div>
           <h2 className="text-lg font-black" style={{ background: 'linear-gradient(135deg, #FFD700, #DAA520)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-            Network Operation Guide
+            Platform Guide
           </h2>
           <p className="text-[11px] mt-1" style={{ color: 'var(--text-muted)' }}>
             {completedCount > 0
-              ? `${completedCount}/${STEPS.length} steps explored — keep going!`
-              : 'Follow these steps to maximize your compute yield'}
+              ? `${completedCount}/${STEPS.length} items explored — keep going!`
+              : 'Explore the key areas of the platform'}
           </p>
-          {!hasInvestment && (
-            <p className="text-[10px] mt-1 px-3 py-1 rounded-full inline-block" style={{ background: 'rgba(239,68,68,0.1)', color: '#f87171', border: '1px solid rgba(239,68,68,0.2)' }}>
-              🔒 New to the network? Provision any node to unlock all features.
-            </p>
-          )}
         </div>
 
-        {/* Progress bar */}
         <div className="mb-4 px-1">
           <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'var(--bg-elevated)' }}>
             <div
@@ -173,7 +161,6 @@ export default function EarnMoreModal() {
           </div>
         </div>
 
-        {/* Steps */}
         <div className="space-y-2">
           {STEPS.map((step, i) => (
             <div
@@ -208,34 +195,20 @@ export default function EarnMoreModal() {
           ))}
         </div>
 
-        {/* Quick Start CTA */}
-        <div className="mt-5 space-y-2">
-          {!hasInvestment && (
-            <a
-              href="/plans"
-              onClick={handleDismiss}
-              className="w-full block text-center py-3 rounded-xl font-bold text-sm"
-              style={{ background: 'linear-gradient(135deg, #FFD700, #DAA520)', color: '#000' }}
-            >
-              Start Computing — Provision Your First Node →
-            </a>
-          )}
-          {hasInvestment && (
-            <a
-              href="/dashboard"
-              onClick={handleDismiss}
-              className="w-full block text-center py-3 rounded-xl font-bold text-sm"
-              style={{ background: 'linear-gradient(135deg, #22c55e, #16a34a)', color: '#fff' }}
-            >
-              Go to Dashboard & Yield →
-            </a>
-          )}
+        <div className="mt-5">
+          <a
+            href="/plans"
+            onClick={handleDismiss}
+            className="w-full block text-center py-3 rounded-xl font-bold text-sm"
+            style={{ background: 'linear-gradient(135deg, #FFD700, #DAA520)', color: '#000' }}
+          >
+            Explore Plans →
+          </a>
         </div>
 
-        {/* Dismiss */}
         <p className="text-center mt-3">
           <button onClick={handleDismiss} className="text-[10px]" style={{ color: 'var(--text-muted)' }}>
-            Got it — close this guide
+            Close this guide
           </button>
         </p>
       </div>
