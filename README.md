@@ -1,17 +1,17 @@
-# Dumiropay — Kenya's Premier Investment Platform
+# Dumiropay — Kenya's Premier AI Node Earnings Platform
 
-A modern React + Vite + Tailwind CSS investment & earn platform for Kenya, featuring M-Pesa integration, referral system, and daily returns.
+A modern React + Vite + Tailwind CSS AI compute node platform for Kenya, featuring M-Pesa integration, referral system, and daily AI compute yields.
 
 ## 🚀 Features
 
 - **Dark Premium UI** — Red/pink accent theme, fully responsive
 - **Phone Authentication** — Register/Login with Kenyan phone number + PIN
 - **Dashboard** — Balance display, daily login bonus (+KSh 50), Lucky Spin (Mon & Fri)
-- **Investment Plans** — 10 plans from KSh 200 to KSh 45,000 @ 3% daily / 90-day duration
+- **AI Compute Node Plans** — 10 plans from KSh 200 to KSh 45,000 @ 3% daily yield / 90-day duration
 - **M-Pesa Recharge** — Paybill **4091165**
 - **Withdrawal** — 24/7 withdrawals directly to M-Pesa, 8% processing fee
 - **Referral System** — 10% Level 1 & 4% Level 2 commission on first deposit
-- **Investment History** — Full portfolio tracking
+- **Node Earnings History** — Full portfolio tracking
 - **LocalStorage** — Data persistence (Supabase-ready via env vars)
 
 ## 🛠 Tech Stack

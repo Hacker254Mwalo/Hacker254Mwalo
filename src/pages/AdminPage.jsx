@@ -635,7 +635,7 @@ function UsersTab({ showToast }) {
                       {r.commission > 0 ? (
                         <p>Commission: <span className="text-green-400">KSh {Number(r.commission).toLocaleString()}</span></p>
                       ) : (
-                        <p className="text-yellow-400">Earning potential: 10% on 1st investment</p>
+                        <p className="text-yellow-400">Earning potential: 10% on 1st node provision</p>
                       )}
                       <p>{r.planName && <span>via {r.planName} · </span>}{fmt(r.date)}</p>
                     </div>
@@ -702,7 +702,7 @@ function ReferralsTab({ showToast }) {
         <div className="card text-center py-12">
           <p className="text-4xl mb-3">🤝</p>
           <p style={{ color: 'var(--text-muted)' }}>No referral commissions yet</p>
-          <p className="text-xs mt-2" style={{ color: 'var(--text-muted)' }}>Commissions are paid when a referred user makes their first investment or deposit.</p>
+          <p className="text-xs mt-2" style={{ color: 'var(--text-muted)' }}>Commissions are paid when a referred user provisions their first node or makes a deposit.</p>
         </div>
       ) : (
         <div className="space-y-3">

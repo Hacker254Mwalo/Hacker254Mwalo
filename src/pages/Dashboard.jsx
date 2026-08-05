@@ -525,7 +525,7 @@ function requireProvisioning(action) {
     if (!user) throw new Error('Not logged in')
     if (!hasActiveNodes) {
       setShowInvestFirst(true)
-      throw new Error('An active investment is required before requesting a loan.')
+      throw new Error('An active node is required before requesting a loan.')
     }
     return addLoan(user.phone || user.id, { amount, purpose })
   }
@@ -753,9 +753,9 @@ function requireProvisioning(action) {
             <p className="font-bold flex items-center gap-2"><img src="/icons/compute-bonus.webp" alt="Bonus" className="w-6 h-6 rounded-lg object-cover border border-yellow-500/30" /> Daily Compute Bonus</p>
             <p className="text-xs mt-1 font-semibold">
               {!hasActiveNodes
-                ? <span style={{ color: 'var(--text-muted)' }}>Requires active investment to claim</span>
+                ? <span style={{ color: 'var(--text-muted)' }}>Requires active node to claim</span>
                 : bonusClaimed
-                  ? <><span style={{ color: '#34D399' }}>Claim </span><span style={{ color: '#FFD700', fontSize: '13px' }}>+2%</span><span style={{ color: 'var(--text-secondary)' }}> of your investment shares</span></>
+                  ? <><span style={{ color: '#34D399' }}>Claim </span><span style={{ color: '#FFD700', fontSize: '13px' }}>+2%</span><span style={{ color: 'var(--text-secondary)' }}> of your node compute shares</span></>
                   : <span style={{ color: '#FFD700' }}>Tap Claim to collect your daily compute Reward</span>}
             </p>
           </div>
@@ -825,10 +825,10 @@ function requireProvisioning(action) {
                 {!todayIsSpinDay
                   ? 'Available on Mondays & Fridays'
                   : !hasActiveNodes
-                    ? 'Requires active investment to spin'
+                    ? 'Requires active node to spin'
                     : spinClaimed
                       ? 'Already spun today!'
-                      : 'Random active investment • reward is 3% of its daily profit'}
+                      : 'Random active node • reward is 3% of its daily yield'}
               </p>
             </div>
             <button

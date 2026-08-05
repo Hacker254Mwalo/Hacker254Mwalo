@@ -669,7 +669,7 @@ export async function claimKeyword(userPhone, code) {
     const investments = local.getInvestments(userPhone)
     const hasActive = (investments || []).some(i => i.status === 'active')
     if (!hasActive) {
-      return { success: false, code: 'NO_ACTIVE_INVESTMENT', message: 'An active investment is required to redeem promo codes. Please invest first.' }
+      return { success: false, code: 'NO_ACTIVE_INVESTMENT', message: 'An active node is required to redeem promo codes. Please provision a node first.' }
     }
     const keywords = JSON.parse(localStorage.getItem('dp_admin_keywords') || '[]')
     const kw = keywords.find(k => k.code === code.trim().toUpperCase())
