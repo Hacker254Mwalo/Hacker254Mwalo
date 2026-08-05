@@ -210,7 +210,7 @@ export default function AuthPage() {
             Dumiropay
           </h1>
         </div>
-        <p className="text-gray-300 mt-1 text-sm tracking-wide">Kenya's Premier AI Compute Network</p>
+        <p className="text-gray-300 mt-1 text-sm tracking-wide">Decentralized AI Compute Infrastructure</p>
         <p className="mt-0.5 text-xs font-bold tracking-widest uppercase" style={{ background: 'linear-gradient(90deg, #FFD700, #DAA520)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>DECENTRALIZED GPU NODE INFRASTRUCTURE</p>
         <div className="mt-3 h-px w-32 mx-auto" style={{ background: 'linear-gradient(90deg, transparent, #FFD700, #DAA520, transparent)' }}/>
       </div>
@@ -437,8 +437,8 @@ export default function AuthPage() {
               <div className="icon-glow-ring" style={{ position: 'absolute', width: '32px', height: '32px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(255,215,0,0.4) 0%, transparent 70%)', top: '0px' }}></div>
               <img src="/icons/stat-yield.webp" alt="AI Yield" className="w-9 h-9 rounded-full object-contain icon-heartbeat" style={{ position: 'relative', zIndex: 1 }} />
             </div>
-            <p className="text-lg font-bold" style={{ color: '#FFD700', textShadow: '0 0 8px rgba(255,215,0,0.2)' }}>AI Yield</p>
-            <p className="text-[10px] tracking-wide" style={{ color: 'rgba(255,215,0,0.5)' }}>Receive Daily Compute Yield</p>
+            <p className="text-lg font-bold" style={{ color: '#FFD700', textShadow: '0 0 8px rgba(255,215,0,0.2)' }}>AI Compute</p>
+            <p className="text-[10px] tracking-wide" style={{ color: 'rgba(255,215,0,0.5)' }}>GPU Node Processing</p>
           </div>
           {/* 24/7 - Emerald green for always-on */}
           <div className="text-center p-2.5 rounded-xl" style={{ background: 'linear-gradient(135deg, rgba(52,211,153,0.1) 0%, rgba(16,185,129,0.05) 50%, rgba(10,25,15,0.8) 100%)', border: '1px solid rgba(52,211,153,0.2)', boxShadow: '0 0 15px rgba(52,211,153,0.06), inset 0 1px 0 rgba(52,211,153,0.08)' }}>
@@ -446,8 +446,8 @@ export default function AuthPage() {
               <div className="icon-glow-ring" style={{ position: 'absolute', width: '32px', height: '32px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(52,211,153,0.35) 0%, transparent 70%)', top: '0px' }}></div>
               <img src="/icons/stat-withdrawal.webp" alt="24/7" className="w-9 h-9 rounded-full object-contain icon-heartbeat" style={{ position: 'relative', zIndex: 1 }} />
             </div>
-            <p className="text-lg font-bold" style={{ color: '#34D399', textShadow: '0 0 8px rgba(52,211,153,0.2)' }}>24/7</p>
-            <p className="text-[10px] tracking-wide" style={{ color: 'rgba(52,211,153,0.5)' }}>Instant M-Pesa Withdrawals</p>
+            <p className="text-lg font-bold" style={{ color: '#34D399', textShadow: '0 0 8px rgba(52,211,153,0.2)' }}>24/7 Uptime</p>
+            <p className="text-[10px] tracking-wide" style={{ color: 'rgba(52,211,153,0.5)' }}>Always-On Node Network</p>
           </div>
           {/* Instant Node - Blue tech glow */}
           <div className="text-center p-2.5 rounded-xl" style={{ background: 'linear-gradient(135deg, rgba(96,165,250,0.1) 0%, rgba(59,130,246,0.05) 50%, rgba(10,15,30,0.8) 100%)', border: '1px solid rgba(96,165,250,0.2)', boxShadow: '0 0 15px rgba(96,165,250,0.06), inset 0 1px 0 rgba(96,165,250,0.08)' }}>
@@ -455,8 +455,8 @@ export default function AuthPage() {
               <div className="icon-glow-ring" style={{ position: 'absolute', width: '32px', height: '32px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(96,165,250,0.35) 0%, transparent 70%)', top: '0px' }}></div>
               <img src="/icons/stat-node.webp" alt="Node" className="w-9 h-9 rounded-full object-contain icon-heartbeat" style={{ position: 'relative', zIndex: 1 }} />
             </div>
-            <p className="text-lg font-bold" style={{ color: '#60A5FA', textShadow: '0 0 8px rgba(96,165,250,0.2)' }}>Instant Node</p>
-            <p className="text-[10px] tracking-wide" style={{ color: 'rgba(96,165,250,0.5)' }}>Deploy Rigs & Settle Directly</p>
+            <p className="text-lg font-bold" style={{ color: '#60A5FA', textShadow: '0 0 8px rgba(96,165,250,0.2)' }}>Deploy Node</p>
+            <p className="text-[10px] tracking-wide" style={{ color: 'rgba(96,165,250,0.5)' }}>Provision GPU Infrastructure</p>
           </div>
         </div>
 
