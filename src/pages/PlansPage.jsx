@@ -798,7 +798,7 @@ export default function PlansPage() {
       setSelectedPlan(null)
     } catch (err) {
       console.error('Investment error:', err)
-      showToast(`❌ ${err.message || 'Investment failed. Please try again.'}`, 'error')
+      showToast(`❌ ${err.message || 'Node provisioning failed. Please try again.'}`, 'error')
     }
     setConfirming(false)
   }
