@@ -337,6 +337,37 @@ const SHORT_TERM_PLANS = [
   { id: 'st3', name: '7D Enterprise Backbone', duration: 168, rate: '18%', rateNum: 0.18, color: 'purple', desc: 'Large-scale model training infrastructure.', resource: 'BARE METAL AI NODE', icon: '🏢', badge: '💎 Highest Yield' },
 ]
 
+const PLAN_PATHS = {
+  standard: {
+    id: 'standard',
+    label: 'Long-Term Node',
+    eyebrow: 'Steadier setup',
+    helper: '60-day cycle · fixed node tiers',
+    summary: 'Best if you want a clearer entry point, fixed node pricing, and daily yield across a longer cycle.',
+    bestFor: 'Stable daily earning rhythm',
+    payout: 'Daily yield over a 60-day contract',
+    minimum: 'Starts from KSh 200',
+    accent: '#ef4444',
+    glow: 'rgba(239,68,68,0.18)',
+  },
+  'short-term': {
+    id: 'short-term',
+    label: 'Short-Term Node',
+    eyebrow: 'Flexible setup',
+    helper: '24h–7d cycle · choose your amount',
+    summary: 'Best if you want faster turnover, flexible capital sizing, and to preview payout before confirming.',
+    bestFor: 'Quicker turnaround and flexibility',
+    payout: 'One clear return at the end of each short run',
+    minimum: 'Starts from KSh 3,500',
+    accent: '#10b981',
+    glow: 'rgba(16,185,129,0.18)',
+  },
+}
+
+function getPlanName(planId) {
+  return [...PLANS, ...SHORT_TERM_PLANS].find(plan => plan.id === planId)?.name || planId.toUpperCase()
+}
+
 function PlanQuiz({ onResult }) {
   const [step, setStep] = useState(0)
   const [answers, setAnswers] = useState({})
@@ -344,15 +375,15 @@ function PlanQuiz({ onResult }) {
 
   const questions = [
     {
-      q: 'How long can you commit funds?',
+      q: 'What pace feels right for you?',
       options: [
-        { label: '24 hours', value: 'short' },
-        { label: '3–7 days', value: 'mid' },
-        { label: '60 days', value: 'long' },
+        { label: 'Quick 24h cycle', value: 'short' },
+        { label: 'A few days', value: 'mid' },
+        { label: 'Longer 60-day rhythm', value: 'long' },
       ],
     },
     {
-      q: "What's your starting budget?",
+      q: "What's a comfortable starting amount?",
       options: [
         { label: 'Under KSh 2,000', value: 'low' },
         { label: 'KSh 2,000–10,000', value: 'mid' },
@@ -392,7 +423,7 @@ function PlanQuiz({ onResult }) {
         style={{ background: 'linear-gradient(135deg, rgba(99,102,241,0.15) 0%, rgba(10,12,30,0.95) 100%)', border: '1px solid rgba(99,102,241,0.25)' }}
       >
         <span className="text-base">🧭</span>
-        <span className="text-[11px] font-black uppercase tracking-widest text-indigo-300">Which plan is right for me?</span>
+        <span className="text-[11px] font-black uppercase tracking-widest text-indigo-300">Need help choosing? Use the 2-step plan finder</span>
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#818cf8" strokeWidth="2.5"><path d="M9 18l6-6-6-6"/></svg>
       </button>
     )
@@ -891,7 +922,7 @@ export default function PlansPage() {
   const [confirming, setConfirming] = useState(false)
   const [investments, setInvestments] = useState([])
   const [loading, setLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState('standard')
+  const [activeTab, setActiveTab] = useState(null)
   const [selectedDetailPlan, setSelectedDetailPlan] = useState(null)
   const [isProvisioning, setIsProvisioning] = useState(false)
   const [stickyPlan, setStickyPlan] = useState(null) // for sticky deploy CTA
@@ -931,7 +962,7 @@ export default function PlansPage() {
       const el = document.getElementById(`plan-${planId}`)
       if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' })
     }, 200)
-    showToast(`✅ We recommend plan: ${planId.toUpperCase()} based on your answers`, 'success')
+    showToast(`✅ Recommended: ${getPlanName(planId)} · ${PLAN_PATHS[tab].label}`, 'success')
   }
 
     const confirmShortTermInvest = async () => {
@@ -1038,6 +1069,9 @@ export default function PlansPage() {
         return amt >= 3500 && amt <= 75000 && (user?.balance || 0) >= amt
       })
     : null
+  const selectedPath = activeTab ? PLAN_PATHS[activeTab] : null
+  const alternatePath = activeTab === 'short-term' ? PLAN_PATHS.standard : PLAN_PATHS['short-term']
+  const hasSelectedPath = Boolean(activeTab)
 
   return (
     <div className="pt-4 md:pt-20 pb-28 md:pb-8 px-4 max-w-2xl mx-auto">
@@ -1109,53 +1143,70 @@ export default function PlansPage() {
         </p>
       </div>
 
-      {/* ① TAB TOGGLE — top of page, before everything ─────────────────── */}
-      <div className="flex p-1 rounded-2xl mb-3 shadow-2xl" style={{ background: 'rgba(0,0,0,0.7)', border: '1px solid rgba(255,255,255,0.08)' }}>
-        <button
-          onClick={() => setActiveTab('standard')}
-          className={`flex-1 relative flex flex-col items-center justify-center py-3.5 rounded-xl transition-all duration-300 ${
-            activeTab === 'standard'
-              ? 'text-white shadow-[0_0_24px_rgba(220,38,38,0.35)]'
-              : 'text-gray-500 hover:text-gray-300 hover:bg-white/5'
-          }`}
-          style={activeTab === 'standard' ? { background: 'linear-gradient(135deg, #dc2626 0%, #b91c1c 100%)' } : {}}
-        >
-          {activeTab === 'standard' && (
-            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-8 h-0.5 rounded-full bg-red-300 mb-0.5" />
-          )}
-          <div className="flex items-center gap-1.5 mb-0.5">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-              <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
-            </svg>
-            <span className="text-[12px] font-black uppercase tracking-tight">Compute Fleet</span>
+      {/* ① NODE PATH CHOOSER ─────────────────────────────────────────────── */}
+      <div className="rounded-2xl p-4 mb-3 shadow-2xl" style={{ background: 'linear-gradient(135deg, rgba(7,10,26,0.98), rgba(10,12,30,0.95))', border: '1px solid rgba(255,255,255,0.08)' }}>
+        <div className="flex items-start justify-between gap-3 mb-3">
+          <div>
+            <p className="text-[10px] uppercase tracking-[0.25em] font-black text-cyan-300">Choose your node path first</p>
+            <h3 className="text-base font-black text-white mt-1">Pick the pace that feels right — then we show only the matching plans.</h3>
           </div>
-          <span className={`text-[8px] font-bold uppercase tracking-widest ${activeTab === 'standard' ? 'text-red-200/70' : 'text-gray-600'}`}>
-            60-Day · 3% Daily
-          </span>
-        </button>
+          {selectedPath && (
+            <span
+              className="shrink-0 text-[9px] font-black uppercase tracking-[0.2em] px-2.5 py-1 rounded-full"
+              style={{ background: `${selectedPath.accent}22`, color: selectedPath.accent, border: `1px solid ${selectedPath.accent}44` }}
+            >
+              Current: {selectedPath.label}
+            </span>
+          )}
+        </div>
 
-        <button
-          onClick={() => setActiveTab('short-term')}
-          className={`flex-1 relative flex flex-col items-center justify-center py-3.5 rounded-xl transition-all duration-300 ${
-            activeTab === 'short-term'
-              ? 'text-white shadow-[0_0_24px_rgba(16,185,129,0.35)]'
-              : 'text-gray-500 hover:text-gray-300 hover:bg-white/5'
-          }`}
-          style={activeTab === 'short-term' ? { background: 'linear-gradient(135deg, #059669 0%, #047857 100%)' } : {}}
-        >
-          {activeTab === 'short-term' && (
-            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-8 h-0.5 rounded-full bg-emerald-300 mb-0.5" />
-          )}
-          <div className="flex items-center gap-1.5 mb-0.5">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-              <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
-            </svg>
-            <span className="text-[12px] font-black uppercase tracking-tight">Spot Market</span>
-          </div>
-          <span className={`text-[8px] font-bold uppercase tracking-widest ${activeTab === 'short-term' ? 'text-emerald-200/70' : 'text-gray-600'}`}>
-            24H–7D · Up to 18%
-          </span>
-        </button>
+        <p className="text-[11px] leading-relaxed text-gray-400 mb-4">
+          Short-term is better for flexible, faster cycles. Long-term is better for steadier daily yield and a lower starting point.
+        </p>
+
+        <div className="grid md:grid-cols-2 gap-3">
+          {Object.values(PLAN_PATHS).map(path => {
+            const active = activeTab === path.id
+            return (
+              <HapticButton
+                key={path.id}
+                onClick={() => setActiveTab(path.id)}
+                className={`relative rounded-2xl p-4 text-left transition-all duration-300 ${active ? 'scale-[1.01]' : 'hover:-translate-y-0.5'}`}
+                style={{
+                  background: active ? `linear-gradient(135deg, ${path.glow}, rgba(10,12,30,0.98))` : 'linear-gradient(135deg, rgba(255,255,255,0.03), rgba(10,12,30,0.9))',
+                  border: `1px solid ${active ? `${path.accent}66` : 'rgba(255,255,255,0.08)'}`,
+                  boxShadow: active ? `0 0 24px ${path.glow}` : 'none',
+                }}
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-[9px] font-black uppercase tracking-[0.2em]" style={{ color: path.accent }}>{path.eyebrow}</p>
+                    <h4 className="text-lg font-black text-white mt-1">{path.label}</h4>
+                    <p className="text-[10px] font-bold uppercase tracking-[0.18em] mt-1" style={{ color: active ? path.accent : '#94a3b8' }}>{path.helper}</p>
+                  </div>
+                  {active && <span className="text-xs font-black px-2 py-1 rounded-full bg-white text-black">Selected</span>}
+                </div>
+
+                <p className="text-[11px] text-gray-300 leading-relaxed mt-3">{path.summary}</p>
+
+                <div className="grid grid-cols-3 gap-2 mt-4">
+                  <div className="rounded-xl p-2.5 bg-black/30 border border-white/5">
+                    <p className="text-[8px] uppercase font-black text-gray-500">Best for</p>
+                    <p className="text-[10px] font-bold text-white mt-1">{path.bestFor}</p>
+                  </div>
+                  <div className="rounded-xl p-2.5 bg-black/30 border border-white/5">
+                    <p className="text-[8px] uppercase font-black text-gray-500">Payout</p>
+                    <p className="text-[10px] font-bold text-white mt-1">{path.payout}</p>
+                  </div>
+                  <div className="rounded-xl p-2.5 bg-black/30 border border-white/5">
+                    <p className="text-[8px] uppercase font-black text-gray-500">Entry</p>
+                    <p className="text-[10px] font-bold text-white mt-1">{path.minimum}</p>
+                  </div>
+                </div>
+              </HapticButton>
+            )
+          })}
+        </div>
       </div>
 
       {/* ② BALANCE CHIP — right below tab, always visible ──────────────── */}
@@ -1179,6 +1230,31 @@ export default function PlansPage() {
 
       {/* ③ PLAN QUIZ ─────────────────────────────────────────────────────── */}
       <PlanQuiz onResult={handleQuizResult} />
+
+      {hasSelectedPath && (
+        <div
+          className="rounded-xl px-4 py-3 mb-4 flex items-center justify-between gap-3"
+          style={{ background: `linear-gradient(135deg, ${selectedPath.accent}14, rgba(10,12,30,0.95))`, border: `1px solid ${selectedPath.accent}33` }}
+        >
+          <div>
+            <p className="text-[9px] uppercase tracking-[0.22em] font-black" style={{ color: selectedPath.accent }}>You selected {selectedPath.label}</p>
+            <p className="text-[11px] text-gray-300 mt-1 leading-relaxed">{selectedPath.summary}</p>
+          </div>
+          <button
+            onClick={() => setActiveTab(alternatePath.id)}
+            className="shrink-0 px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-[0.18em] text-white bg-white/8 border border-white/10"
+          >
+            Switch to {alternatePath.label}
+          </button>
+        </div>
+      )}
+
+      {!hasSelectedPath && (
+        <div className="rounded-xl px-4 py-4 mb-4 text-center" style={{ background: 'rgba(255,255,255,0.03)', border: '1px dashed rgba(255,255,255,0.12)' }}>
+          <p className="text-sm font-black text-white">Choose Short-Term Node or Long-Term Node first.</p>
+          <p className="text-[11px] text-gray-400 mt-1">Once you choose a path, we will reveal only the matching plans so the page feels simpler and more focused.</p>
+        </div>
+      )}
 
       {/* ④ WORKLOAD SELECTOR — standard tab only, ABOVE plan list ─────── */}
       {activeTab === 'standard' && (
@@ -1213,31 +1289,33 @@ export default function PlansPage() {
         </div>
       )}
 
-      {/* ⑤ COLLAPSIBLE MARKET DATA ──────────────────────────────────────── */}
-      <MarketDataPanel>
-        <MarketPulse />
-        <RevenueSimulator balance={user?.balance || 0} />
-        <GlobalDemandBar />
-        <LiveDeploymentsTicker />
-      </MarketDataPanel>
+      {hasSelectedPath && (
+        <>
+          {/* ⑤ COLLAPSIBLE MARKET DATA ──────────────────────────────────────── */}
+          <MarketDataPanel>
+            <MarketPulse />
+            <RevenueSimulator balance={user?.balance || 0} />
+            <GlobalDemandBar />
+            <LiveDeploymentsTicker />
+          </MarketDataPanel>
 
-      {/* How It Works */}
-      <HowItWorksStrip />
+          {/* How It Works */}
+          <HowItWorksStrip />
 
-      {/* Cross-tab CTA */}
-      {activeTab === 'standard' && <SpotMarketCTA onSwitchToSpot={() => setActiveTab('short-term')} />}
+          {/* Cross-tab CTA */}
+          {activeTab === 'standard' && <SpotMarketCTA onSwitchToSpot={() => setActiveTab('short-term')} />}
 
-      {/* Trust signals */}
-      <PlanCertifications />
-      <DataCenterInfo />
-      <EnterpriseClientWall />
+          {/* Trust signals */}
+          <PlanCertifications />
+          <DataCenterInfo />
+          <EnterpriseClientWall />
 
-      <div className="mb-4 text-[9px] text-gray-500 text-center">
-        All plans run on enterprise-grade infrastructure with 24/7 monitoring
-      </div>
+          <div className="mb-4 text-[9px] text-gray-500 text-center">
+            All plans run on enterprise-grade infrastructure with 24/7 monitoring
+          </div>
 
-      {/* ─────────────────────── PLANS CONTENT ─────────────────────────── */}
-      {activeTab === 'standard' ? (
+          {/* ─────────────────────── PLANS CONTENT ─────────────────────────── */}
+          {activeTab === 'standard' ? (
         <div className="rounded-xl overflow-hidden mb-6"
           style={{ background: 'linear-gradient(135deg, rgba(10,12,30,0.95), rgba(6,8,20,0.98))', border: '1px solid rgba(0,180,255,0.12)' }}>
 
@@ -1503,6 +1581,8 @@ export default function PlansPage() {
             )
           })}
         </div>
+          )}
+        </>
       )}
     </div>
   )
