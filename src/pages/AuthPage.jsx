@@ -22,6 +22,9 @@ export default function AuthPage() {
   const { login } = useAuth()
   const navigate = useNavigate()
   const [mobile, setMobile] = useState(false)
+  // 3A: First-visit landing animation
+  const [showSplash, setShowSplash] = useState(() => !localStorage.getItem('dp_visited'))
+  const [splashStage, setSplashStage] = useState(0)
 
   useEffect(() => {
     const check = () => setMobile(window.innerWidth < 768)
@@ -33,7 +36,19 @@ export default function AuthPage() {
     const ref = params.get('ref')
     if (ref) {
       setRefCode(ref.toUpperCase())
-      setTab('register') // Switch to register tab if coming from a referral link
+      setTab('register')
+    }
+
+    // 3A: First-visit splash animation sequence
+    if (showSplash) {
+      const t1 = setTimeout(() => setSplashStage(1), 600)
+      const t2 = setTimeout(() => setSplashStage(2), 1400)
+      const t3 = setTimeout(() => setSplashStage(3), 2200)
+      const t4 = setTimeout(() => {
+        setShowSplash(false)
+        localStorage.setItem('dp_visited', '1')
+      }, 3200)
+      return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); clearTimeout(t4); window.removeEventListener('resize', check) }
     }
 
     return () => window.removeEventListener('resize', check)
@@ -167,6 +182,38 @@ export default function AuthPage() {
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-4 relative overflow-hidden" style={{ backgroundImage: 'url(/ai-splash-bg.webp)', backgroundSize: 'cover', backgroundPosition: 'center', backgroundAttachment: 'fixed' }}>
+
+      {/* 3A: First-visit landing splash */}
+      {showSplash && (
+        <div
+          className="fixed inset-0 z-[200] flex flex-col items-center justify-center"
+          style={{ background: 'linear-gradient(180deg, #030712 0%, #06101a 100%)', transition: 'opacity 0.5s', opacity: showSplash ? 1 : 0 }}
+          onClick={() => { setShowSplash(false); localStorage.setItem('dp_visited', '1') }}
+        >
+          <div className={`transition-all duration-500 ${splashStage >= 1 ? 'opacity-100 scale-100' : 'opacity-0 scale-90'} mb-6`}>
+            <svg width="64" height="64" viewBox="0 0 36 36" fill="none" className="drop-shadow-2xl mx-auto">
+              <path d="M18 3L33 18L18 33L3 18L18 3Z" fill="url(#sg)" stroke="#FFD700" strokeWidth="1.5"/>
+              <path d="M18 10L25 18L18 26L11 18L18 10Z" fill="#FFD700" opacity="0.3"/>
+              <defs><linearGradient id="sg" x1="3" y1="3" x2="33" y2="33"><stop offset="0%" stopColor="#FFD700"/><stop offset="100%" stopColor="#DAA520"/></linearGradient></defs>
+            </svg>
+            <h1 className="text-4xl font-black tracking-tight text-center mt-3" style={{ background: 'linear-gradient(135deg,#FFD700,#FFC125,#DAA520)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+              Dumiropay
+            </h1>
+          </div>
+          <div className={`transition-all duration-500 delay-300 ${splashStage >= 2 ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'} text-center mb-8`}>
+            <p className="text-gray-300 text-sm">Decentralized AI Compute Infrastructure</p>
+            <p className="text-[11px] font-bold tracking-widest uppercase mt-1" style={{ color: 'rgba(255,215,0,0.5)' }}>GPU · Neural Networks · Enterprise AI</p>
+          </div>
+          <div className={`transition-all duration-500 delay-500 ${splashStage >= 3 ? 'opacity-100' : 'opacity-0'} w-48`}>
+            <div className="w-full bg-gray-800 rounded-full h-1 overflow-hidden">
+              <div className="h-full rounded-full" style={{ width: '100%', background: 'linear-gradient(90deg, #FFD700, #DAA520)', animation: 'shimmer 1.2s ease-in-out' }} />
+            </div>
+            <p className="text-center text-[9px] text-gray-500 mt-2">Initializing node network…</p>
+          </div>
+          <p className="absolute bottom-6 text-[8px] text-gray-600">Tap anywhere to skip</p>
+        </div>
+      )}
+
       {/* Dark overlay over AI background */}
       <div className="absolute inset-0 pointer-events-none" style={{ background: 'rgba(3, 7, 18, 0.65)', zIndex: 0 }} />
 
@@ -215,8 +262,88 @@ export default function AuthPage() {
         <div className="mt-3 h-px w-32 mx-auto" style={{ background: 'linear-gradient(90deg, transparent, #FFD700, #DAA520, transparent)' }}/>
       </div>
 
-      <div className="w-full mb-8 z-10">
+      <div className="w-full mb-4 z-10">
         <LiveGridTicker />
+      </div>
+
+      {/* How It Works strip */}
+      <div className="w-full max-w-sm mb-4 z-10 px-1">
+        <div
+          className="rounded-2xl px-3 py-3"
+          style={{
+            background: 'linear-gradient(135deg, rgba(255,215,0,0.06) 0%, rgba(10,10,25,0.85) 100%)',
+            border: '1px solid rgba(255,215,0,0.12)',
+            boxShadow: '0 4px 24px rgba(0,0,0,0.35)',
+            backdropFilter: 'blur(10px)',
+          }}
+        >
+          <p className="text-center text-[10px] font-bold tracking-widest uppercase mb-3" style={{ color: 'rgba(255,215,0,0.5)' }}>
+            How It Works
+          </p>
+          <div className="flex items-start justify-between gap-2">
+            {/* Step 1 */}
+            <div className="flex-1 flex flex-col items-center text-center gap-1">
+              <div
+                className="w-10 h-10 rounded-full flex items-center justify-center text-xl mb-1"
+                style={{
+                  background: 'linear-gradient(135deg, rgba(255,215,0,0.18) 0%, rgba(180,120,0,0.08) 100%)',
+                  border: '1.5px solid rgba(255,215,0,0.3)',
+                  boxShadow: '0 0 12px rgba(255,215,0,0.12)',
+                }}
+              >
+                🔐
+              </div>
+              <span className="text-[11px] font-bold text-white leading-tight">Create Account</span>
+              <span className="text-[9px] leading-tight" style={{ color: 'rgba(255,255,255,0.38)' }}>Register your node profile in seconds</span>
+            </div>
+
+            {/* Connector */}
+            <div className="flex flex-col items-center justify-center pt-4 gap-0.5 flex-shrink-0">
+              {[0,1,2].map(i => (
+                <div key={i} className="rounded-full" style={{ width: 4, height: 4, background: 'rgba(255,215,0,0.3)', animationDelay: `${i * 0.3}s` }} />
+              ))}
+            </div>
+
+            {/* Step 2 */}
+            <div className="flex-1 flex flex-col items-center text-center gap-1">
+              <div
+                className="w-10 h-10 rounded-full flex items-center justify-center text-xl mb-1"
+                style={{
+                  background: 'linear-gradient(135deg, rgba(96,165,250,0.18) 0%, rgba(30,60,120,0.08) 100%)',
+                  border: '1.5px solid rgba(96,165,250,0.3)',
+                  boxShadow: '0 0 12px rgba(96,165,250,0.12)',
+                }}
+              >
+                ⚙️
+              </div>
+              <span className="text-[11px] font-bold text-white leading-tight">Select a Node Plan</span>
+              <span className="text-[9px] leading-tight" style={{ color: 'rgba(255,255,255,0.38)' }}>Pick your GPU compute tier</span>
+            </div>
+
+            {/* Connector */}
+            <div className="flex flex-col items-center justify-center pt-4 gap-0.5 flex-shrink-0">
+              {[0,1,2].map(i => (
+                <div key={i} className="rounded-full" style={{ width: 4, height: 4, background: 'rgba(96,165,250,0.3)', animationDelay: `${i * 0.3}s` }} />
+              ))}
+            </div>
+
+            {/* Step 3 */}
+            <div className="flex-1 flex flex-col items-center text-center gap-1">
+              <div
+                className="w-10 h-10 rounded-full flex items-center justify-center text-xl mb-1"
+                style={{
+                  background: 'linear-gradient(135deg, rgba(52,211,153,0.18) 0%, rgba(10,60,30,0.08) 100%)',
+                  border: '1.5px solid rgba(52,211,153,0.3)',
+                  boxShadow: '0 0 12px rgba(52,211,153,0.12)',
+                }}
+              >
+                📈
+              </div>
+              <span className="text-[11px] font-bold text-white leading-tight">Node Goes Live</span>
+              <span className="text-[9px] leading-tight" style={{ color: 'rgba(255,255,255,0.38)' }}>Your GPU processes AI workloads 24/7</span>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div className="relative mx-auto mb-4 z-10 w-full max-w-xs">

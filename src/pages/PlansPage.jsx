@@ -289,7 +289,7 @@ function HowItWorksStrip() {
 /* ── Spot Market CTA (visible on standard tab) ──────────────────────── */
 function SpotMarketCTA({ onSwitchToSpot }) {
   return (
-    <div className="rounded-xl px-4 py-3 mb-6 flex items-center justify-between cursor-pointer group"
+    <div className="rounded-xl px-4 py-3 mb-4 flex items-center justify-between cursor-pointer group"
       onClick={onSwitchToSpot}
       style={{ background: 'linear-gradient(135deg, rgba(16,185,129,0.08) 0%, rgba(10,12,30,0.95) 100%)', border: '1px solid rgba(16,185,129,0.2)' }}>
       <div className="flex items-center gap-3">
@@ -312,6 +312,135 @@ function SpotMarketCTA({ onSwitchToSpot }) {
           <path d="M5 12h14M12 5l7 7-7 7"/>
         </svg>
       </div>
+    </div>
+  )
+}
+
+/* ── Plan Badge Map ─────────────────────────────────────────────────────── */
+const PLAN_BADGES = {
+  starter: { label: 'Best Start', color: '#3b82f6' },
+  basic:   { label: '🔥 Popular', color: '#f97316' },
+  silver:  { label: 'Solid Pick', color: '#94a3b8' },
+  gold:    { label: '⭐ Best Value', color: '#facc15' },
+  platinum:{ label: 'Top Seller', color: '#06b6d4' },
+  diamond: { label: 'Elite Tier', color: '#a855f7' },
+  ruby:    { label: 'High Yield', color: '#ef4444' },
+  emerald: { label: 'Secure', color: '#10b981' },
+  sapphire:{ label: 'Premium', color: '#6366f1' },
+  vip:     { label: '👑 Ultimate', color: '#ec4899' },
+}
+
+/* ── Plan Quiz ──────────────────────────────────────────────────────────── */
+const SHORT_TERM_PLANS = [
+  { id: 'st1', name: '24h Rapid Inference', duration: 24, rate: '3%', rateNum: 0.03, color: 'emerald', desc: 'Real-time AI inference & data validation.', resource: 'NVIDIA H100 TENSOR CORE', icon: '⚡', badge: '⚡ Fastest Payout' },
+  { id: 'st2', name: '3D Neural Cluster', duration: 72, rate: '8%', rateNum: 0.08, color: 'blue', desc: 'Deep learning model validation & testing.', resource: 'MULTI-GPU CLUSTER A100', icon: '🧠', badge: '🔥 Most Popular' },
+  { id: 'st3', name: '7D Enterprise Backbone', duration: 168, rate: '18%', rateNum: 0.18, color: 'purple', desc: 'Large-scale model training infrastructure.', resource: 'BARE METAL AI NODE', icon: '🏢', badge: '💎 Highest Yield' },
+]
+
+function PlanQuiz({ onResult }) {
+  const [step, setStep] = useState(0)
+  const [answers, setAnswers] = useState({})
+  const [open, setOpen] = useState(false)
+
+  const questions = [
+    {
+      q: 'How long can you commit funds?',
+      options: [
+        { label: '24 hours', value: 'short' },
+        { label: '3–7 days', value: 'mid' },
+        { label: '60 days', value: 'long' },
+      ],
+    },
+    {
+      q: "What's your starting budget?",
+      options: [
+        { label: 'Under KSh 2,000', value: 'low' },
+        { label: 'KSh 2,000–10,000', value: 'mid' },
+        { label: 'Above KSh 10,000', value: 'high' },
+      ],
+    },
+  ]
+
+  function pick(val) {
+    const next = { ...answers, [step]: val }
+    setAnswers(next)
+    if (step < questions.length - 1) {
+      setStep(step + 1)
+    } else {
+      // Determine recommendation
+      const time = next[0]
+      const budget = next[1]
+      let tab = 'standard'
+      let planId = 'gold'
+      if (time === 'short') { tab = 'short-term'; planId = 'st1' }
+      else if (time === 'mid') { tab = 'short-term'; planId = budget === 'low' ? 'st2' : 'st3' }
+      else if (budget === 'low') planId = 'starter'
+      else if (budget === 'mid') planId = 'gold'
+      else planId = 'diamond'
+      onResult({ tab, planId })
+      setOpen(false)
+      setStep(0)
+      setAnswers({})
+    }
+  }
+
+  if (!open) {
+    return (
+      <button
+        onClick={() => setOpen(true)}
+        className="w-full mb-4 py-3 rounded-xl flex items-center justify-center gap-2 transition-all active:scale-95"
+        style={{ background: 'linear-gradient(135deg, rgba(99,102,241,0.15) 0%, rgba(10,12,30,0.95) 100%)', border: '1px solid rgba(99,102,241,0.25)' }}
+      >
+        <span className="text-base">🧭</span>
+        <span className="text-[11px] font-black uppercase tracking-widest text-indigo-300">Which plan is right for me?</span>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#818cf8" strokeWidth="2.5"><path d="M9 18l6-6-6-6"/></svg>
+      </button>
+    )
+  }
+
+  const q = questions[step]
+  return (
+    <div className="mb-4 rounded-xl p-4" style={{ background: 'linear-gradient(135deg, rgba(99,102,241,0.12) 0%, rgba(10,12,30,0.98) 100%)', border: '1px solid rgba(99,102,241,0.3)' }}>
+      <div className="flex items-center justify-between mb-3">
+        <p className="text-[10px] font-black uppercase tracking-widest text-indigo-400">Plan Finder · Step {step + 1}/{questions.length}</p>
+        <button onClick={() => { setOpen(false); setStep(0); setAnswers({}) }} className="text-gray-600 hover:text-gray-400 text-xs">✕</button>
+      </div>
+      <p className="text-sm font-bold text-white mb-3">{q.q}</p>
+      <div className="grid grid-cols-3 gap-2">
+        {q.options.map(o => (
+          <button key={o.value} onClick={() => pick(o.value)}
+            className="py-2.5 px-2 rounded-lg text-[10px] font-bold text-center transition-all active:scale-95 hover:border-indigo-400 text-white"
+            style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
+            {o.label}
+          </button>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+/* ── Market Data Collapsible Panel ─────────────────────────────────────── */
+function MarketDataPanel({ children }) {
+  const [expanded, setExpanded] = useState(false)
+  return (
+    <div className="mb-4">
+      <button
+        onClick={() => setExpanded(e => !e)}
+        className="w-full flex items-center justify-between px-4 py-2.5 rounded-xl transition-all"
+        style={{ background: 'rgba(0,180,255,0.04)', border: '1px solid rgba(0,180,255,0.1)' }}
+      >
+        <div className="flex items-center gap-2">
+          <div className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
+          <span className="text-[10px] font-black uppercase tracking-widest" style={{ color: '#00B4FF' }}>Live Market Data</span>
+        </div>
+        <svg
+          width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#00B4FF" strokeWidth="2.5"
+          className={`transition-transform duration-300 ${expanded ? 'rotate-180' : ''}`}
+        >
+          <path d="M6 9l6 6 6-6"/>
+        </svg>
+      </button>
+      {expanded && <div className="mt-2 space-y-2">{children}</div>}
     </div>
   )
 }
@@ -367,6 +496,53 @@ function MarketPulse() {
           </div>
         ))}
       </div>
+    </div>
+  )
+}
+
+/* ── 1A: Compute Load Bar ─────────────────────────────────────────────── */
+function ComputeLoadBar({ planId }) {
+  const [load, setLoad] = useState(() => 72 + Math.abs(planId.charCodeAt(0) % 20))
+  useEffect(() => {
+    const id = setInterval(() => {
+      setLoad(prev => {
+        const delta = (Math.random() - 0.45) * 4
+        return Math.max(60, Math.min(99, prev + delta))
+      })
+    }, 3500)
+    return () => clearInterval(id)
+  }, [planId])
+  const color = load >= 90 ? '#ef4444' : load >= 75 ? '#facc15' : '#34d399'
+  return (
+    <div className="mt-2">
+      <div className="flex justify-between items-center mb-0.5">
+        <span className="text-[8px] font-bold uppercase tracking-wider" style={{ color: 'rgba(255,255,255,0.35)' }}>Compute Load</span>
+        <span className="text-[8px] font-black" style={{ color }}>{load.toFixed(0)}%</span>
+      </div>
+      <div className="w-full h-1 rounded-full bg-gray-800 overflow-hidden">
+        <div className="h-full rounded-full transition-all duration-700" style={{ width: `${load}%`, background: `linear-gradient(90deg, ${color}88, ${color})` }} />
+      </div>
+    </div>
+  )
+}
+
+/* ── 1E: Per-plan node count ─────────────────────────────────────────── */
+const PLAN_NODE_COUNTS = {
+  starter: 4821, basic: 3107, silver: 2419, gold: 1853,
+  platinum: 1204, diamond: 876, ruby: 542, emerald: 318, sapphire: 197, vip: 89,
+}
+function LiveNodeCount({ planId }) {
+  const [count, setCount] = useState(PLAN_NODE_COUNTS[planId] || 500)
+  useEffect(() => {
+    const id = setInterval(() => {
+      setCount(prev => prev + Math.floor(Math.random() * 3))
+    }, 6000)
+    return () => clearInterval(id)
+  }, [planId])
+  return (
+    <div className="flex items-center gap-1 mt-1">
+      <div className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse flex-shrink-0" />
+      <span className="text-[8px] font-bold" style={{ color: 'rgba(52,211,153,0.7)' }}>{count.toLocaleString()} active nodes</span>
     </div>
   )
 }
@@ -454,21 +630,50 @@ function NodeDetailsModal({ plan, onClose, onDeploy }) {
     'vip': { cpu: '256 Cores', gpu: '8x NVIDIA H100', ram: '1TB', network: '200Gbps', storage: '10TB NVMe' },
   }[plan.id] || { cpu: 'Custom', gpu: 'Enterprise Grade', ram: 'High Density', network: 'Optimized', storage: 'Redundant' };
 
+  // 1B: ROI Timeline
+  const daily = getWorkloadYield(plan.amount, 'finance')
+  const milestones = [
+    { day: 1, val: daily },
+    { day: 15, val: daily * 15 },
+    { day: 30, val: daily * 30 },
+    { day: 60, val: getWorkloadTotalReturn(plan.amount, 'finance') },
+  ]
+  const maxVal = milestones[milestones.length - 1].val
+
   return (
     <div className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4 backdrop-blur-sm" onClick={onClose}>
-      <div className="card max-w-sm w-full relative overflow-hidden border-blue-500/30" onClick={e => e.stopPropagation()}>
+      <div className="card max-w-sm w-full relative overflow-hidden border-blue-500/30" onClick={e => e.stopPropagation()} style={{ maxHeight: '90vh', overflowY: 'auto' }}>
         <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 via-cyan-400 to-blue-500"></div>
         
-        <div className="flex justify-between items-start mb-6">
+        <div className="flex justify-between items-start mb-4">
           <div>
             <h3 className="text-xl font-black text-white uppercase tracking-tighter">{plan.name}</h3>
             <p className="text-[10px] text-blue-400 font-bold font-mono uppercase">Node Specification V4.2</p>
+            <LiveNodeCount planId={plan.id} />
           </div>
           <button onClick={onClose} className="w-8 h-8 rounded-full bg-gray-800 flex items-center justify-center text-gray-400 hover:text-white transition-colors">✕</button>
         </div>
 
-        <div className="space-y-4 mb-8">
-          <div className="grid grid-cols-2 gap-4">
+        {/* 1B: ROI Timeline chart */}
+        <div className="p-3 rounded-xl bg-emerald-900/10 border border-emerald-500/20 mb-4">
+          <p className="text-[8px] text-emerald-400 uppercase font-bold mb-2">Revenue Timeline (Finance Workload)</p>
+          <div className="flex items-end gap-2 h-14">
+            {milestones.map(m => {
+              const pct = Math.max(8, Math.round((m.val / maxVal) * 100))
+              return (
+                <div key={m.day} className="flex-1 flex flex-col items-center gap-0.5">
+                  <span className="text-[7px] font-bold text-emerald-400">KSh {m.val >= 1000 ? `${(m.val/1000).toFixed(0)}k` : m.val}</span>
+                  <div className="w-full rounded-t" style={{ height: `${pct}%`, background: 'linear-gradient(0deg, #059669, #34d399)', minHeight: 4 }} />
+                  <span className="text-[7px] text-gray-500">D{m.day}</span>
+                </div>
+              )
+            })}
+          </div>
+          <ComputeLoadBar planId={plan.id} />
+        </div>
+
+        <div className="space-y-4 mb-6">
+          <div className="grid grid-cols-2 gap-3">
             <div className="p-3 rounded-xl bg-white/5 border border-white/5">
               <p className="text-[8px] text-gray-500 uppercase font-bold mb-1">Compute Core</p>
               <p className="text-xs font-bold text-blue-100">{specs.cpu}</p>
@@ -490,7 +695,7 @@ function NodeDetailsModal({ plan, onClose, onDeploy }) {
           <div className="p-3 rounded-xl bg-blue-900/10 border border-blue-500/20">
             <p className="text-[8px] text-blue-400 uppercase font-bold mb-1">Workload Capability</p>
             <p className="text-[10px] text-gray-300 leading-relaxed">
-              {plan.desc || 'Optimized for heavy AI inference, data processing, and neural network training cycles.'}
+              {plan.description || 'Optimized for heavy AI inference, data processing, and neural network training cycles.'}
             </p>
           </div>
         </div>
@@ -689,11 +894,13 @@ export default function PlansPage() {
   const [activeTab, setActiveTab] = useState('standard')
   const [selectedDetailPlan, setSelectedDetailPlan] = useState(null)
   const [isProvisioning, setIsProvisioning] = useState(false)
+  const [stickyPlan, setStickyPlan] = useState(null) // for sticky deploy CTA
+  const [highlightPlanId, setHighlightPlanId] = useState(null) // quiz result highlight
   const [shortTermAmounts, setShortTermAmounts] = useState({
     st1: '',
     st2: '',
     st3: '',
-  }) // 'standard' or 'short-term'
+  })
 
   useEffect(() => {
     if (!user) return
@@ -709,16 +916,22 @@ export default function PlansPage() {
     setTimeout(() => setToast({ msg: '', type: 'success' }), 3500)
   }
 
-  const handleShortTermInvest = (durationHours, amount) => {
-    const plan = [
-      { id: 'st1', name: '24h Rapid Inference', duration: 24, rate: '3%', color: 'blue', desc: 'Optimized for real-time AI inference and high-frequency data validation.', resource: 'NVIDIA H100' },
-      { id: 'st2', name: '3D Neural Cluster', duration: 72, rate: '8%', color: 'indigo', desc: 'Scalable multi-node environment for deep learning model validation and testing.', resource: 'Multi-GPU Cluster' },
-      { id: 'st3', name: '7D Enterprise Backbone', duration: 168, rate: '18%', color: 'purple', desc: 'Dedicated infrastructure for large-scale model training and high-availability datasets.', resource: 'Bare Metal Node' },
-    ].find(p => p.duration === durationHours)
-    
+  const handleShortTermInvest = (durationHours) => {
+    const plan = SHORT_TERM_PLANS.find(p => p.duration === durationHours)
     if (plan) {
       setSelectedPlan(plan)
     }
+  }
+
+  const handleQuizResult = ({ tab, planId }) => {
+    setActiveTab(tab)
+    setHighlightPlanId(planId)
+    // scroll to plans area
+    setTimeout(() => {
+      const el = document.getElementById(`plan-${planId}`)
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    }, 200)
+    showToast(`✅ We recommend plan: ${planId.toUpperCase()} based on your answers`, 'success')
   }
 
     const confirmShortTermInvest = async () => {
@@ -818,10 +1031,19 @@ export default function PlansPage() {
     return <LoadingRitual onComplete={handleLoadingComplete} />
   }
 
+  // Derived sticky state for short-term: which plan has a valid entered amount
+  const activeStickyPlanData = activeTab === 'short-term'
+    ? SHORT_TERM_PLANS.find(p => {
+        const amt = parseFloat(shortTermAmounts[p.id])
+        return amt >= 3500 && amt <= 75000 && (user?.balance || 0) >= amt
+      })
+    : null
+
   return (
-    <div className="pt-4 md:pt-20 pb-24 md:pb-8 px-4 max-w-2xl mx-auto">
+    <div className="pt-4 md:pt-20 pb-28 md:pb-8 px-4 max-w-2xl mx-auto">
+      {/* Toast */}
       {toast.msg && (
-        <div className={`fixed top-4 left-1/2 -translate-x-1/2 z-50 px-6 py-3 rounded-xl shadow-lg text-sm font-medium border ${
+        <div className={`fixed top-4 left-1/2 -translate-x-1/2 z-[60] px-6 py-3 rounded-xl shadow-lg text-sm font-medium border ${
           toast.type === 'error'
             ? 'bg-red-900 border-red-700 text-red-100'
             : 'bg-green-800 border-green-600 text-white'
@@ -830,6 +1052,7 @@ export default function PlansPage() {
         </div>
       )}
 
+      {/* Modals */}
       {selectedPlan && (
         <ConfirmModal
           plan={selectedPlan}
@@ -843,123 +1066,185 @@ export default function PlansPage() {
           investments={investments}
         />
       )}
-
       {selectedDetailPlan && (
         <NodeDetailsModal
           plan={selectedDetailPlan}
           onClose={() => setSelectedDetailPlan(null)}
-          onDeploy={() => {
-            setSelectedPlan(selectedDetailPlan);
-            setSelectedWorkload('finance');
-          }}
+          onDeploy={() => { setSelectedPlan(selectedDetailPlan); setSelectedWorkload('finance') }}
         />
+      )}
+
+      {/* ── Sticky Short-Term Deploy Bar ───────────────────────────────── */}
+      {activeStickyPlanData && (
+        <div className="fixed bottom-16 md:bottom-4 left-0 right-0 z-40 flex justify-center px-4 pointer-events-none">
+          <div className="max-w-2xl w-full pointer-events-auto">
+            <div className="rounded-2xl px-4 py-3 flex items-center justify-between shadow-2xl"
+              style={{ background: 'linear-gradient(135deg, rgba(16,185,129,0.95) 0%, rgba(5,150,105,0.98) 100%)', border: '1px solid rgba(16,185,129,0.4)' }}>
+              <div>
+                <p className="text-[9px] font-black uppercase tracking-widest text-emerald-100/70">Ready to Deploy</p>
+                <p className="text-sm font-black text-white">
+                  {activeStickyPlanData.name} · KSh {parseFloat(shortTermAmounts[activeStickyPlanData.id]).toLocaleString()}
+                  <span className="ml-2 text-emerald-200">→ earn KSh {Math.floor(parseFloat(shortTermAmounts[activeStickyPlanData.id]) * activeStickyPlanData.rateNum).toLocaleString()} profit</span>
+                </p>
+              </div>
+              <button
+                onClick={() => handleShortTermInvest(activeStickyPlanData.duration)}
+                className="ml-3 px-4 py-2 rounded-xl bg-white text-emerald-700 text-[11px] font-black uppercase tracking-tighter whitespace-nowrap active:scale-95 transition-all shadow-lg"
+              >
+                Provision ⚡
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Quick Actions Strip */}
       <QuickActions user={user} showToast={showToast} />
 
-      <div className="mb-6">
+      {/* ── Page Header ─────────────────────────────────────────────────── */}
+      <div className="mb-4">
         <h2 className="text-2xl font-black">Provision Compute Infrastructure</h2>
-        <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>
-          Provision high-performance GPU nodes and earn real-time compute revenue.
+        <p className="text-xs mt-1" style={{ color: 'var(--text-secondary)' }}>
+          Deploy GPU nodes · Earn real-time compute revenue · Scale anytime
         </p>
       </div>
 
-      {/* Market Pulse */}
-      <MarketPulse />
-
-      {/* Compute Yield Simulator */}
-      <RevenueSimulator balance={user?.balance || 0} />
-
-      {/* Global Demand Bar */}
-      <GlobalDemandBar />
-
-      {/* Live Deployments Ticker */}
-      <LiveDeploymentsTicker />
-
-      {/* Tab Toggle */}
-      <div className="flex p-1.5 bg-black/60 rounded-2xl mb-4 border border-white/10 shadow-2xl">
-        <button 
+      {/* ① TAB TOGGLE — top of page, before everything ─────────────────── */}
+      <div className="flex p-1 rounded-2xl mb-3 shadow-2xl" style={{ background: 'rgba(0,0,0,0.7)', border: '1px solid rgba(255,255,255,0.08)' }}>
+        <button
           onClick={() => setActiveTab('standard')}
-          className={`flex-1 flex flex-col items-center justify-center py-3 rounded-xl transition-all duration-300 ${
-            activeTab === 'standard' 
-              ? 'bg-gradient-to-br from-red-600 to-red-700 text-white shadow-[0_0_20px_rgba(220,38,38,0.3)] scale-[1.02]' 
+          className={`flex-1 relative flex flex-col items-center justify-center py-3.5 rounded-xl transition-all duration-300 ${
+            activeTab === 'standard'
+              ? 'text-white shadow-[0_0_24px_rgba(220,38,38,0.35)]'
               : 'text-gray-500 hover:text-gray-300 hover:bg-white/5'
           }`}
+          style={activeTab === 'standard' ? { background: 'linear-gradient(135deg, #dc2626 0%, #b91c1c 100%)' } : {}}
         >
-          <div className="flex items-center gap-2 mb-0.5">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"></path>
+          {activeTab === 'standard' && (
+            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-8 h-0.5 rounded-full bg-red-300 mb-0.5" />
+          )}
+          <div className="flex items-center gap-1.5 mb-0.5">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
             </svg>
-            <span className="text-[11px] font-black uppercase tracking-tighter">Compute Fleet</span>
+            <span className="text-[12px] font-black uppercase tracking-tight">Compute Fleet</span>
           </div>
-          <span className={`text-[8px] font-bold uppercase tracking-[0.2em] ${activeTab === 'standard' ? 'text-red-100/70' : 'text-gray-600'}`}>
-            60-Day Fixed Term
+          <span className={`text-[8px] font-bold uppercase tracking-widest ${activeTab === 'standard' ? 'text-red-200/70' : 'text-gray-600'}`}>
+            60-Day · 3% Daily
           </span>
         </button>
-        
-        <button 
+
+        <button
           onClick={() => setActiveTab('short-term')}
-          className={`flex-1 flex flex-col items-center justify-center py-3 rounded-xl transition-all duration-300 ${
-            activeTab === 'short-term' 
-              ? 'bg-gradient-to-br from-emerald-600 to-emerald-700 text-white shadow-[0_0_20px_rgba(16,185,129,0.3)] scale-[1.02]' 
+          className={`flex-1 relative flex flex-col items-center justify-center py-3.5 rounded-xl transition-all duration-300 ${
+            activeTab === 'short-term'
+              ? 'text-white shadow-[0_0_24px_rgba(16,185,129,0.35)]'
               : 'text-gray-500 hover:text-gray-300 hover:bg-white/5'
           }`}
+          style={activeTab === 'short-term' ? { background: 'linear-gradient(135deg, #059669 0%, #047857 100%)' } : {}}
         >
-          <div className="flex items-center gap-2 mb-0.5">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path>
+          {activeTab === 'short-term' && (
+            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-8 h-0.5 rounded-full bg-emerald-300 mb-0.5" />
+          )}
+          <div className="flex items-center gap-1.5 mb-0.5">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
             </svg>
-            <span className="text-[11px] font-black uppercase tracking-tighter">Spot Market</span>
+            <span className="text-[12px] font-black uppercase tracking-tight">Spot Market</span>
           </div>
-          <span className={`text-[8px] font-bold uppercase tracking-[0.2em] ${activeTab === 'short-term' ? 'text-emerald-100/70' : 'text-gray-600'}`}>
-            24H - 7D Rapid Yield
+          <span className={`text-[8px] font-bold uppercase tracking-widest ${activeTab === 'short-term' ? 'text-emerald-200/70' : 'text-gray-600'}`}>
+            24H–7D · Up to 18%
           </span>
         </button>
       </div>
+
+      {/* ② BALANCE CHIP — right below tab, always visible ──────────────── */}
+      <div className="flex items-center justify-between rounded-xl px-4 py-3 mb-4"
+        style={{ background: 'linear-gradient(135deg, rgba(255,255,255,0.04) 0%, rgba(0,0,0,0.3) 100%)', border: '1px solid rgba(255,255,255,0.07)' }}>
+        <div className="flex items-center gap-2">
+          <span className="text-lg">💰</span>
+          <div>
+            <p className="text-[9px] uppercase tracking-widest text-gray-500 font-bold">Available Balance</p>
+            <p className="text-base font-black text-white">KSh {(user?.balance || 0).toLocaleString()}</p>
+          </div>
+        </div>
+        <button
+          onClick={() => navigate('/profile?deposit=1')}
+          className="px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-tighter transition-all active:scale-95"
+          style={{ background: 'linear-gradient(135deg, rgba(220,38,38,0.2), rgba(220,38,38,0.08))', border: '1px solid rgba(220,38,38,0.3)', color: '#f87171' }}
+        >
+          + Top Up
+        </button>
+      </div>
+
+      {/* ③ PLAN QUIZ ─────────────────────────────────────────────────────── */}
+      <PlanQuiz onResult={handleQuizResult} />
+
+      {/* ④ WORKLOAD SELECTOR — standard tab only, ABOVE plan list ─────── */}
+      {activeTab === 'standard' && (
+        <div className="rounded-xl px-4 py-3 mb-4" style={{ background: 'rgba(0,180,255,0.04)', border: '1px solid rgba(0,180,255,0.1)' }}>
+          <p className="text-[9px] uppercase tracking-widest font-black mb-2.5" style={{ color: '#00B4FF' }}>
+            AI Workload Type — adjusts yield multiplier for all plans below
+          </p>
+          <div className="grid grid-cols-3 gap-2">
+            {Object.values(WORKLOAD_MULTIPLIERS).map(w => {
+              const active = selectedWorkload === w.id
+              return (
+                <HapticButton
+                  key={w.id}
+                  onClick={() => setSelectedWorkload(w.id)}
+                  className={`relative rounded-xl px-2 py-2.5 text-center transition-all ${
+                    active
+                      ? 'border-2 border-cyan-500 shadow-lg shadow-cyan-500/10'
+                      : 'border border-gray-700/50 hover:border-gray-600'
+                  }`}
+                  style={active ? { background: 'linear-gradient(135deg, rgba(6,182,212,0.18), rgba(59,130,246,0.1))' } : {}}
+                >
+                  <span className="text-lg block mb-0.5">{w.icon}</span>
+                  <p className={`text-[9px] font-bold ${active ? 'text-cyan-300' : 'text-gray-300'}`}>{w.name}</p>
+                  <p className={`text-[8px] mt-0.5 font-black ${w.multiplier > 1 ? 'text-green-400' : w.multiplier >= 0.95 ? 'text-blue-400' : 'text-yellow-400'}`}>
+                    {w.multiplier >= 1 ? '+' : ''}{Math.round((w.multiplier - 1) * 100)}% yield
+                  </p>
+                  {active && <div className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />}
+                </HapticButton>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* ⑤ COLLAPSIBLE MARKET DATA ──────────────────────────────────────── */}
+      <MarketDataPanel>
+        <MarketPulse />
+        <RevenueSimulator balance={user?.balance || 0} />
+        <GlobalDemandBar />
+        <LiveDeploymentsTicker />
+      </MarketDataPanel>
 
       {/* How It Works */}
       <HowItWorksStrip />
 
-      {/* Spot Market CTA (visible on standard tab) */}
+      {/* Cross-tab CTA */}
       {activeTab === 'standard' && <SpotMarketCTA onSwitchToSpot={() => setActiveTab('short-term')} />}
 
-      {/* Certifications */}
+      {/* Trust signals */}
       <PlanCertifications />
-
-      {/* Data Center Status */}
       <DataCenterInfo />
-
-      {/* Enterprise Wall */}
       <EnterpriseClientWall />
 
-      {/* Balance */}
-      <div className="balance-gradient rounded-xl px-5 py-4 mb-6 flex items-center justify-between">
-        <div>
-          <p className="text-gray-400 text-xs">Available Balance</p>
-          <p className="text-2xl font-black">KSh {(user?.balance || 0).toLocaleString()}</p>
-        </div>
-        <span className="text-3xl">💰</span>
+      <div className="mb-4 text-[9px] text-gray-500 text-center">
+        All plans run on enterprise-grade infrastructure with 24/7 monitoring
       </div>
 
-      <div className="mb-4 text-xs text-gray-400 text-center">
-        <p>All plans run on enterprise-grade infrastructure with 24/7 monitoring</p>
-      </div>
-
-      {/* Plans Content */}
+      {/* ─────────────────────── PLANS CONTENT ─────────────────────────── */}
       {activeTab === 'standard' ? (
         <div className="rounded-xl overflow-hidden mb-6"
           style={{ background: 'linear-gradient(135deg, rgba(10,12,30,0.95), rgba(6,8,20,0.98))', border: '1px solid rgba(0,180,255,0.12)' }}>
-          
-          {/* Table Header */}
+
           <div className="px-4 py-3 border-b" style={{ borderColor: 'rgba(0,180,255,0.12)' }}>
             <div className="flex items-center justify-between">
-              <p className="text-[10px] uppercase tracking-widest font-bold" style={{ color: '#00B4FF' }}>
-                Live Node Market
-              </p>
-              <p className="text-[10px]" style={{ color: 'var(--text-muted)' }}>
-                Tap any row to deploy
-              </p>
+              <p className="text-[10px] uppercase tracking-widest font-bold" style={{ color: '#00B4FF' }}>Live Node Market</p>
+              <p className="text-[10px]" style={{ color: 'var(--text-muted)' }}>Tap any row to deploy</p>
             </div>
           </div>
 
@@ -968,14 +1253,14 @@ export default function PlansPage() {
             <table className="number-wall-table">
               <thead>
                 <tr>
-<th className="text-left">Node Type</th>
-	                  <th>Allocation</th>
-	                  <th>24h Revenue</th>
-	                  <th>Contract Value</th>
-		                  <th>Yield Index</th>
-		                  <th>Status</th>
-		                  <th>Details</th>
-		                </tr>
+                  <th className="text-left">Node Type</th>
+                  <th>Allocation</th>
+                  <th>24h Revenue</th>
+                  <th>Contract Value</th>
+                  <th>Yield Index</th>
+                  <th>Status</th>
+                  <th>Details</th>
+                </tr>
               </thead>
               <tbody>
                 {PLANS.map(plan => (
@@ -992,212 +1277,232 @@ export default function PlansPage() {
             </table>
           </div>
 
-	          {/* Mobile Cards (compact number wall style) */}
-	          <div className="md:hidden divide-y" style={{ borderColor: 'rgba(31,41,55,0.4)' }}>
-	            {PLANS.map(plan => {
-	              const daily = getWorkloadYield(plan.amount, selectedWorkload)
-	              const total = getWorkloadTotalReturn(plan.amount, selectedWorkload)
-	              const roi = Math.round((total / plan.amount - 1) * 100)
-	              const isCritical = plan.amount >= 15000
-	              const planImage = PLAN_IMAGES[plan.id]
-	
-	              return (
-	                <HapticButton
-	                  key={plan.id}
-	                  onClick={() => setSelectedDetailPlan(plan)}
-	                  className={`w-full text-left px-4 py-3 transition-all ${isCritical ? 'demand-critical' : ''}`}
-	                >
-                  <div className="flex items-center gap-3 mb-2">
-                    {planImage && (
-                      <div className="w-10 h-10 rounded-lg overflow-hidden flex-shrink-0 border border-white/10">
-                        <img src={planImage} alt={plan.name} className="w-full h-full object-cover" />
+          {/* Mobile Cards */}
+          <div className="md:hidden divide-y" style={{ borderColor: 'rgba(31,41,55,0.4)' }}>
+            {PLANS.map(plan => {
+              const daily = getWorkloadYield(plan.amount, selectedWorkload)
+              const total = getWorkloadTotalReturn(plan.amount, selectedWorkload)
+              const roi = Math.round((total / plan.amount - 1) * 100)
+              const isCritical = plan.amount >= 15000
+              const planImage = PLAN_IMAGES[plan.id]
+              const badge = PLAN_BADGES[plan.id]
+              const isHighlighted = highlightPlanId === plan.id
+
+              return (
+                <div key={plan.id} id={`plan-${plan.id}`}>
+                  <HapticButton
+                    onClick={() => setSelectedDetailPlan(plan)}
+                    className={`w-full text-left px-4 py-3 transition-all ${isCritical ? 'demand-critical' : ''} ${isHighlighted ? 'ring-2 ring-indigo-400 ring-inset rounded-xl' : ''}`}
+                  >
+                    <div className="flex items-center gap-3 mb-2">
+                      {planImage && (
+                        <div className="relative w-10 h-10 rounded-lg overflow-hidden flex-shrink-0 border border-white/10">
+                          <img src={planImage} alt={plan.name} className="w-full h-full object-cover" />
+                        </div>
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between gap-1">
+                          <p className="text-sm font-bold text-white truncate">{plan.name}</p>
+                          <p className="text-sm font-black text-white flex-shrink-0">KSh {plan.amount.toLocaleString()}</p>
+                        </div>
+                        <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                          <p className="text-[9px]" style={{ color: 'var(--text-muted)' }}>{plan.specs || 'AI Compute'}</p>
+                          {badge && (
+                            <span className="text-[8px] font-black px-1.5 py-0.5 rounded-full" style={{ background: `${badge.color}22`, color: badge.color, border: `1px solid ${badge.color}44` }}>
+                              {badge.label}
+                            </span>
+                          )}
+                        </div>
+                        <LiveNodeCount planId={plan.id} />
                       </div>
-                    )}
-                    <div className="flex-1">
-                      <div className="flex items-center justify-between">
-<p className="text-sm font-bold text-white">{plan.name}</p>
-	                        <p className="text-sm font-black text-white">KSh {plan.amount.toLocaleString()}</p>
-	                      </div>
-	                      <p className="text-[9px]" style={{ color: 'var(--text-muted)' }}>{plan.specs || 'AI Compute'}</p>
-	                    </div>
-	                  </div>
-	
-	                  <div className="flex justify-between items-center pt-2" style={{ borderTop: '1px solid rgba(31,41,55,0.4)' }}>
-	                    <div className="text-center">
-	                      <p className="num-glow-green font-bold text-xs">KSh {daily.toLocaleString()}</p>
-	                      <p className="text-[8px] text-gray-500">24h Rev</p>
-	                    </div>
-	                    <div className="text-center">
-	                      <p className="num-glow-gold font-bold text-xs">KSh {total.toLocaleString()}</p>
-	                      <p className="text-[8px] text-gray-500">Value</p>
-	                    </div>
-	                    <div className="text-center">
-	                      <p className="text-cyan-400 font-bold text-xs">{roi}%</p>
-	                      <p className="text-[8px] text-gray-500">Yield</p>
-	                    </div>
-                    <div className="text-center min-w-[50px]">
-                      <div className="flex flex-col items-center">
+                    </div>
+                    <ComputeLoadBar planId={plan.id} />
+
+                    <div className="flex justify-between items-center pt-2 mt-2" style={{ borderTop: '1px solid rgba(31,41,55,0.4)' }}>
+                      <div className="text-center">
+                        <p className="num-glow-green font-bold text-xs">KSh {daily.toLocaleString()}</p>
+                        <p className="text-[8px] text-gray-500">24h Rev</p>
+                      </div>
+                      <div className="text-center">
+                        <p className="num-glow-gold font-bold text-xs">KSh {total.toLocaleString()}</p>
+                        <p className="text-[8px] text-gray-500">Value</p>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-cyan-400 font-bold text-xs">{roi}%</p>
+                        <p className="text-[8px] text-gray-500">Yield</p>
+                      </div>
+                      <div className="text-center min-w-[50px]">
                         <span className="text-xs">ℹ️</span>
                         <p className="text-[7px] text-blue-400 uppercase mt-0.5 font-bold">Tap to Read</p>
                       </div>
+                      <div className="text-center">
+                        <button
+                          onClick={(e) => { e.stopPropagation(); setSelectedPlan(plan); setSelectedWorkload('finance') }}
+                          className="liquid-gold text-[9px] font-bold px-3 py-1.5 rounded-lg text-white"
+                        >
+                          Deploy
+                        </button>
+                      </div>
                     </div>
-                    <div className="text-center">
-                      <button
-                        onClick={(e) => { e.stopPropagation(); setSelectedPlan(plan); setSelectedWorkload('finance') }}
-                        className="liquid-gold text-[9px] font-bold px-3 py-1.5 rounded-lg text-white"
-                      >
-                        Deploy
-                      </button>
-                    </div>
-                  </div>
-                </HapticButton>
+                  </HapticButton>
+                </div>
               )
             })}
           </div>
         </div>
       ) : (
-        <div className="space-y-6 mb-8">
-          {/* Institutional Spot Market Header */}
+        /* ── SPOT MARKET TAB ──────────────────────────────────────────── */
+        <div className="space-y-5 mb-8">
+          {/* Header */}
           <div className="relative overflow-hidden bg-gradient-to-br from-emerald-900/30 to-blue-900/20 border border-emerald-500/30 rounded-2xl p-5 shadow-2xl shadow-emerald-900/10">
             <div className="absolute top-0 right-0 p-3">
               <div className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-emerald-500/20 border border-emerald-500/30">
-                <div className="w-1 h-1 rounded-full bg-emerald-400 animate-pulse"></div>
+                <div className="w-1 h-1 rounded-full bg-emerald-400 animate-pulse" />
                 <span className="text-[8px] font-black text-emerald-400 uppercase tracking-tighter">Live Market Active</span>
               </div>
             </div>
-            
-            <h3 className="text-emerald-400 font-black text-base mb-2 uppercase tracking-tight">Institutional Spot Market</h3>
-            <p className="text-[11px] text-gray-300 leading-relaxed mb-4 max-w-[90%]">
-              Deploy high-frequency compute nodes for immediate enterprise AI tasks. 
-              <span className="text-emerald-400 font-bold ml-1">Direct Capital Deployment:</span> These contracts require fresh liquidity and operate independently from long-term fleet yields.
+            <h3 className="text-emerald-400 font-black text-base mb-1.5 uppercase tracking-tight">Institutional Spot Market</h3>
+            <p className="text-[11px] text-gray-300 leading-relaxed mb-3 max-w-[90%]">
+              Deploy high-frequency compute nodes for immediate enterprise AI tasks.{' '}
+              <span className="text-emerald-400 font-bold">Direct Capital Deployment:</span> Operates independently from long-term fleet yields.
             </p>
-            
             <div className="flex items-center gap-4 text-[9px] font-bold text-emerald-500/80">
-              <div className="flex items-center gap-1">
-                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><path d="M20 6L9 17l-5-5"/></svg>
-                <span>AUTOMATIC PAYOUT</span>
-              </div>
-              <div className="flex items-center gap-1">
-                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><path d="M20 6L9 17l-5-5"/></svg>
-                <span>NO LOCK-UP PERIOD</span>
-              </div>
+              {['AUTOMATIC PAYOUT', 'NO LOCK-UP PERIOD', 'INSTANT SETTLEMENT'].map(t => (
+                <div key={t} className="flex items-center gap-1">
+                  <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><path d="M20 6L9 17l-5-5"/></svg>
+                  <span>{t}</span>
+                </div>
+              ))}
             </div>
           </div>
 
-          {[
-            { id: 'st1', name: '24h Rapid Inference', duration: 24, rate: '3%', color: 'emerald', desc: 'Real-time AI inference & data validation.', resource: 'NVIDIA H100 TENSOR CORE', icon: '⚡' },
-            { id: 'st2', name: '3D Neural Cluster', duration: 72, rate: '8%', color: 'blue', desc: 'Deep learning model validation & testing.', resource: 'MULTI-GPU CLUSTER A100', icon: '🧠' },
-            { id: 'st3', name: '7D Enterprise Backbone', duration: 168, rate: '18%', color: 'purple', desc: 'Large-scale model training infrastructure.', resource: 'BARE METAL AI NODE', icon: '🏢' },
-          ].map(plan => (
-            <div key={plan.id} className="group relative bg-gray-900/40 border border-white/5 hover:border-white/10 rounded-2xl p-5 transition-all duration-500">
-              <div className="absolute top-0 right-0">
-                <div className={`px-4 py-1.5 bg-${plan.color}-600/90 text-white text-[10px] font-black uppercase rounded-bl-xl tracking-tighter`}>
-                  {plan.duration}H DURATION
-                </div>
-              </div>
-              
-              <div className="flex items-center gap-4 mb-6">
-                <div className={`w-14 h-14 rounded-2xl bg-${plan.color}-500/10 flex items-center justify-center border border-${plan.color}-500/20 group-hover:scale-105 transition-transform duration-500 shadow-inner`}>
-                  <span className="text-3xl">{plan.icon}</span>
-                </div>
-                <div>
-                  <h4 className="font-black text-white text-lg tracking-tight">{plan.name}</h4>
-                  <div className="flex items-center gap-2">
-                    <span className={`text-[9px] font-black text-${plan.color}-400 uppercase tracking-widest`}>{plan.resource}</span>
-                    <span className="w-1 h-1 rounded-full bg-gray-700"></span>
-                    <span className="text-[9px] text-gray-500 font-bold uppercase">SECURE UPLINK</span>
-                  </div>
-                </div>
-              </div>
+          {SHORT_TERM_PLANS.map(plan => {
+            const enteredAmt = parseFloat(shortTermAmounts[plan.id]) || 0
+            const profit = enteredAmt > 0 ? Math.floor(enteredAmt * plan.rateNum) : 0
+            const totalReturn = enteredAmt + profit
+            const isHighlighted = highlightPlanId === plan.id
 
-              <div className="grid grid-cols-2 gap-4 mb-6">
-                <div className="bg-black/40 rounded-xl p-3 border border-white/5 group-hover:border-white/10 transition-colors">
-                  <p className="text-[9px] text-gray-500 uppercase font-black mb-1">Guaranteed Yield</p>
-                  <div className="flex items-baseline gap-1">
-                    <p className={`text-2xl font-black text-${plan.color}-400`}>{plan.rate}</p>
-                    <span className="text-[10px] text-gray-500 font-bold uppercase">Net</span>
-                  </div>
-                </div>
-                <div className="bg-black/40 rounded-xl p-3 border border-white/5 group-hover:border-white/10 transition-colors">
-                  <p className="text-[9px] text-gray-500 uppercase font-black mb-1">Node Lifecycle</p>
-                  <div className="flex items-baseline gap-1">
-                    <p className="text-2xl font-black text-white">{plan.duration}</p>
-                    <span className="text-[10px] text-gray-500 font-bold uppercase">Hours</span>
-                  </div>
-                </div>
-              </div>
+            const colorMap = {
+              emerald: { bg: 'rgba(16,185,129,0.08)', border: 'rgba(16,185,129,0.25)', text: '#10b981', btn: '#059669', btnHover: '#047857' },
+              blue:    { bg: 'rgba(59,130,246,0.08)', border: 'rgba(59,130,246,0.25)', text: '#3b82f6', btn: '#2563eb', btnHover: '#1d4ed8' },
+              purple:  { bg: 'rgba(168,85,247,0.08)', border: 'rgba(168,85,247,0.25)', text: '#a855f7', btn: '#7c3aed', btnHover: '#6d28d9' },
+            }[plan.color]
 
-              <div className="space-y-4">
-                <div className="relative">
-                  <div className="flex justify-between items-center mb-2">
-                    <label className="text-[10px] text-gray-400 uppercase font-black tracking-tighter">Allocation Amount</label>
-                    <span className="text-[10px] text-gray-500 font-mono">Min: 3,500 | Max: 75,000</span>
-                  </div>
-                  <div className="relative group/input">
-                    <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 font-black text-sm">KSh</div>
-                    <input
-                      type="number"
-                      placeholder="0.00"
-                      value={shortTermAmounts[plan.id]}
-                      onChange={(e) => setShortTermAmounts(prev => ({ ...prev, [plan.id]: e.target.value }))}
-                      className="w-full bg-black/80 border border-white/10 group-hover/input:border-white/20 rounded-xl py-3.5 pl-12 pr-4 text-base font-black text-white focus:border-emerald-500 outline-none transition-all shadow-inner"
-                    />
-                  </div>
-                </div>
-
-                <button
-                  onClick={() => handleShortTermInvest(plan.duration, parseFloat(shortTermAmounts[plan.id]) || 0)}
-                  disabled={confirming}
-                  className={`w-full py-4 rounded-xl bg-${plan.color}-600 hover:bg-${plan.color}-500 text-white text-xs font-black uppercase tracking-[0.2em] transition-all shadow-xl shadow-${plan.color}-900/30 active:scale-[0.98] relative overflow-hidden group/btn`}
-                >
-                  <span className="relative z-10">{confirming ? 'Initializing...' : 'Provision AI Node'}</span>
-                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover/btn:animate-shimmer"></div>
-                </button>
-              </div>
-
-              <div className="mt-4 flex items-center justify-center gap-2 opacity-50">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-gray-400">
-                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
-                </svg>
-                <p className="text-[9px] text-gray-400 font-bold uppercase tracking-widest">Enterprise-Grade Encryption Active</p>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Workload Selector — Standard Nodes only */}
-      {activeTab === 'standard' && (
-      <div className="card mb-4">
-        <p className="text-[10px] uppercase tracking-widest font-semibold mb-3" style={{ color: '#00B4FF' }}>
-          Select AI Workload (applies to all plans)
-        </p>
-        <div className="grid grid-cols-3 gap-2">
-          {Object.values(WORKLOAD_MULTIPLIERS).map(w => {
-            const active = selectedWorkload === w.id
             return (
-              <HapticButton
-                key={w.id}
-                onClick={() => setSelectedWorkload(w.id)}
-                className={`relative rounded-xl px-2 py-3 text-center transition-all ${
-                  active
-                    ? 'bg-gradient-to-br from-blue-600/30 to-cyan-600/20 border-2 border-cyan-500 shadow-lg shadow-cyan-500/10'
-                    : 'border border-gray-700/50'
-                }`}
+              <div
+                key={plan.id}
+                id={`plan-${plan.id}`}
+                className={`group relative rounded-2xl p-5 transition-all duration-300 ${isHighlighted ? 'ring-2 ring-indigo-400' : ''}`}
+                style={{ background: `linear-gradient(135deg, ${colorMap.bg} 0%, rgba(10,12,30,0.97) 100%)`, border: `1px solid ${colorMap.border}` }}
               >
-                <span className="text-xl block mb-1">{w.icon}</span>
-                <p className={`text-[10px] font-bold ${active ? 'text-cyan-300' : 'text-gray-300'}`}>{w.name}</p>
-                <p className={`text-[9px] mt-1 font-semibold ${
-                  w.multiplier > 1 ? 'text-green-400' : w.multiplier >= 0.95 ? 'text-blue-400' : 'text-yellow-400'
-                }`}>
-                  {w.multiplier >= 1 ? '+' : ''}{Math.round((w.multiplier - 1) * 100)}% yield
-                </p>
-                {active && <div className="absolute top-1 right-1 w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />}
-              </HapticButton>
+                {/* Duration badge */}
+                <div className="absolute top-0 right-0 flex flex-col items-end gap-1 p-3">
+                  <div className="px-3 py-1 rounded-bl-xl rounded-tr-xl text-white text-[10px] font-black uppercase tracking-tighter"
+                    style={{ background: colorMap.btn }}>
+                    {plan.duration}H DURATION
+                  </div>
+                  <span className="text-[8px] font-black uppercase px-2 py-0.5 rounded-full"
+                    style={{ background: `${colorMap.text}22`, color: colorMap.text, border: `1px solid ${colorMap.text}44` }}>
+                    {plan.badge}
+                  </span>
+                </div>
+
+                {/* Plan header */}
+                <div className="flex items-center gap-4 mb-5 pr-24">
+                  <div className="w-14 h-14 rounded-2xl flex items-center justify-center border flex-shrink-0 group-hover:scale-105 transition-transform duration-300 shadow-inner"
+                    style={{ background: `${colorMap.text}12`, borderColor: `${colorMap.text}30` }}>
+                    <span className="text-3xl">{plan.icon}</span>
+                  </div>
+                  <div>
+                    <h4 className="font-black text-white text-base tracking-tight">{plan.name}</h4>
+                    <div className="flex items-center gap-2 mt-0.5">
+                      <span className="text-[9px] font-black uppercase tracking-widest" style={{ color: colorMap.text }}>{plan.resource}</span>
+                      <span className="w-1 h-1 rounded-full bg-gray-700" />
+                      <span className="text-[9px] text-gray-500 font-bold uppercase">SECURE UPLINK</span>
+                    </div>
+                    <p className="text-[9px] text-gray-500 mt-0.5 leading-tight">{plan.desc}</p>
+                  </div>
+                </div>
+
+                {/* Stats grid */}
+                <div className="grid grid-cols-2 gap-3 mb-5">
+                  <div className="rounded-xl p-3 border" style={{ background: 'rgba(0,0,0,0.4)', borderColor: 'rgba(255,255,255,0.05)' }}>
+                    <p className="text-[9px] text-gray-500 uppercase font-black mb-1">Guaranteed Yield</p>
+                    <div className="flex items-baseline gap-1">
+                      <p className="text-2xl font-black" style={{ color: colorMap.text }}>{plan.rate}</p>
+                      <span className="text-[10px] text-gray-500 font-bold uppercase">Net</span>
+                    </div>
+                  </div>
+                  <div className="rounded-xl p-3 border" style={{ background: 'rgba(0,0,0,0.4)', borderColor: 'rgba(255,255,255,0.05)' }}>
+                    <p className="text-[9px] text-gray-500 uppercase font-black mb-1">Node Lifecycle</p>
+                    <div className="flex items-baseline gap-1">
+                      <p className="text-2xl font-black text-white">{plan.duration}</p>
+                      <span className="text-[10px] text-gray-500 font-bold uppercase">Hours</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Amount input + live preview */}
+                <div className="space-y-3">
+                  <div>
+                    <div className="flex justify-between items-center mb-2">
+                      <label className="text-[10px] text-gray-400 uppercase font-black tracking-tighter">Allocation Amount</label>
+                      <span className="text-[9px] text-gray-500 font-mono">Min: 3,500 · Max: 75,000</span>
+                    </div>
+                    <div className="relative">
+                      <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 font-black text-sm">KSh</div>
+                      <input
+                        type="number"
+                        placeholder="0.00"
+                        value={shortTermAmounts[plan.id]}
+                        onChange={(e) => setShortTermAmounts(prev => ({ ...prev, [plan.id]: e.target.value }))}
+                        className="w-full bg-black/80 rounded-xl py-3.5 pl-12 pr-4 text-base font-black text-white outline-none transition-all shadow-inner"
+                        style={{ border: `1px solid ${enteredAmt >= 3500 ? colorMap.text + '66' : 'rgba(255,255,255,0.08)'}` }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* ⑥ LIVE RETURN PREVIEW */}
+                  {enteredAmt >= 3500 && enteredAmt <= 75000 && (
+                    <div className="rounded-xl px-4 py-3 flex items-center justify-between"
+                      style={{ background: `${colorMap.text}0d`, border: `1px solid ${colorMap.text}33` }}>
+                      <div className="text-center">
+                        <p className="text-[8px] text-gray-500 uppercase font-bold">You Invest</p>
+                        <p className="text-sm font-black text-white">KSh {enteredAmt.toLocaleString()}</p>
+                      </div>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={colorMap.text} strokeWidth="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                      <div className="text-center">
+                        <p className="text-[8px] text-gray-500 uppercase font-bold">Profit</p>
+                        <p className="text-sm font-black" style={{ color: colorMap.text }}>+ KSh {profit.toLocaleString()}</p>
+                      </div>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={colorMap.text} strokeWidth="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                      <div className="text-center">
+                        <p className="text-[8px] text-gray-500 uppercase font-bold">Total Return</p>
+                        <p className="text-sm font-black text-yellow-400">KSh {totalReturn.toLocaleString()}</p>
+                      </div>
+                    </div>
+                  )}
+
+                  <button
+                    onClick={() => handleShortTermInvest(plan.duration)}
+                    disabled={confirming}
+                    className="w-full py-4 rounded-xl text-white text-xs font-black uppercase tracking-[0.2em] transition-all active:scale-[0.98] shadow-xl"
+                    style={{ background: `linear-gradient(135deg, ${colorMap.btn}, ${colorMap.btnHover})`, boxShadow: `0 8px 24px ${colorMap.text}30` }}
+                  >
+                    {confirming ? 'Initializing...' : `Provision ${plan.name} Node`}
+                  </button>
+                </div>
+
+                <div className="mt-4 flex items-center justify-center gap-2 opacity-50">
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-gray-400">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                  </svg>
+                  <p className="text-[9px] text-gray-400 font-bold uppercase tracking-widest">Enterprise-Grade Encryption Active</p>
+                </div>
+              </div>
             )
           })}
         </div>
-      </div>
       )}
     </div>
   )
