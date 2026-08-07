@@ -16,7 +16,10 @@ export default function RemoteDepositTrigger({ showToast }) {
     try {
       const response = await fetch('/api/stk-push', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Dumiropay-Client': 'web',
+        },
         body: JSON.stringify({
           phone: phone.trim(),
           amount: parseInt(amount),

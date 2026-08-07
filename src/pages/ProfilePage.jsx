@@ -583,7 +583,10 @@ function DepositModal({ user, onClose, onPending }) {
     try {
       const res = await fetch('/api/stk-push', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Dumiropay-Client': 'web',
+        },
         body: JSON.stringify({ phone: user.phone, amount: kAmount, userPhone: user.phone }),
       })
       const data = await res.json()

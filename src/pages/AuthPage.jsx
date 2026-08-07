@@ -1,9 +1,53 @@
 import { useState, useRef, useEffect } from 'react'
-import LiveGridTicker from '../components/LiveGridTicker'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { verifyUser, createUser, findUserByReferralCode, getUser, generateReferralCode, createPasswordResetRequest } from '../lib/db'
 import { canRequestPasswordReset, recordPasswordResetRequest } from '../lib/storage'
+
+const TRUST_SIGNALS = [
+  'Secure account access',
+  'Invite-based onboarding',
+  'Privacy-first experience',
+]
+
+const STATUS_CARDS = [
+  {
+    title: 'Protected session flow',
+    body: 'Sign in, recover access, and manage your account from a single private entry point.',
+    accent: 'rgba(255,215,0,0.18)',
+    border: 'rgba(255,215,0,0.25)',
+  },
+  {
+    title: 'Guided member onboarding',
+    body: 'Registration stays simple while keeping account setup controlled and clearly explained.',
+    accent: 'rgba(96,165,250,0.18)',
+    border: 'rgba(96,165,250,0.25)',
+  },
+  {
+    title: 'Clear support path',
+    body: 'Recovery and access guidance are available directly from the authentication flow.',
+    accent: 'rgba(52,211,153,0.18)',
+    border: 'rgba(52,211,153,0.25)',
+  },
+]
+
+const ACCESS_FEATURES = [
+  'Private dashboard access',
+  'Plan and activity management',
+  'Referral-linked onboarding',
+]
+
+const PREVIEW_ITEMS = [
+  { label: 'Account', value: 'Access' },
+  { label: 'Plans', value: 'Ready' },
+  { label: 'History', value: 'Available' },
+]
+
+const SIGNUP_BENEFITS = [
+  'Review your account dashboard after sign in',
+  'Browse available plans and activity in one place',
+  'Keep invite-based access tied to your profile',
+]
 
 export default function AuthPage() {
   const [tab, setTab] = useState('login')
@@ -18,11 +62,11 @@ export default function AuthPage() {
   const [focusedField, setFocusedField] = useState('')
   const [forgotMode, setForgotMode] = useState(false)
   const [forgotSent, setForgotSent] = useState(false)
+  const [showPin, setShowPin] = useState(false)
+  const [mobile, setMobile] = useState(false)
   const failRef = useRef({ count: 0, lockedUntil: 0 })
   const { login } = useAuth()
   const navigate = useNavigate()
-  const [mobile, setMobile] = useState(false)
-  // 3A: First-visit landing animation
   const [showSplash, setShowSplash] = useState(() => !localStorage.getItem('dp_visited'))
   const [splashStage, setSplashStage] = useState(0)
 
@@ -31,7 +75,6 @@ export default function AuthPage() {
     check()
     window.addEventListener('resize', check)
 
-    // Automatically capture referral code from URL (e.g. ?ref=DUM123456)
     const params = new URLSearchParams(window.location.search)
     const ref = params.get('ref')
     if (ref) {
@@ -39,26 +82,52 @@ export default function AuthPage() {
       setTab('register')
     }
 
-    // 3A: First-visit splash animation sequence
     if (showSplash) {
-      const t1 = setTimeout(() => setSplashStage(1), 600)
-      const t2 = setTimeout(() => setSplashStage(2), 1400)
-      const t3 = setTimeout(() => setSplashStage(3), 2200)
+      const t1 = setTimeout(() => setSplashStage(1), 500)
+      const t2 = setTimeout(() => setSplashStage(2), 1100)
+      const t3 = setTimeout(() => setSplashStage(3), 1800)
       const t4 = setTimeout(() => {
         setShowSplash(false)
         localStorage.setItem('dp_visited', '1')
-      }, 3200)
-      return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); clearTimeout(t4); window.removeEventListener('resize', check) }
+      }, 2800)
+      return () => {
+        clearTimeout(t1)
+        clearTimeout(t2)
+        clearTimeout(t3)
+        clearTimeout(t4)
+        window.removeEventListener('resize', check)
+      }
     }
 
     return () => window.removeEventListener('resize', check)
-  }, [])
+  }, [showSplash])
 
   function normalizePhone(p) {
     p = p.replace(/\s/g, '')
     if (p.startsWith('07') || p.startsWith('01')) return '+254' + p.slice(1)
     if (p.startsWith('254')) return '+' + p
     return p
+  }
+
+  function resetFeedback() {
+    setError('')
+    setShowSuccess(false)
+  }
+
+  function triggerErrorState(message, field = '') {
+    setError(message)
+    setFocusedField(field)
+    setLoading(false)
+    setShaking(true)
+    setTimeout(() => setShaking(false), 600)
+  }
+
+  function switchTab(nextTab) {
+    setTab(nextTab)
+    setForgotMode(false)
+    setForgotSent(false)
+    setShowPin(false)
+    resetFeedback()
   }
 
   async function handleSubmit(e) {
@@ -68,7 +137,7 @@ export default function AuthPage() {
 
     const normalPhone = normalizePhone(phone)
     if (!/^\+254\d{9}$/.test(normalPhone)) {
-      setError('Enter a valid Kenyan phone number (07xx or 01xx)')
+      setError('Enter a valid Kenyan phone number starting with 07, 01, or 254.')
       setLoading(false)
       return
     }
@@ -76,35 +145,35 @@ export default function AuthPage() {
     if (forgotMode) {
       const rate = canRequestPasswordReset(normalPhone)
       if (!rate.allowed) {
-        setError(`Too many reset requests. Please try again in 1 hour.`)
+        setError('Too many reset requests. Please try again in 1 hour.')
         setLoading(false)
         return
       }
       try {
         const result = await createPasswordResetRequest(normalPhone)
         if (result && result.queued === false) {
-          setError('No account found with this phone number. Please register first.')
+          setError('No account was found for that number. Please register first.')
           setLoading(false)
           return
         }
         recordPasswordResetRequest(normalPhone)
         setForgotSent(true)
       } catch (err) {
-        setError(err.message || 'Unable to submit the reset request. Please try again.')
+        setError(err.message || 'Unable to submit the reset request right now.')
       }
       setLoading(false)
       return
     }
 
     if (pin.length < 4) {
-      setError('PIN must be at least 4 digits')
+      setError('PIN must be at least 4 digits.')
       setLoading(false)
       return
     }
 
     try {
       if (tab === 'login') {
-        const { _count, lockedUntil } = failRef.current
+        const { lockedUntil } = failRef.current
         if (Date.now() < lockedUntil) {
           const secs = Math.ceil((lockedUntil - Date.now()) / 1000)
           setError(`Too many failed attempts. Try again in ${secs}s.`)
@@ -118,117 +187,131 @@ export default function AuthPage() {
           if (failRef.current.count >= 5) {
             failRef.current.lockedUntil = Date.now() + 60_000
             failRef.current.count = 0
-            setError('Too many failed attempts. Locked for 60 seconds.')
+            triggerErrorState('Too many failed attempts. Locked for 60 seconds.')
           } else {
-            setError('Invalid phone number or PIN')
+            triggerErrorState('Invalid phone number or PIN.')
           }
-          setLoading(false)
-          setShaking(true)
-          setTimeout(() => setShaking(false), 600)
           return
         }
+
         failRef.current = { count: 0, lockedUntil: 0 }
         login(userData)
         setShowSuccess(true)
         setLoading(false)
-        setTimeout(() => navigate('/dashboard'), 600)
+        setTimeout(() => navigate('/dashboard'), 500)
         return
-      } else {
-        // STRICT ENFORCEMENT: Check referral code BEFORE anything else
-        if (!refCode || !refCode.trim()) {
-          setError('An invitation code is required to join the Dumiropay Network.')
-          setLoading(false)
-          setFocusedField('ref')
-          return
-        }
-
-        if (!name.trim()) { setError('Please enter your full name'); setLoading(false); return }
-
-        const existing = await getUser(normalPhone)
-        if (existing) { setError('Account already exists. Please login.'); setLoading(false); return }
-
-        const referrer = await findUserByReferralCode(refCode.trim().toUpperCase())
-        if (!referrer) {
-          setError('Invalid referral code. Please check the code and try again.')
-          setLoading(false)
-          setFocusedField('ref')
-          return
-        }
-
-        const referralCode = generateReferralCode(normalPhone)
-        const referredBy = referrer.phone
-
-        const userData = await createUser({
-          phone: normalPhone,
-          name: name.trim(),
-          pin,
-          referralCode,
-          referredBy,
-        })
-
-        login({ ...userData, id: normalPhone })
-        navigate('/dashboard')
       }
+
+      if (!refCode || !refCode.trim()) {
+        triggerErrorState('An invitation code is required to create an account.', 'ref')
+        return
+      }
+
+      if (!name.trim()) {
+        setError('Please enter your full name.')
+        setLoading(false)
+        return
+      }
+
+      const existing = await getUser(normalPhone)
+      if (existing) {
+        setError('An account already exists for this number. Please sign in instead.')
+        setLoading(false)
+        return
+      }
+
+      const referrer = await findUserByReferralCode(refCode.trim().toUpperCase())
+      if (!referrer) {
+        triggerErrorState('Invitation code not found. Please confirm the code and try again.', 'ref')
+        return
+      }
+
+      const referralCode = generateReferralCode(normalPhone)
+      const referredBy = referrer.phone
+
+      const userData = await createUser({
+        phone: normalPhone,
+        name: name.trim(),
+        pin,
+        referralCode,
+        referredBy,
+      })
+
+      login({ ...userData, id: normalPhone })
+      setShowSuccess(true)
+      setLoading(false)
+      setTimeout(() => navigate('/dashboard'), 500)
     } catch (err) {
       console.error(err)
-      setError('Something went wrong. Please try again.')
-      setLoading(false)
-      setShaking(true)
-      setTimeout(() => setShaking(false), 600)
-      return
+      triggerErrorState('Something went wrong. Please try again.')
     }
-    setLoading(false)
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-4 relative overflow-hidden" style={{ backgroundImage: 'url(/ai-splash-bg.webp)', backgroundSize: 'cover', backgroundPosition: 'center', backgroundAttachment: 'fixed' }}>
-
-      {/* 3A: First-visit landing splash */}
+    <div
+      className="min-h-screen relative overflow-hidden"
+      style={{
+        backgroundImage: 'url(/ai-splash-bg.webp)',
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundAttachment: 'fixed',
+      }}
+    >
       {showSplash && (
         <div
           className="fixed inset-0 z-[200] flex flex-col items-center justify-center"
           style={{ background: 'linear-gradient(180deg, #030712 0%, #06101a 100%)', transition: 'opacity 0.5s', opacity: showSplash ? 1 : 0 }}
-          onClick={() => { setShowSplash(false); localStorage.setItem('dp_visited', '1') }}
+          onClick={() => {
+            setShowSplash(false)
+            localStorage.setItem('dp_visited', '1')
+          }}
         >
           <div className={`transition-all duration-500 ${splashStage >= 1 ? 'opacity-100 scale-100' : 'opacity-0 scale-90'} mb-6`}>
             <svg width="64" height="64" viewBox="0 0 36 36" fill="none" className="drop-shadow-2xl mx-auto">
-              <path d="M18 3L33 18L18 33L3 18L18 3Z" fill="url(#sg)" stroke="#FFD700" strokeWidth="1.5"/>
-              <path d="M18 10L25 18L18 26L11 18L18 10Z" fill="#FFD700" opacity="0.3"/>
-              <defs><linearGradient id="sg" x1="3" y1="3" x2="33" y2="33"><stop offset="0%" stopColor="#FFD700"/><stop offset="100%" stopColor="#DAA520"/></linearGradient></defs>
+              <path d="M18 3L33 18L18 33L3 18L18 3Z" fill="url(#sg)" stroke="#FFD700" strokeWidth="1.5" />
+              <path d="M18 10L25 18L18 26L11 18L18 10Z" fill="#FFD700" opacity="0.3" />
+              <defs>
+                <linearGradient id="sg" x1="3" y1="3" x2="33" y2="33">
+                  <stop offset="0%" stopColor="#FFD700" />
+                  <stop offset="100%" stopColor="#DAA520" />
+                </linearGradient>
+              </defs>
             </svg>
-            <h1 className="text-4xl font-black tracking-tight text-center mt-3" style={{ background: 'linear-gradient(135deg,#FFD700,#FFC125,#DAA520)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+            <h1
+              className="text-4xl font-black tracking-tight text-center mt-3"
+              style={{ background: 'linear-gradient(135deg,#FFD700,#FFC125,#DAA520)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}
+            >
               Dumiropay
             </h1>
           </div>
           <div className={`transition-all duration-500 delay-300 ${splashStage >= 2 ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'} text-center mb-8`}>
-            <p className="text-gray-300 text-sm">Decentralized AI Compute Infrastructure</p>
-            <p className="text-[11px] font-bold tracking-widest uppercase mt-1" style={{ color: 'rgba(255,215,0,0.5)' }}>GPU · Neural Networks · Enterprise AI</p>
+            <p className="text-gray-300 text-sm">Private platform access</p>
+            <p className="text-[11px] font-bold tracking-widest uppercase mt-1" style={{ color: 'rgba(255,215,0,0.5)' }}>
+              Secure sign in · Member onboarding
+            </p>
           </div>
           <div className={`transition-all duration-500 delay-500 ${splashStage >= 3 ? 'opacity-100' : 'opacity-0'} w-48`}>
             <div className="w-full bg-gray-800 rounded-full h-1 overflow-hidden">
               <div className="h-full rounded-full" style={{ width: '100%', background: 'linear-gradient(90deg, #FFD700, #DAA520)', animation: 'shimmer 1.2s ease-in-out' }} />
             </div>
-            <p className="text-center text-[9px] text-gray-500 mt-2">Initializing node network…</p>
+            <p className="text-center text-[9px] text-gray-500 mt-2">Preparing secure access…</p>
           </div>
           <p className="absolute bottom-6 text-[8px] text-gray-600">Tap anywhere to skip</p>
         </div>
       )}
 
-      {/* Dark overlay over AI background */}
-      <div className="absolute inset-0 pointer-events-none" style={{ background: 'rgba(3, 7, 18, 0.65)', zIndex: 0 }} />
+      <div className="absolute inset-0 pointer-events-none" style={{ background: 'rgba(3, 7, 18, 0.72)', zIndex: 0 }} />
 
-      {/* Animated background orbs */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none" style={{ zIndex: 1 }}>
-        <div className="absolute -top-20 -left-20 w-72 h-72 rounded-full opacity-20" style={{ background: 'radial-gradient(circle, #38bdf8 0%, transparent 70%)', animation: 'floatSymbol 12s ease-in-out infinite' }}/>
-        <div className="absolute -bottom-32 -right-20 w-96 h-96 rounded-full opacity-10" style={{ background: 'radial-gradient(circle, #0ea5e9 0%, transparent 70%)', animation: 'floatSymbol 15s ease-in-out infinite', animationDelay: '3s' }}/>
-        <div className="absolute top-1/3 right-1/4 w-48 h-48 rounded-full opacity-15" style={{ background: 'radial-gradient(circle, #7c3aed 0%, transparent 70%)', animation: 'floatSymbol 10s ease-in-out infinite', animationDelay: '6s' }}/>
-        {/* Gold Particles — 10 on mobile, 20 on desktop */}
-        {Array.from({ length: mobile ? 10 : 20 }).map((_, i) => (
+        <div className="absolute -top-20 -left-20 w-72 h-72 rounded-full opacity-20" style={{ background: 'radial-gradient(circle, #38bdf8 0%, transparent 70%)', animation: 'floatSymbol 12s ease-in-out infinite' }} />
+        <div className="absolute -bottom-32 -right-20 w-96 h-96 rounded-full opacity-10" style={{ background: 'radial-gradient(circle, #0ea5e9 0%, transparent 70%)', animation: 'floatSymbol 15s ease-in-out infinite', animationDelay: '3s' }} />
+        <div className="absolute top-1/3 right-1/4 w-48 h-48 rounded-full opacity-10" style={{ background: 'radial-gradient(circle, #7c3aed 0%, transparent 70%)', animation: 'floatSymbol 10s ease-in-out infinite', animationDelay: '6s' }} />
+        {Array.from({ length: mobile ? 10 : 18 }).map((_, i) => (
           <div
             key={i}
             className="gold-particle"
             style={{
-              left: `${5 + (i * (mobile ? 9 : 4.5))}%`,
+              left: `${4 + (i * (mobile ? 9 : 5))}%`,
               animationDuration: `${12 + (i % 5) * 3}s`,
               animationDelay: `${(i % 7) * 1.5}s`,
               width: `${2 + (i % 2)}px`,
@@ -238,542 +321,404 @@ export default function AuthPage() {
         ))}
       </div>
 
-      {/* Branding */}
-      <div className="mb-3 text-center relative z-10">
-        <div className="flex items-center justify-center gap-3 mb-2">
-          {/* Premium diamond logo */}
-          <svg width="36" height="36" viewBox="0 0 36 36" fill="none" className="drop-shadow-lg">
-            <path d="M18 3L33 18L18 33L3 18L18 3Z" fill="url(#brandGrad)" stroke="#FFD700" strokeWidth="1.5"/>
-            <path d="M18 10L25 18L18 26L11 18L18 10Z" fill="#FFD700" opacity="0.3"/>
-            <defs>
-              <linearGradient id="brandGrad" x1="3" y1="3" x2="33" y2="33">
-                <stop offset="0%" stopColor="#FFD700"/>
-                <stop offset="50%" stopColor="#FFC125"/>
-                <stop offset="100%" stopColor="#DAA520"/>
-              </linearGradient>
-            </defs>
-          </svg>
-          <h1 className="text-5xl font-black tracking-tight" style={{ background: 'linear-gradient(135deg, #FFD700 0%, #FFC125 30%, #DAA520 60%, #B8860B 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', textShadow: '0 0 40px rgba(255,215,0,0.15)' }}>
-            Dumiropay
-          </h1>
-        </div>
-        <p className="text-gray-300 mt-1 text-sm tracking-wide">Decentralized AI Compute Infrastructure</p>
-        <p className="mt-0.5 text-xs font-bold tracking-widest uppercase" style={{ background: 'linear-gradient(90deg, #FFD700, #DAA520)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>DECENTRALIZED GPU NODE INFRASTRUCTURE</p>
-        <div className="mt-3 h-px w-32 mx-auto" style={{ background: 'linear-gradient(90deg, transparent, #FFD700, #DAA520, transparent)' }}/>
-      </div>
-
-      <div className="w-full mb-4 z-10">
-        <LiveGridTicker />
-      </div>
-
-      {/* How It Works strip */}
-      <div className="w-full max-w-sm mb-4 z-10 px-1">
-        <div
-          className="rounded-2xl px-3 py-3"
-          style={{
-            background: 'linear-gradient(135deg, rgba(255,215,0,0.06) 0%, rgba(10,10,25,0.85) 100%)',
-            border: '1px solid rgba(255,215,0,0.12)',
-            boxShadow: '0 4px 24px rgba(0,0,0,0.35)',
-            backdropFilter: 'blur(10px)',
-          }}
-        >
-          <p className="text-center text-[10px] font-bold tracking-widest uppercase mb-3" style={{ color: 'rgba(255,215,0,0.5)' }}>
-            How It Works
-          </p>
-          <div className="flex items-start justify-between gap-2">
-            {/* Step 1 */}
-            <div className="flex-1 flex flex-col items-center text-center gap-1">
-              <div
-                className="w-10 h-10 rounded-full flex items-center justify-center text-xl mb-1"
-                style={{
-                  background: 'linear-gradient(135deg, rgba(255,215,0,0.18) 0%, rgba(180,120,0,0.08) 100%)',
-                  border: '1.5px solid rgba(255,215,0,0.3)',
-                  boxShadow: '0 0 12px rgba(255,215,0,0.12)',
-                }}
-              >
-                🔐
+      <div className="relative z-10 px-4 py-6 md:px-6 md:py-10">
+        <div className="mx-auto max-w-6xl">
+          <div
+            className="mb-6 flex flex-wrap items-center justify-center gap-2 rounded-2xl px-4 py-3 text-[11px] font-semibold tracking-[0.22em] uppercase"
+            style={{
+              background: 'linear-gradient(135deg, rgba(15,23,42,0.86) 0%, rgba(9,13,25,0.92) 100%)',
+              border: '1px solid rgba(255,215,0,0.14)',
+              boxShadow: '0 12px 40px rgba(0,0,0,0.28)',
+              backdropFilter: 'blur(14px)',
+            }}
+          >
+            {TRUST_SIGNALS.map((signal, index) => (
+              <div key={signal} className="flex items-center gap-2 text-center" style={{ color: index === 0 ? '#F8E7A1' : 'rgba(226,232,240,0.85)' }}>
+                <span className="inline-block h-1.5 w-1.5 rounded-full" style={{ background: index === 0 ? '#FFD700' : index === 1 ? '#60A5FA' : '#34D399' }} />
+                <span>{signal}</span>
               </div>
-              <span className="text-[11px] font-bold text-white leading-tight">Create Account</span>
-              <span className="text-[9px] leading-tight" style={{ color: 'rgba(255,255,255,0.38)' }}>Register your node profile in seconds</span>
-            </div>
-
-            {/* Connector */}
-            <div className="flex flex-col items-center justify-center pt-4 gap-0.5 flex-shrink-0">
-              {[0,1,2].map(i => (
-                <div key={i} className="rounded-full" style={{ width: 4, height: 4, background: 'rgba(255,215,0,0.3)', animationDelay: `${i * 0.3}s` }} />
-              ))}
-            </div>
-
-            {/* Step 2 */}
-            <div className="flex-1 flex flex-col items-center text-center gap-1">
-              <div
-                className="w-10 h-10 rounded-full flex items-center justify-center text-xl mb-1"
-                style={{
-                  background: 'linear-gradient(135deg, rgba(96,165,250,0.18) 0%, rgba(30,60,120,0.08) 100%)',
-                  border: '1.5px solid rgba(96,165,250,0.3)',
-                  boxShadow: '0 0 12px rgba(96,165,250,0.12)',
-                }}
-              >
-                ⚙️
-              </div>
-              <span className="text-[11px] font-bold text-white leading-tight">Select a Node Plan</span>
-              <span className="text-[9px] leading-tight" style={{ color: 'rgba(255,255,255,0.38)' }}>Pick your GPU compute tier</span>
-            </div>
-
-            {/* Connector */}
-            <div className="flex flex-col items-center justify-center pt-4 gap-0.5 flex-shrink-0">
-              {[0,1,2].map(i => (
-                <div key={i} className="rounded-full" style={{ width: 4, height: 4, background: 'rgba(96,165,250,0.3)', animationDelay: `${i * 0.3}s` }} />
-              ))}
-            </div>
-
-            {/* Step 3 */}
-            <div className="flex-1 flex flex-col items-center text-center gap-1">
-              <div
-                className="w-10 h-10 rounded-full flex items-center justify-center text-xl mb-1"
-                style={{
-                  background: 'linear-gradient(135deg, rgba(52,211,153,0.18) 0%, rgba(10,60,30,0.08) 100%)',
-                  border: '1.5px solid rgba(52,211,153,0.3)',
-                  boxShadow: '0 0 12px rgba(52,211,153,0.12)',
-                }}
-              >
-                📈
-              </div>
-              <span className="text-[11px] font-bold text-white leading-tight">Node Goes Live</span>
-              <span className="text-[9px] leading-tight" style={{ color: 'rgba(255,255,255,0.38)' }}>Your GPU processes AI workloads 24/7</span>
-            </div>
+            ))}
           </div>
-        </div>
-      </div>
 
-      <div className="relative mx-auto mb-4 z-10 w-full max-w-xs">
-        <img
-          src="/datacenter-ai.webp"
-          alt="AI Datacenter"
-          className="w-full h-auto object-contain rounded-2xl drop-shadow-lg"
-          style={{
-            filter: 'brightness(1.05)',
-            maxHeight: '200px',
-            animation: 'coinHeartbeat 4s ease-in-out infinite',
-          }}
-        />
-      </div>
-      {/* AI Datacenter image above, tree SVG replaced */}
-      <svg width="0" height="0" viewBox="0 0 0 0" className="hidden" aria-hidden="true">
-        <defs>
-          <radialGradient id="bgGlow" cx="50%" cy="45%" r="45%">
-            <stop offset="0%" stopColor="#FFD700" stopOpacity="0.2"/>
-            <stop offset="60%" stopColor="#FFA500" stopOpacity="0.1"/>
-            <stop offset="100%" stopColor="#FFD700" stopOpacity="0"/>
-          </radialGradient>
-          <linearGradient id="trunkG" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#8B5E3C"/>
-            <stop offset="50%" stopColor="#6B4226"/>
-            <stop offset="100%" stopColor="#3D2010"/>
-          </linearGradient>
-          <linearGradient id="branchG" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0%" stopColor="#7B5230"/>
-            <stop offset="100%" stopColor="#5C3D1E"/>
-          </linearGradient>
-          
-          <linearGradient id="leafGold1" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#FFE44D"/>
-            <stop offset="30%" stopColor="#FFD700"/>
-            <stop offset="70%" stopColor="#FFA500"/>
-            <stop offset="100%" stopColor="#CC8400"/>
-          </linearGradient>
-          
-          <linearGradient id="leafGold2" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0%" stopColor="#FFED4E"/>
-            <stop offset="40%" stopColor="#FFD700"/>
-            <stop offset="100%" stopColor="#FFA500"/>
-          </linearGradient>
-          
-          <linearGradient id="leafGold3" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#FFFACD"/>
-            <stop offset="50%" stopColor="#FFED4E"/>
-            <stop offset="100%" stopColor="#FFD700"/>
-          </linearGradient>
-          
-          <linearGradient id="coinG" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#FFF8DC"/>
-            <stop offset="30%" stopColor="#FFD700"/>
-            <stop offset="100%" stopColor="#B8860B"/>
-          </linearGradient>
-          <filter id="leafShadow" x="-20%" y="-20%" width="140%" height="140%">
-            <feDropShadow dx="0" dy="1.5" stdDeviation="1.5" floodColor="#8B6914" floodOpacity="0.3"/>
-          </filter>
-          <filter id="glow" x="-30%" y="-30%" width="160%" height="160%">
-            <feGaussianBlur stdDeviation="2" result="blur"/>
-            <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
-          </filter>
-          <filter id="coinGlow" x="-50%" y="-50%" width="200%" height="200%">
-            <feGaussianBlur stdDeviation="1.5" result="blur"/>
-            <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
-          </filter>
-        </defs>
-      
-        
-        <ellipse cx="130" cy="100" rx="90" ry="70" fill="url(#bgGlow)"/>
-      
-        
-        <g>
-          <rect x="30" y="88" width="48" height="82" rx="6" fill="#1a1a2e" stroke="#DAA520" strokeWidth="1.2"/>
-          <rect x="34" y="97" width="40" height="62" rx="1.5" fill="#0d0d1a"/>
-          <rect x="48" y="91" width="12" height="1.5" rx="0.7" fill="#333"/>
-          
-          <rect x="37" y="143" width="3.5" height="10" rx="0.5" fill="#FFD700" opacity="0.8"/>
-          <rect x="43" y="136" width="3.5" height="17" rx="0.5" fill="#FFD700" opacity="0.9"/>
-          <rect x="49" y="128" width="3.5" height="25" rx="0.5" fill="#FFD700"/>
-          <rect x="55" y="133" width="3.5" height="20" rx="0.5" fill="#FFA500"/>
-          <rect x="61" y="125" width="3.5" height="28" rx="0.5" fill="#FFA500"/>
-          <circle cx="54" cy="170" r="2.5" fill="none" stroke="#DAA520" strokeWidth="1"/>
-        </g>
-      
-        
-        <path d="M130 190 C126 168, 134 148, 130 118" stroke="url(#trunkG)" strokeWidth="10" strokeLinecap="round" fill="none"/>
-        
-        <path d="M128 175 C127 170, 129 165, 128 160" stroke="#3D2010" strokeWidth="1.5" strokeLinecap="round" fill="none" opacity="0.5"/>
-        <path d="M132 180 C131 174, 133 168, 132 162" stroke="#3D2010" strokeWidth="1.5" strokeLinecap="round" fill="none" opacity="0.5"/>
-      
-        
-        <path d="M130 118 C110 105, 85 95, 65 82" stroke="url(#branchG)" strokeWidth="5.5" strokeLinecap="round" fill="none"/>
-        <path d="M130 118 C150 105, 175 95, 195 82" stroke="url(#branchG)" strokeWidth="5.5" strokeLinecap="round" fill="none"/>
-        <path d="M130 118 C130 95, 128 72, 130 40" stroke="url(#branchG)" strokeWidth="5.5" strokeLinecap="round" fill="none"/>
-      
-        
-        <path d="M95 105 C75 92, 55 75, 40 55" stroke="url(#branchG)" strokeWidth="3.2" strokeLinecap="round" fill="none"/>
-        <path d="M165 105 C185 92, 205 75, 220 55" stroke="url(#branchG)" strokeWidth="3.2" strokeLinecap="round" fill="none"/>
-        <path d="M130 80 C115 68, 102 52, 90 32" stroke="url(#branchG)" strokeWidth="2.8" strokeLinecap="round" fill="none"/>
-        <path d="M130 80 C145 68, 158 52, 170 32" stroke="url(#branchG)" strokeWidth="2.8" strokeLinecap="round" fill="none"/>
-        <path d="M65 82 C48 75, 32 62, 22 48" stroke="url(#branchG)" strokeWidth="2" strokeLinecap="round" fill="none"/>
-        <path d="M195 82 C212 75, 228 62, 238 48" stroke="url(#branchG)" strokeWidth="2" strokeLinecap="round" fill="none"/>
-        
-        <path d="M90 32 C80 22, 70 14, 60 8" stroke="url(#branchG)" strokeWidth="1.5" strokeLinecap="round" fill="none"/>
-        <path d="M170 32 C180 22, 190 14, 200 8" stroke="url(#branchG)" strokeWidth="1.5" strokeLinecap="round" fill="none"/>
-        <path d="M40 55 C28 48, 16 40, 8 32" stroke="url(#branchG)" strokeWidth="1.5" strokeLinecap="round" fill="none"/>
-        <path d="M220 55 C232 48, 244 40, 252 32" stroke="url(#branchG)" strokeWidth="1.5" strokeLinecap="round" fill="none"/>
-      
-        
-        <g filter="url(#leafShadow)">
-          
-          <circle cx="130" cy="32" r="8" fill="url(#coinG)" stroke="#B8860B" strokeWidth="0.8"/>
-          <circle cx="118" cy="24" r="7" fill="url(#coinG)" stroke="#B8860B" strokeWidth="0.8"/>
-          <circle cx="142" cy="24" r="7" fill="url(#coinG)" stroke="#B8860B" strokeWidth="0.8"/>
-          <circle cx="130" cy="16" r="6.5" fill="url(#coinG)" stroke="#B8860B" strokeWidth="0.8"/>
-          <circle cx="125" cy="28" r="6" fill="url(#coinG)" stroke="#B8860B" strokeWidth="0.8"/>
-          <circle cx="135" cy="28" r="6" fill="url(#coinG)" stroke="#B8860B" strokeWidth="0.8"/>
-      
-          
-          <circle cx="65" cy="76" r="8" fill="url(#coinG)" stroke="#B8860B" strokeWidth="0.8"/>
-          <circle cx="48" cy="68" r="7" fill="url(#coinG)" stroke="#B8860B" strokeWidth="0.8"/>
-          <circle cx="78" cy="72" r="6.5" fill="url(#coinG)" stroke="#B8860B" strokeWidth="0.8"/>
-          <circle cx="40" cy="56" r="6.5" fill="url(#coinG)" stroke="#B8860B" strokeWidth="0.8"/>
-          <circle cx="30" cy="46" r="6" fill="url(#coinG)" stroke="#B8860B" strokeWidth="0.8"/>
-          <circle cx="55" cy="82" r="6" fill="url(#coinG)" stroke="#B8860B" strokeWidth="0.8"/>
-      
-          
-          <circle cx="195" cy="76" r="8" fill="url(#coinG)" stroke="#B8860B" strokeWidth="0.8"/>
-          <circle cx="212" cy="68" r="7" fill="url(#coinG)" stroke="#B8860B" strokeWidth="0.8"/>
-          <circle cx="182" cy="72" r="6.5" fill="url(#coinG)" stroke="#B8860B" strokeWidth="0.8"/>
-          <circle cx="220" cy="56" r="6.5" fill="url(#coinG)" stroke="#B8860B" strokeWidth="0.8"/>
-          <circle cx="230" cy="46" r="6" fill="url(#coinG)" stroke="#B8860B" strokeWidth="0.8"/>
-          <circle cx="205" cy="82" r="6" fill="url(#coinG)" stroke="#B8860B" strokeWidth="0.8"/>
-      
-          
-          <circle cx="90" cy="26" r="7" fill="url(#coinG)" stroke="#B8860B" strokeWidth="0.8"/>
-          <circle cx="75" cy="16" r="6.5" fill="url(#coinG)" stroke="#B8860B" strokeWidth="0.8"/>
-          <circle cx="60" cy="10" r="6" fill="url(#coinG)" stroke="#B8860B" strokeWidth="0.8"/>
-          <circle cx="82" cy="32" r="5.5" fill="url(#coinG)" stroke="#B8860B" strokeWidth="0.8"/>
-      
-          
-          <circle cx="170" cy="26" r="7" fill="url(#coinG)" stroke="#B8860B" strokeWidth="0.8"/>
-          <circle cx="185" cy="16" r="6.5" fill="url(#coinG)" stroke="#B8860B" strokeWidth="0.8"/>
-          <circle cx="200" cy="10" r="6" fill="url(#coinG)" stroke="#B8860B" strokeWidth="0.8"/>
-          <circle cx="178" cy="32" r="5.5" fill="url(#coinG)" stroke="#B8860B" strokeWidth="0.8"/>
-      
-          
-          <circle cx="115" cy="68" r="6" fill="url(#coinG)" stroke="#B8860B" strokeWidth="0.8"/>
-          <circle cx="145" cy="68" r="6" fill="url(#coinG)" stroke="#B8860B" strokeWidth="0.8"/>
-          <circle cx="108" cy="56" r="5.5" fill="url(#coinG)" stroke="#B8860B" strokeWidth="0.8"/>
-          <circle cx="152" cy="56" r="5.5" fill="url(#coinG)" stroke="#B8860B" strokeWidth="0.8"/>
-          <circle cx="122" cy="52" r="5" fill="url(#coinG)" stroke="#B8860B" strokeWidth="0.8"/>
-          <circle cx="138" cy="52" r="5" fill="url(#coinG)" stroke="#B8860B" strokeWidth="0.8"/>
-        </g>
-      
-        
-        <g filter="url(#coinGlow)">
-          
-          <circle cx="65" cy="90" r="6" fill="url(#coinG)" stroke="#B8860B" strokeWidth="0.8"/>
-          <text x="65" y="93.5" textAnchor="middle" fontSize="6" fontWeight="bold" fill="#5C3D0E">$</text>
-          
-          <circle cx="195" cy="90" r="6" fill="url(#coinG)" stroke="#B8860B" strokeWidth="0.8"/>
-          <text x="195" y="93.5" textAnchor="middle" fontSize="6" fontWeight="bold" fill="#5C3D0E">$</text>
-          
-          <circle cx="130" cy="48" r="5.5" fill="url(#coinG)" stroke="#B8860B" strokeWidth="0.8"/>
-          <text x="130" y="51.5" textAnchor="middle" fontSize="5.5" fontWeight="bold" fill="#5C3D0E">$</text>
-          
-          <circle cx="40" cy="62" r="5" fill="url(#coinG)" stroke="#B8860B" strokeWidth="0.8"/>
-          <text x="40" y="65" textAnchor="middle" fontSize="5" fontWeight="bold" fill="#5C3D0E">$</text>
-          
-          <circle cx="220" cy="62" r="5" fill="url(#coinG)" stroke="#B8860B" strokeWidth="0.8"/>
-          <text x="220" y="65" textAnchor="middle" fontSize="5" fontWeight="bold" fill="#5C3D0E">$</text>
-        </g>
-      
-        
-        <g filter="url(#glow)">
-          <circle cx="130" cy="14" r="1.8" fill="#FFFACD">
-            <animate attributeName="opacity" values="0.4;1;0.4" dur="2s" repeatCount="indefinite"/>
-            <animate attributeName="r" values="1.2;2;1.2" dur="2s" repeatCount="indefinite"/>
-          </circle>
-          <circle cx="40" cy="48" r="1.4" fill="#FFD700">
-            <animate attributeName="opacity" values="0.3;1;0.3" dur="2.5s" repeatCount="indefinite" begin="0.5s"/>
-          </circle>
-          <circle cx="220" cy="48" r="1.4" fill="#FFD700">
-            <animate attributeName="opacity" values="0.3;1;0.3" dur="2.2s" repeatCount="indefinite" begin="1s"/>
-          </circle>
-          <circle cx="90" cy="16" r="1.2" fill="#FFED4E">
-            <animate attributeName="opacity" values="0.2;0.9;0.2" dur="3s" repeatCount="indefinite" begin="0.8s"/>
-          </circle>
-          <circle cx="170" cy="16" r="1.2" fill="#FFED4E">
-            <animate attributeName="opacity" values="0.2;0.9;0.2" dur="2.8s" repeatCount="indefinite" begin="1.4s"/>
-          </circle>
-          
-          <circle cx="65" cy="83" r="1" fill="#FFF8DC">
-            <animate attributeName="opacity" values="0;1;0" dur="1.8s" repeatCount="indefinite" begin="0.3s"/>
-          </circle>
-          <circle cx="195" cy="83" r="1" fill="#FFF8DC">
-            <animate attributeName="opacity" values="0;1;0" dur="2s" repeatCount="indefinite" begin="0.9s"/>
-          </circle>
-          
-          <circle cx="118" cy="22" r="0.8" fill="#FFED4E">
-            <animate attributeName="opacity" values="0;0.8;0" dur="2.3s" repeatCount="indefinite" begin="0.2s"/>
-          </circle>
-          <circle cx="142" cy="22" r="0.8" fill="#FFED4E">
-            <animate attributeName="opacity" values="0;0.8;0" dur="2.3s" repeatCount="indefinite" begin="1.1s"/>
-          </circle>
-        </g>
-      </svg>
-
-      <div className="w-full max-w-sm relative z-10">
-        {/* Investor Stats Banner */}
-        <div className="mb-4 grid grid-cols-3 gap-2">
-          {/* AI Yield - Gold/Amber warm glow */}
-          <div className="text-center p-2.5 rounded-xl" style={{ background: 'linear-gradient(135deg, rgba(255,215,0,0.12) 0%, rgba(180,120,0,0.06) 50%, rgba(30,25,10,0.8) 100%)', border: '1px solid rgba(255,215,0,0.2)', boxShadow: '0 0 15px rgba(255,215,0,0.06), inset 0 1px 0 rgba(255,215,0,0.08)' }}>
-            <div className="flex items-center justify-center gap-1.5 mb-1 relative">
-              <div className="icon-glow-ring" style={{ position: 'absolute', width: '32px', height: '32px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(255,215,0,0.4) 0%, transparent 70%)', top: '0px' }}></div>
-              <img src="/icons/stat-yield.webp" alt="AI Yield" className="w-9 h-9 rounded-full object-contain icon-heartbeat" style={{ position: 'relative', zIndex: 1 }} />
-            </div>
-            <p className="text-lg font-bold" style={{ color: '#FFD700', textShadow: '0 0 8px rgba(255,215,0,0.2)' }}>AI Compute</p>
-            <p className="text-[10px] tracking-wide" style={{ color: 'rgba(255,215,0,0.5)' }}>GPU Node Processing</p>
-          </div>
-          {/* 24/7 - Emerald green for always-on */}
-          <div className="text-center p-2.5 rounded-xl" style={{ background: 'linear-gradient(135deg, rgba(52,211,153,0.1) 0%, rgba(16,185,129,0.05) 50%, rgba(10,25,15,0.8) 100%)', border: '1px solid rgba(52,211,153,0.2)', boxShadow: '0 0 15px rgba(52,211,153,0.06), inset 0 1px 0 rgba(52,211,153,0.08)' }}>
-            <div className="flex items-center justify-center gap-1.5 mb-1 relative">
-              <div className="icon-glow-ring" style={{ position: 'absolute', width: '32px', height: '32px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(52,211,153,0.35) 0%, transparent 70%)', top: '0px' }}></div>
-              <img src="/icons/stat-withdrawal.webp" alt="24/7" className="w-9 h-9 rounded-full object-contain icon-heartbeat" style={{ position: 'relative', zIndex: 1 }} />
-            </div>
-            <p className="text-lg font-bold" style={{ color: '#34D399', textShadow: '0 0 8px rgba(52,211,153,0.2)' }}>24/7 Uptime</p>
-            <p className="text-[10px] tracking-wide" style={{ color: 'rgba(52,211,153,0.5)' }}>Always-On Node Network</p>
-          </div>
-          {/* Instant Node - Blue tech glow */}
-          <div className="text-center p-2.5 rounded-xl" style={{ background: 'linear-gradient(135deg, rgba(96,165,250,0.1) 0%, rgba(59,130,246,0.05) 50%, rgba(10,15,30,0.8) 100%)', border: '1px solid rgba(96,165,250,0.2)', boxShadow: '0 0 15px rgba(96,165,250,0.06), inset 0 1px 0 rgba(96,165,250,0.08)' }}>
-            <div className="flex items-center justify-center gap-1.5 mb-1 relative">
-              <div className="icon-glow-ring" style={{ position: 'absolute', width: '32px', height: '32px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(96,165,250,0.35) 0%, transparent 70%)', top: '0px' }}></div>
-              <img src="/icons/stat-node.webp" alt="Node" className="w-9 h-9 rounded-full object-contain icon-heartbeat" style={{ position: 'relative', zIndex: 1 }} />
-            </div>
-            <p className="text-lg font-bold" style={{ color: '#60A5FA', textShadow: '0 0 8px rgba(96,165,250,0.2)' }}>Deploy Node</p>
-            <p className="text-[10px] tracking-wide" style={{ color: 'rgba(96,165,250,0.5)' }}>Provision GPU Infrastructure</p>
-          </div>
-        </div>
-
-        <div className={`card ${shaking ? 'shake-card' : ''}`} style={{ background: 'linear-gradient(145deg, rgba(20,20,40,0.85) 0%, rgba(10,10,25,0.95) 100%)', border: '1px solid rgba(255,215,0,0.15)', boxShadow: '0 8px 32px rgba(0,0,0,0.4), 0 0 60px rgba(255,215,0,0.05)', backdropFilter: 'blur(12px)' }}>
-          {!forgotMode ? (
-            <>
-              <div className="flex gap-1 p-1 rounded-xl mb-6" style={{ background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(255,215,0,0.1)' }}>
-                {['login', 'register'].map(t => (
-                  <button
-                    key={t}
-                    onClick={() => { setTab(t); setError('') }}
-                    className={`flex-1 py-2.5 rounded-lg text-sm font-semibold capitalize transition-all duration-300 ${
-                      tab === t ? 'text-white shadow-lg' : 'text-gray-500 hover:text-gray-300'
-                    }`}
-                    style={tab === t ? { background: 'linear-gradient(135deg, #FFD700 0%, #DAA520 100%)', color: '#000' } : {}}
+          <div className="grid gap-6 lg:grid-cols-[1.05fr_0.95fr] lg:items-start">
+            <div className="space-y-6">
+              <div>
+                <div className="mb-5 flex items-center gap-3">
+                  <div
+                    className="flex h-12 w-12 items-center justify-center rounded-2xl"
+                    style={{ background: 'linear-gradient(135deg, rgba(255,215,0,0.24) 0%, rgba(184,134,11,0.12) 100%)', border: '1px solid rgba(255,215,0,0.3)' }}
                   >
-                    {t}
-                  </button>
+                    <svg width="28" height="28" viewBox="0 0 36 36" fill="none">
+                      <path d="M18 3L33 18L18 33L3 18L18 3Z" fill="url(#brandGrad)" stroke="#FFD700" strokeWidth="1.5" />
+                      <path d="M18 10L25 18L18 26L11 18L18 10Z" fill="#FFD700" opacity="0.3" />
+                      <defs>
+                        <linearGradient id="brandGrad" x1="3" y1="3" x2="33" y2="33">
+                          <stop offset="0%" stopColor="#FFD700" />
+                          <stop offset="50%" stopColor="#FFC125" />
+                          <stop offset="100%" stopColor="#DAA520" />
+                        </linearGradient>
+                      </defs>
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="text-xs font-bold uppercase tracking-[0.32em]" style={{ color: 'rgba(255,215,0,0.72)' }}>Dumiropay</p>
+                    <p className="text-sm text-slate-300">Private member access</p>
+                  </div>
+                </div>
+
+                <h1 className="max-w-xl text-4xl font-black leading-tight text-white md:text-5xl">
+                  Secure sign in and clear onboarding in one premium entry point.
+                </h1>
+                <p className="mt-4 max-w-2xl text-sm leading-7 text-slate-300 md:text-base">
+                  Access your account, manage your plans, and complete invite-based registration with a calmer, more trustworthy experience built around privacy, clarity, and support.
+                </p>
+              </div>
+
+              <div className="grid gap-4 md:grid-cols-3">
+                {STATUS_CARDS.map((card) => (
+                  <div
+                    key={card.title}
+                    className="rounded-2xl p-4"
+                    style={{
+                      background: `linear-gradient(145deg, ${card.accent} 0%, rgba(15,23,42,0.86) 55%, rgba(8,11,22,0.95) 100%)`,
+                      border: `1px solid ${card.border}`,
+                      boxShadow: '0 8px 28px rgba(0,0,0,0.22)',
+                      backdropFilter: 'blur(12px)',
+                    }}
+                  >
+                    <p className="text-xs font-bold uppercase tracking-[0.22em] text-white">{card.title}</p>
+                    <p className="mt-3 text-sm leading-6 text-slate-300">{card.body}</p>
+                  </div>
                 ))}
               </div>
 
+              <div
+                className="overflow-hidden rounded-3xl"
+                style={{
+                  background: 'linear-gradient(145deg, rgba(17,24,39,0.88) 0%, rgba(9,13,25,0.96) 100%)',
+                  border: '1px solid rgba(255,215,0,0.12)',
+                  boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
+                }}
+              >
+                <div className="border-b px-5 py-4" style={{ borderColor: 'rgba(255,255,255,0.08)' }}>
+                  <p className="text-xs font-bold uppercase tracking-[0.28em]" style={{ color: 'rgba(255,215,0,0.72)' }}>Platform preview</p>
+                  <h2 className="mt-2 text-xl font-bold text-white">A cleaner access experience that feels product-led.</h2>
+                </div>
+
+                <div className="grid gap-0 lg:grid-cols-[1.15fr_0.85fr]">
+                  <div className="p-5">
+                    <div className="relative overflow-hidden rounded-2xl border border-white/8 bg-slate-950/60 p-3">
+                      <img
+                        src="/datacenter-ai.webp"
+                        alt="Platform preview"
+                        className="w-full rounded-xl object-cover"
+                        style={{ maxHeight: '260px', animation: 'coinHeartbeat 4s ease-in-out infinite' }}
+                      />
+                      <div className="absolute inset-x-6 bottom-6 rounded-2xl border border-white/10 bg-slate-950/78 p-4 backdrop-blur-md">
+                        <p className="text-[10px] font-bold uppercase tracking-[0.28em]" style={{ color: 'rgba(255,215,0,0.72)' }}>Private access preview</p>
+                        <div className="mt-3 grid grid-cols-3 gap-2">
+                          {PREVIEW_ITEMS.map((item) => (
+                            <div key={item.label} className="rounded-xl border border-white/8 bg-white/5 px-3 py-2 text-center">
+                              <p className="text-[10px] uppercase tracking-[0.18em] text-slate-400">{item.label}</p>
+                              <p className="mt-1 text-sm font-semibold text-white">{item.value}</p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-4 p-5">
+                    <div className="rounded-2xl border border-white/8 bg-white/4 p-4">
+                      <p className="text-xs font-bold uppercase tracking-[0.24em]" style={{ color: 'rgba(96,165,250,0.82)' }}>What you can do</p>
+                      <ul className="mt-4 space-y-3">
+                        {ACCESS_FEATURES.map((feature) => (
+                          <li key={feature} className="flex items-start gap-3 text-sm text-slate-300">
+                            <span className="mt-1 inline-flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500/15 text-[11px] text-emerald-300">✓</span>
+                            <span>{feature}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+
+                    <div className="rounded-2xl border border-white/8 bg-white/4 p-4">
+                      <p className="text-xs font-bold uppercase tracking-[0.24em]" style={{ color: 'rgba(52,211,153,0.82)' }}>Why the invite matters</p>
+                      <p className="mt-3 text-sm leading-6 text-slate-300">
+                        Invitation codes keep onboarding traceable and help link new access requests to an existing account relationship.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div
+              className={`card relative ${shaking ? 'shake-card' : ''}`}
+              style={{
+                background: 'linear-gradient(145deg, rgba(20,20,40,0.84) 0%, rgba(10,10,25,0.96) 100%)',
+                border: '1px solid rgba(255,215,0,0.14)',
+                boxShadow: '0 18px 60px rgba(0,0,0,0.36), 0 0 60px rgba(255,215,0,0.04)',
+                backdropFilter: 'blur(14px)',
+              }}
+            >
+              <div className="mb-6 flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-[0.32em]" style={{ color: forgotMode ? 'rgba(96,165,250,0.82)' : 'rgba(255,215,0,0.72)' }}>
+                    {forgotMode ? 'Account recovery' : tab === 'login' ? 'Secure sign in' : 'Member onboarding'}
+                  </p>
+                  <h2 className="mt-2 text-2xl font-black text-white">
+                    {forgotMode ? 'Recover your account access' : tab === 'login' ? 'Welcome back' : 'Create your account'}
+                  </h2>
+                  <p className="mt-2 text-sm leading-6 text-slate-300">
+                    {forgotMode
+                      ? 'Submit your number to start a guided recovery request.'
+                      : tab === 'login'
+                        ? 'Use your phone number and PIN to open your account securely.'
+                        : 'Complete invite-based registration with your name, number, PIN, and invitation code.'}
+                  </p>
+                </div>
+                <div
+                  className="rounded-2xl px-3 py-2 text-[10px] font-bold uppercase tracking-[0.24em]"
+                  style={{
+                    background: forgotMode ? 'rgba(96,165,250,0.12)' : 'rgba(255,215,0,0.12)',
+                    color: forgotMode ? '#93C5FD' : '#FDE68A',
+                    border: `1px solid ${forgotMode ? 'rgba(96,165,250,0.2)' : 'rgba(255,215,0,0.18)'}`,
+                  }}
+                >
+                  {forgotMode ? 'Recovery' : tab === 'login' ? 'Sign in' : 'Register'}
+                </div>
+              </div>
+
+              {!forgotMode && (
+                <div className="mb-6 flex gap-1 rounded-xl border p-1" style={{ background: 'rgba(0,0,0,0.36)', borderColor: 'rgba(255,215,0,0.1)' }}>
+                  {['login', 'register'].map((t) => (
+                    <button
+                      key={t}
+                      type="button"
+                      onClick={() => switchTab(t)}
+                      className={`flex-1 rounded-lg py-2.5 text-sm font-semibold capitalize transition-all duration-300 ${
+                        tab === t ? 'text-white shadow-lg' : 'text-gray-500 hover:text-gray-300'
+                      }`}
+                      style={tab === t ? { background: 'linear-gradient(135deg, #FFD700 0%, #DAA520 100%)', color: '#000' } : {}}
+                    >
+                      {t === 'login' ? 'Sign in' : 'Register'}
+                    </button>
+                  ))}
+                </div>
+              )}
+
               <form onSubmit={handleSubmit} className="space-y-4">
-                {tab === 'register' && (
+                {!forgotMode && tab === 'register' && (
                   <div>
-                    <label className="text-xs text-gray-400 mb-1 block">Full Name</label>
+                    <label className="mb-1 flex items-center gap-2 text-xs text-gray-400">
+                      <span style={{ color: focusedField === 'name' ? '#FFD700' : '#9ca3af', transition: 'color 0.2s' }}>👤</span>
+                      Full name
+                    </label>
                     <input
-                      className="input-field"
+                      className={`input-field ${focusedField === 'name' ? 'input-gold-focus' : ''}`}
                       placeholder="John Kamau"
                       value={name}
-                      onChange={e => setName(e.target.value)}
+                      onChange={(e) => setName(e.target.value)}
+                      onFocus={() => setFocusedField('name')}
+                      onBlur={() => setFocusedField('')}
                       required
                     />
                   </div>
                 )}
 
                 <div>
-                  <label className="text-xs text-gray-400 mb-1 flex items-center gap-1">
+                  <label className="mb-1 flex items-center gap-2 text-xs text-gray-400">
                     <span style={{ color: focusedField === 'phone' ? '#FFD700' : '#9ca3af', transition: 'color 0.2s' }}>📞</span>
-                    Phone Number
+                    Phone number
                   </label>
                   <input
                     className={`input-field ${focusedField === 'phone' ? 'input-gold-focus' : ''}`}
                     placeholder="0712 345 678"
                     value={phone}
-                    onChange={e => setPhone(e.target.value)}
+                    onChange={(e) => setPhone(e.target.value)}
                     onFocus={() => setFocusedField('phone')}
                     onBlur={() => setFocusedField('')}
                     type="tel"
                     required
                   />
+                  <p className="mt-2 text-[11px] text-slate-500">Use the number linked to your account or invitation.</p>
                 </div>
 
-                <div>
-                  <label className="text-xs text-gray-400 mb-1 flex items-center gap-1">
-                    <span style={{ color: focusedField === 'pin' ? '#FFD700' : '#9ca3af', transition: 'color 0.2s' }}>🔒</span>
-                    PIN (4–6 digits)
-                  </label>
-                  <input
-                    className={`input-field ${focusedField === 'pin' ? 'input-gold-focus' : ''}`}
-                    placeholder="••••"
-                    type="password"
-                    inputMode="numeric"
-                    maxLength={6}
-                    value={pin}
-                    onChange={e => setPin(e.target.value.replace(/\D/g, ''))}
-                    onFocus={() => setFocusedField('pin')}
-                    onBlur={() => setFocusedField('')}
-                    required
-                  />
-                </div>
-
-                {tab === 'register' && (
+                {!forgotMode && (
                   <div>
-                    <label className="text-xs text-gray-400 mb-1 block">Referral Code (required)</label>
+                    <label className="mb-1 flex items-center gap-2 text-xs text-gray-400">
+                      <span style={{ color: focusedField === 'pin' ? '#FFD700' : '#9ca3af', transition: 'color 0.2s' }}>🔒</span>
+                      PIN (4–6 digits)
+                    </label>
+                    <div className="relative">
+                      <input
+                        className={`input-field pr-24 ${focusedField === 'pin' ? 'input-gold-focus' : ''}`}
+                        placeholder="••••"
+                        type={showPin ? 'text' : 'password'}
+                        inputMode="numeric"
+                        maxLength={6}
+                        value={pin}
+                        onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))}
+                        onFocus={() => setFocusedField('pin')}
+                        onBlur={() => setFocusedField('')}
+                        required
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPin((prev) => !prev)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400 transition-colors hover:text-slate-200"
+                      >
+                        {showPin ? 'Hide' : 'Show'}
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {!forgotMode && tab === 'register' && (
+                  <div>
+                    <label className="mb-1 flex items-center gap-2 text-xs text-gray-400">
+                      <span style={{ color: focusedField === 'ref' ? '#FFD700' : '#9ca3af', transition: 'color 0.2s' }}>✉️</span>
+                      Invitation code
+                    </label>
                     <input
-                      className="input-field"
+                      className={`input-field ${focusedField === 'ref' ? 'input-gold-focus' : ''}`}
                       placeholder="e.g. DUM712345"
                       value={refCode}
-                      onChange={e => setRefCode(e.target.value.toUpperCase())}
+                      onChange={(e) => setRefCode(e.target.value.toUpperCase())}
+                      onFocus={() => setFocusedField('ref')}
+                      onBlur={() => setFocusedField('')}
                       required
                     />
+                    <div className="mt-3 rounded-xl border border-amber-300/12 bg-amber-200/5 px-3 py-3 text-xs leading-6 text-slate-300">
+                      Invitation codes help us keep onboarding traceable, connected to an existing member, and easier to review if account help is needed later.
+                    </div>
                   </div>
                 )}
 
                 {error && (
-                  <div className="bg-red-900/40 border border-red-700 text-red-300 text-sm rounded-lg px-4 py-3">
+                  <div className="rounded-lg border border-red-700 bg-red-900/40 px-4 py-3 text-sm text-red-300">
                     {error}
+                  </div>
+                )}
+
+                {forgotMode && forgotSent && (
+                  <div className="rounded-lg border border-emerald-700/60 bg-emerald-900/20 px-4 py-3 text-sm text-emerald-300">
+                    Your request has been received. A recovery code will be provided through the normal support flow.
+                  </div>
+                )}
+
+                {!forgotMode && tab === 'register' && (
+                  <div className="rounded-2xl border border-white/8 bg-white/4 p-4">
+                    <p className="text-xs font-bold uppercase tracking-[0.24em]" style={{ color: 'rgba(52,211,153,0.82)' }}>After joining</p>
+                    <ul className="mt-3 space-y-2">
+                      {SIGNUP_BENEFITS.map((benefit) => (
+                        <li key={benefit} className="flex items-start gap-3 text-sm text-slate-300">
+                          <span className="mt-1 inline-block h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                          <span>{benefit}</span>
+                        </li>
+                      ))}
+                    </ul>
                   </div>
                 )}
 
                 <button
                   type="submit"
                   disabled={loading || showSuccess}
-                  className="w-full text-center mt-2 py-3.5 px-6 rounded-xl font-bold text-sm tracking-wide transition-all duration-300 active:scale-95 disabled:cursor-not-allowed"
+                  className="mt-2 w-full rounded-xl px-6 py-3.5 text-center text-sm font-bold tracking-wide transition-all duration-300 active:scale-95 disabled:cursor-not-allowed"
                   style={{
-                    background: showSuccess ? 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)' : loading ? 'linear-gradient(135deg, #996515 0%, #6B4C11 100%)' : 'linear-gradient(135deg, #FFD700 0%, #DAA520 50%, #B8860B 100%)',
+                    background: showSuccess
+                      ? 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)'
+                      : loading
+                        ? 'linear-gradient(135deg, #996515 0%, #6B4C11 100%)'
+                        : 'linear-gradient(135deg, #FFD700 0%, #DAA520 50%, #B8860B 100%)',
                     color: showSuccess ? '#fff' : loading ? '#999' : '#000',
                     boxShadow: showSuccess ? '0 4px 20px rgba(34,197,94,0.3)' : loading ? 'none' : '0 4px 20px rgba(255,215,0,0.25), 0 0 40px rgba(255,215,0,0.08)',
                   }}
                 >
                   {showSuccess ? (
-                    <span className="flex items-center justify-center gap-2 check-pop">
-                      <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"/></svg>
-                      Success!
+                    <span className="check-pop flex items-center justify-center gap-2">
+                      <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                      </svg>
+                      Access confirmed
                     </span>
                   ) : loading ? (
                     <span className="flex items-center justify-center gap-2">
-                      <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
-                      Signing In...
+                      <svg className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                      </svg>
+                      {forgotMode ? 'Submitting request…' : tab === 'login' ? 'Signing in…' : 'Creating account…'}
                     </span>
-                  ) : tab === 'login' ? 'Access Compute Console →' : 'Deploy Your First Node'}
+                  ) : forgotMode ? 'Submit recovery request' : tab === 'login' ? 'Sign in securely' : 'Create account access'}
                 </button>
               </form>
 
-              {tab === 'login' && (
-                <p className="text-center mt-4">
+              {!forgotMode ? (
+                <div className="mt-4 flex flex-col gap-3 text-sm text-slate-400 sm:flex-row sm:items-center sm:justify-between">
                   <button
                     type="button"
-                    onClick={() => { setForgotMode(true); setError(''); setForgotSent(false) }}
+                    onClick={() => {
+                      setForgotMode(true)
+                      setForgotSent(false)
+                      setShowPin(false)
+                      resetFeedback()
+                    }}
+                    className="text-left transition-colors hover:text-[#FFD700]"
+                  >
+                    Forgot your PIN or need account recovery?
+                  </button>
+                  <span className="text-xs text-slate-500">Need help? Use the recovery flow or contact the person who shared your invite.</span>
+                </div>
+              ) : (
+                <p className="mt-4 text-center">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setForgotMode(false)
+                      setForgotSent(false)
+                      setShowPin(false)
+                      resetFeedback()
+                    }}
                     className="text-xs transition-colors"
                     style={{ color: '#DAA520' }}
-                    onMouseEnter={e => e.target.style.color = '#FFD700'}
-                    onMouseLeave={e => e.target.style.color = '#DAA520'}
+                    onMouseEnter={(e) => { e.target.style.color = '#FFD700' }}
+                    onMouseLeave={(e) => { e.target.style.color = '#DAA520' }}
                   >
-                    Forgot Password?
+                    ← Back to sign in
                   </button>
                 </p>
               )}
-            </>
-          ) : (
-            <>
-              <h3 className="text-lg font-bold mb-1" style={{ background: 'linear-gradient(135deg, #FFD700, #DAA520)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Reset Password</h3>
-              <p className="text-gray-400 text-sm mb-6">
-                {forgotSent
-                  ? 'Your request has been received. A verification code will be provided by admin or contact support via WhatsApp.'
-                  : 'Enter your registered phone number to request a password reset. A code will be provided by admin.'}
-              </p>
 
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div>
-                  <label className="text-xs text-gray-400 mb-1 block">Phone Number</label>
-                  <input
-                    className="input-field"
-                    placeholder="0712 345 678"
-                    value={phone}
-                    onChange={e => setPhone(e.target.value)}
-                    type="tel"
-                    required
-                  />
+              <div className="mt-6 grid gap-3 sm:grid-cols-3">
+                <div className="rounded-xl border border-white/8 bg-white/4 px-3 py-3 text-center">
+                  <p className="text-[10px] uppercase tracking-[0.2em] text-slate-500">Access</p>
+                  <p className="mt-1 text-sm font-semibold text-white">Private</p>
                 </div>
+                <div className="rounded-xl border border-white/8 bg-white/4 px-3 py-3 text-center">
+                  <p className="text-[10px] uppercase tracking-[0.2em] text-slate-500">Onboarding</p>
+                  <p className="mt-1 text-sm font-semibold text-white">Guided</p>
+                </div>
+                <div className="rounded-xl border border-white/8 bg-white/4 px-3 py-3 text-center">
+                  <p className="text-[10px] uppercase tracking-[0.2em] text-slate-500">Policies</p>
+                  <p className="mt-1 text-sm font-semibold text-white">Visible</p>
+                </div>
+              </div>
 
-                {error && (
-                  <div className="bg-red-900/40 border border-red-700 text-red-300 text-sm rounded-lg px-4 py-3">
-                    {error}
-                  </div>
-                )}
-
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="w-full text-center py-3.5 px-6 rounded-xl font-bold text-sm tracking-wide transition-all duration-300 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
-                  style={{
-                    background: loading ? 'linear-gradient(135deg, #996515 0%, #6B4C11 100%)' : 'linear-gradient(135deg, #FFD700 0%, #DAA520 50%, #B8860B 100%)',
-                    color: loading ? '#999' : '#000',
-                    boxShadow: loading ? 'none' : '0 4px 20px rgba(255,215,0,0.25), 0 0 40px rgba(255,215,0,0.08)',
-                  }}
-                >
-                  {loading ? 'Processing...' : forgotSent ? 'Send Another Request' : 'Submit Request'}
+              <p className="mt-6 text-center text-xs" style={{ color: 'rgba(218,165,32,0.58)' }}>
+                By using Dumiropay you agree to our{' '}
+                <button type="button" onClick={() => navigate('/terms')} className="underline hover:text-[#FFD700]">
+                  Terms & Conditions
+                </button>{' '}
+                and{' '}
+                <button type="button" onClick={() => navigate('/privacy')} className="underline hover:text-[#FFD700]">
+                  Privacy Policy
                 </button>
-              </form>
-
-                <p className="text-center mt-4">
-                  <button
-                    type="button"
-                    onClick={() => { setForgotMode(false); setError(''); setForgotSent(false) }}
-                    className="text-xs transition-colors"
-                    style={{ color: '#DAA520' }}
-                    onMouseEnter={e => e.target.style.color = '#FFD700'}
-                    onMouseLeave={e => e.target.style.color = '#DAA520'}
-                  >
-                    ← Back to Login
-                  </button>
-                </p>
-            </>
-          )}
+                .
+              </p>
+            </div>
+          </div>
         </div>
-
-        <p className="text-center text-xs mt-6" style={{ color: 'rgba(218,165,32,0.5)' }}>
-          By using Dumiropay you agree to our <button type="button" onClick={() => navigate('/terms')} className="underline hover:text-[#FFD700]">Terms & Conditions</button> and <button type="button" onClick={() => navigate('/privacy')} className="underline hover:text-[#FFD700]">Privacy Policy</button>.
-        </p>
       </div>
     </div>
   )
