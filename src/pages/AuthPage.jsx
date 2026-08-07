@@ -392,62 +392,18 @@ export default function AuthPage() {
                 ))}
               </div>
 
-              <div
-                className="overflow-hidden rounded-3xl"
-                style={{
-                  background: 'linear-gradient(145deg, rgba(17,24,39,0.88) 0%, rgba(9,13,25,0.96) 100%)',
-                  border: '1px solid rgba(255,215,0,0.12)',
-                  boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
-                }}
-              >
-                <div className="border-b px-5 py-4" style={{ borderColor: 'rgba(255,255,255,0.08)' }}>
-                  <p className="text-xs font-bold uppercase tracking-[0.28em]" style={{ color: 'rgba(255,215,0,0.72)' }}>Platform preview</p>
-                  <h2 className="mt-2 text-xl font-bold text-white">A cleaner access experience that feels product-led.</h2>
-                </div>
-
-                <div className="grid gap-0 lg:grid-cols-[1.15fr_0.85fr]">
-                  <div className="p-5">
-                    <div className="relative overflow-hidden rounded-2xl border border-white/8 bg-slate-950/60 p-3">
-                      <img
-                        src="/datacenter-ai.webp"
-                        alt="Platform preview"
-                        className="w-full rounded-xl object-cover"
-                        style={{ maxHeight: '260px', animation: 'coinHeartbeat 4s ease-in-out infinite' }}
-                      />
-                      <div className="absolute inset-x-6 bottom-6 rounded-2xl border border-white/10 bg-slate-950/78 p-4 backdrop-blur-md">
-                        <p className="text-[10px] font-bold uppercase tracking-[0.28em]" style={{ color: 'rgba(255,215,0,0.72)' }}>Private access preview</p>
-                        <div className="mt-3 grid grid-cols-3 gap-2">
-                          {PREVIEW_ITEMS.map((item) => (
-                            <div key={item.label} className="rounded-xl border border-white/8 bg-white/5 px-3 py-2 text-center">
-                              <p className="text-[10px] uppercase tracking-[0.18em] text-slate-400">{item.label}</p>
-                              <p className="mt-1 text-sm font-semibold text-white">{item.value}</p>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="space-y-4 p-5">
-                    <div className="rounded-2xl border border-white/8 bg-white/4 p-4">
-                      <p className="text-xs font-bold uppercase tracking-[0.24em]" style={{ color: 'rgba(96,165,250,0.82)' }}>What you can do</p>
-                      <ul className="mt-4 space-y-3">
-                        {ACCESS_FEATURES.map((feature) => (
-                          <li key={feature} className="flex items-start gap-3 text-sm text-slate-300">
-                            <span className="mt-1 inline-flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500/15 text-[11px] text-emerald-300">✓</span>
-                            <span>{feature}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-
-                    <div className="rounded-2xl border border-white/8 bg-white/4 p-4">
-                      <p className="text-xs font-bold uppercase tracking-[0.24em]" style={{ color: 'rgba(52,211,153,0.82)' }}>Why the invite matters</p>
-                      <p className="mt-3 text-sm leading-6 text-slate-300">
-                        Invitation codes keep onboarding traceable and help link new access requests to an existing account relationship.
-                      </p>
-                    </div>
-                  </div>
+              {/* Platform preview panel (private access preview + why the invite matters) removed per request */}
+              <div className="space-y-4">
+                <div className="rounded-2xl border border-white/8 bg-white/4 p-4">
+                  <p className="text-xs font-bold uppercase tracking-[0.24em]" style={{ color: 'rgba(96,165,250,0.82)' }}>What you can do</p>
+                  <ul className="mt-4 space-y-3">
+                    {ACCESS_FEATURES.map((feature) => (
+                      <li key={feature} className="flex items-start gap-3 text-sm text-slate-300">
+                        <span className="mt-1 inline-flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500/15 text-[11px] text-emerald-300">✓</span>
+                        <span>{feature}</span>
+                      </li>
+                    ))}
+                  </ul>
                 </div>
               </div>
             </div>
