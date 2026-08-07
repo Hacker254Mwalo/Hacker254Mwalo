@@ -987,7 +987,8 @@ function WithdrawModal({ balance, userPhone, onClose, onWithdraw }) {
     setLoading(true)
     setError('')
     try {
-      await onWithdraw(parseInt(amount), userPhone)
+      // Pass fee, net amount and mpesa number so the DB function receives all args
+      await onWithdraw(parseInt(amount), { fee, netAmount: receives, mpesaPhone: userPhone })
       onClose()
     } catch (err) {
       setError(err.message || 'Withdrawal failed. Please try again.')
@@ -1210,7 +1211,7 @@ function BonusWithdrawModal({ bonusBalance, userPhone, onClose, onWithdraw }) {
     setLoading(true)
     setError('')
     try {
-      await onWithdraw(parseInt(amount), userPhone)
+      await onWithdraw(parseInt(amount), { mpesaPhone: userPhone })
       onClose()
     } catch (err) {
       setError(err.message || 'Bonus withdrawal failed.')
@@ -1357,17 +1358,18 @@ export default function ProfilePage() {
     } catch { /* silent */ }
   }
 
-  async function handleWithdraw(amount, phone) {
-    const result = await addWithdrawal(phone, { amount })
-    const fresh = await getUser(phone)
+  async function handleWithdraw(amount, opts) {
+    const fee = Math.floor(amount * WITHDRAWAL_FEE)
+    const result = await addWithdrawal(user.phone, { amount, fee, netAmount: amount - fee, mpesaPhone: opts?.mpesaPhone || user.phone })
+    const fresh = await getUser(user.phone)
     if (fresh) updateUser({ balance: fresh.balance })
-    showToast(`✅ Withdrawal of KSh ${amount.toLocaleString()} initiated to ${phone}`)
+    showToast(`✅ Withdrawal of KSh ${amount.toLocaleString()} initiated to ${user.phone}`)
     return result
   }
 
-  async function handleBonusWithdraw(amount, phone) {
-    const result = await withdrawBonus(phone, { amount })
-    const fresh = await getUser(phone)
+  async function handleBonusWithdraw(amount, opts) {
+    const result = await withdrawBonus(user.phone, amount, opts?.mpesaPhone || user.phone)
+    const fresh = await getUser(user.phone)
     if (fresh) updateUser({ balance: fresh.balance, bonusBalance: fresh.bonusBalance })
     showToast(`✅ Bonus withdrawal of KSh ${amount.toLocaleString()} initiated`)
     return result

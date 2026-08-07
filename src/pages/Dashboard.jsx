@@ -15,6 +15,7 @@ import {
   getClaimedKeywords,
   executeComputeCycle,
   getShortTermInvestments,
+  completeShortTerm,
 } from '../lib/db'
 import YieldPanel from '../components/EarningsPanel'
 import LiveActivityFeed from '../components/LiveActivityFeed'
@@ -313,6 +314,13 @@ export default function Dashboard() {
         hasClaimedBonusToday(phone, 'spin'),
         getWhatsAppSettings(),
       ])
+      // Auto-mature any expired active short-term nodes (server is idempotent)
+      const now = Date.now()
+      for (const inv of (stInvs || []).filter(i => i.status === 'active' && new Date(i.endsAt).getTime() <= now)) {
+        try {
+          await completeShortTerm(inv.id, phone, inv.totalReturn)
+        } catch { /* will retry on next poll */ }
+      }
       setActiveNodes((invs || []).filter(i => i.status === 'active'))
       setShortTermInvs((stInvs || []).filter(i => i.status === 'active'))
       setBonusClaimed(bonusStatus)
@@ -338,6 +346,13 @@ export default function Dashboard() {
       return () => clearTimeout(timer)
     }
   }, [user])
+
+  // Re-run auto-mature on 15s polling while the user keeps the dashboard open
+  useEffect(() => {
+    if (!user) return
+    const interval = setInterval(loadData, 15000)
+    return () => clearInterval(interval)
+  }, [loadData])
 
   // Load streak data on mount
   useEffect(() => {

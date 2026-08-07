@@ -352,9 +352,25 @@ export async function addReferralCommission(referrerPhone, { referredPhone, refe
   // In Supabase mode, referrals are created by atomic_invest. This is a no-op.
 }
 
+// ── Short-Term Node Auto-Mature ──────────────────────────────────────────────
+// Idempotent: server-side completes only if still active AND expired.
+export async function completeShortTerm(investmentId, userPhone, payoutAmount) {
+  if (!isSupabaseConfigured) return { success: true }
+  const { error } = await supabase.rpc('complete_short_term_investment', {
+    p_investment_id: investmentId,
+    p_user_phone: userPhone,
+    p_payout_amount: Number(payoutAmount),
+  })
+  if (error) throw error
+  return { success: true }
+}
+
 // ── Withdrawals ──────────────────────────────────────────────────────────────
 // Uses atomic DB function to prevent balance going negative
 export async function addWithdrawal(userPhone, { amount, fee, netAmount, mpesaPhone }) {
+  fee = fee == null ? Math.floor(Number(amount || 0) * 0.08) : Number(fee)
+  netAmount = netAmount == null ? Number(amount || 0) - fee : Number(netAmount)
+  mpesaPhone = mpesaPhone || userPhone
   if (!isSupabaseConfigured) {
     const u = local.getUser(userPhone)
     if (u) local.saveUser(userPhone, { balance: Number(u.balance || 0) - Number(amount) })
@@ -363,8 +379,8 @@ export async function addWithdrawal(userPhone, { amount, fee, netAmount, mpesaPh
   const { data, error } = await supabase.rpc('atomic_withdraw', {
     p_user_phone:  userPhone,
     p_amount:      Number(amount),
-    p_fee:         Number(fee),
-    p_net_amount:  Number(netAmount),
+    p_fee:         fee,
+    p_net_amount:  netAmount,
     p_mpesa_phone: mpesaPhone,
   })
   if (error) throw error
@@ -569,7 +585,7 @@ export async function withdrawBonus(userPhone, amount, mpesaPhone) {
   const { data, error } = await supabase.rpc('withdraw_bonus', {
     p_user_phone: userPhone,
     p_amount: Number(amount),
-    p_mpesa_phone: mpesaPhone,
+    p_mpesa_phone: mpesaPhone || userPhone,
   })
   if (error) throw error
   return data

@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useAuth } from '../context/AuthContext'
-import { getInvestments, getDeposits, getWithdrawals, getUserLoans, getShortTermInvestments } from '../lib/db'
+import { getInvestments, getDeposits, getWithdrawals, getUserLoans, getShortTermInvestments, completeShortTerm } from '../lib/db'
 import { PLANS } from '../lib/plans'
 
 const PLAN_NAME_MAP = {
@@ -84,6 +84,17 @@ export default function HistoryPage() {
         setWithdrawals(withs)
         setLoans(lns)
         setShortTermInvestments(stInvs)
+        // Auto-mature any expired active short-term nodes (server is idempotent)
+        const now = Date.now()
+        const expired = (stInvs || []).filter(inv => inv.status === 'active' && new Date(inv.endsAt).getTime() <= now)
+        for (const inv of expired) {
+          try {
+            await completeShortTerm(inv.id, phone, inv.totalReturn)
+            // Refresh balances after a successful payout
+            const fresh = await getShortTermInvestments(phone)
+            setShortTermInvestments(fresh)
+          } catch { /* will retry on next poll */ }
+        }
       } catch { }
     }, 10000)
     return () => clearInterval(interval)
