@@ -20,6 +20,7 @@
  */
 
 import { getServerClient } from '../src/lib/supabase.js'
+import { isIpRateLimited, rejectSuspiciousRequest, setNoStore } from './_lib/requestSecurity.js'
 
 // ── Zetu Pay authorization key helper ────────────────────────────────────────
 function createAuthorizationKey(amount, walletId) {
@@ -66,7 +67,12 @@ function normalizePhone(phone) {
 
 // ── Main handler ─────────────────────────────────────────────────────────────
 export default async function handler(req, res) {
+  setNoStore(res)
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' })
+  if (rejectSuspiciousRequest(req, res, { requireClientHeader: true })) return
+  if (isIpRateLimited(req, 'stk-push', 20, 60_000)) {
+    return res.status(429).json({ error: 'Too many requests. Wait a minute.' })
+  }
 
   const { phone, amount, userPhone } = req.body || {}
   if (!phone || !amount || !userPhone) {
@@ -74,8 +80,12 @@ export default async function handler(req, res) {
   }
 
   const normalPhone = normalizePhone(phone)
+  const normalUserPhone = normalizePhone(userPhone)
   if (!normalPhone) {
     return res.status(400).json({ error: 'Invalid phone. Use 12 digits starting with 254.' })
+  }
+  if (!normalUserPhone || normalUserPhone !== normalPhone) {
+    return res.status(400).json({ error: 'Invalid account owner for this request.' })
   }
 
   const numAmount = Math.ceil(Number(amount))
@@ -90,6 +100,16 @@ export default async function handler(req, res) {
   const supabase = getServerClient(req.headers, process.env.SUPABASE_SERVICE_ROLE_KEY)
 
   try {
+    const { data: userRecord, error: userError } = await supabase
+      .from('users')
+      .select('phone')
+      .eq('phone', normalUserPhone)
+      .single()
+
+    if (userError || !userRecord) {
+      return res.status(403).json({ error: 'Account not allowed for this request.' })
+    }
+
     const walletId = process.env.ZETUPAY_WALLET_ID
     if (!walletId) {
       throw new Error('ZETUPAY_WALLET_ID is required')
@@ -115,7 +135,7 @@ export default async function handler(req, res) {
       reference,
       redirectUrl,
       currency: 'KES',
-      identifier: userPhone,
+      identifier: normalUserPhone,
       real: true,
     }
 
@@ -145,7 +165,7 @@ export default async function handler(req, res) {
     }
 
     // 5. Handle success (201 Created, status: "pending")
-    return handleSuccess(res, supabase, initBody, initData, userPhone, reference)
+    return handleSuccess(res, supabase, initBody, initData, normalUserPhone, reference)
 
   } catch (err) {
     console.error('STK Push error:', err.message, err.stack)

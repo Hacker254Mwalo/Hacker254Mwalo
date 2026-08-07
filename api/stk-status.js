@@ -18,6 +18,8 @@
  *   PAYKIT_BASE_URL
  */
 
+import { isIpRateLimited, rejectSuspiciousRequest, setNoStore } from './_lib/requestSecurity.js'
+
 // ── In-memory token cache (shared with stk-push.js pattern) ─────────────────
 let paykitToken = null
 let paykitTokenExpiresAt = 0
@@ -70,7 +72,12 @@ function paykitErrorResponse(res, status, paykitError) {
 
 // ── Main handler ─────────────────────────────────────────────────────────────
 export default async function handler(req, res) {
+  setNoStore(res)
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' })
+  if (rejectSuspiciousRequest(req, res)) return
+  if (isIpRateLimited(req, 'stk-status', 30, 60_000)) {
+    return res.status(429).json({ error: 'Too many requests. Wait a minute.' })
+  }
 
   const { requestId } = req.body || {}
   if (!requestId) {

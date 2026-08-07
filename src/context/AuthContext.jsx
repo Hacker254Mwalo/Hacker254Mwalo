@@ -3,6 +3,14 @@ import { getUser } from '../lib/db'
 
 const AuthContext = createContext(null)
 const SESSION_KEY = 'dumiropay_session'
+const SESSION_COOKIE = 'dp_session'
+
+function syncSessionCookie(hasSession) {
+  if (typeof document === 'undefined') return
+  const secure = window.location.protocol === 'https:' ? '; Secure' : ''
+  const maxAge = hasSession ? 60 * 60 * 24 * 30 : 0
+  document.cookie = `${SESSION_COOKIE}=${hasSession ? '1' : '0'}; Path=/; Max-Age=${maxAge}; SameSite=Lax${secure}`
+}
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null)
@@ -23,14 +31,18 @@ export function AuthProvider({ children }) {
             : { ...session, id: session.phone }
           setUser(u)
           localStorage.setItem(SESSION_KEY, JSON.stringify(u))
+          syncSessionCookie(true)
         }).catch(() => {
           setUser({ ...session, id: session.phone })
+          syncSessionCookie(true)
         }).finally(() => setLoading(false))
       } catch {
         localStorage.removeItem(SESSION_KEY)
+        syncSessionCookie(false)
         setLoading(false)
       }
     } else {
+      syncSessionCookie(false)
       setLoading(false)
     }
   }, [])
@@ -39,11 +51,13 @@ export function AuthProvider({ children }) {
     const u = { ...userData, id: userData.phone || userData.id }
     setUser(u)
     localStorage.setItem(SESSION_KEY, JSON.stringify(u))
+    syncSessionCookie(true)
   }, [])
 
   const logout = useCallback(() => {
     setUser(null)
     localStorage.removeItem(SESSION_KEY)
+    syncSessionCookie(false)
   }, [])
 
   const updateUser = useCallback((updates) => {
@@ -67,6 +81,7 @@ export function AuthProvider({ children }) {
         const u = { ...fresh, id: fresh.phone }
         setUser(u)
         localStorage.setItem(SESSION_KEY, JSON.stringify(u))
+        syncSessionCookie(true)
       }
     } catch { /* silently fail */ }
   }, [])
