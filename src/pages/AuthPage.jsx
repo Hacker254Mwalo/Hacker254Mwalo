@@ -22,6 +22,9 @@ export default function AuthPage() {
   const { login } = useAuth()
   const navigate = useNavigate()
   const [mobile, setMobile] = useState(false)
+  // 3A: First-visit landing animation
+  const [showSplash, setShowSplash] = useState(() => !localStorage.getItem('dp_visited'))
+  const [splashStage, setSplashStage] = useState(0)
 
   useEffect(() => {
     const check = () => setMobile(window.innerWidth < 768)
@@ -33,7 +36,19 @@ export default function AuthPage() {
     const ref = params.get('ref')
     if (ref) {
       setRefCode(ref.toUpperCase())
-      setTab('register') // Switch to register tab if coming from a referral link
+      setTab('register')
+    }
+
+    // 3A: First-visit splash animation sequence
+    if (showSplash) {
+      const t1 = setTimeout(() => setSplashStage(1), 600)
+      const t2 = setTimeout(() => setSplashStage(2), 1400)
+      const t3 = setTimeout(() => setSplashStage(3), 2200)
+      const t4 = setTimeout(() => {
+        setShowSplash(false)
+        localStorage.setItem('dp_visited', '1')
+      }, 3200)
+      return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); clearTimeout(t4); window.removeEventListener('resize', check) }
     }
 
     return () => window.removeEventListener('resize', check)
@@ -167,6 +182,38 @@ export default function AuthPage() {
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-4 relative overflow-hidden" style={{ backgroundImage: 'url(/ai-splash-bg.webp)', backgroundSize: 'cover', backgroundPosition: 'center', backgroundAttachment: 'fixed' }}>
+
+      {/* 3A: First-visit landing splash */}
+      {showSplash && (
+        <div
+          className="fixed inset-0 z-[200] flex flex-col items-center justify-center"
+          style={{ background: 'linear-gradient(180deg, #030712 0%, #06101a 100%)', transition: 'opacity 0.5s', opacity: showSplash ? 1 : 0 }}
+          onClick={() => { setShowSplash(false); localStorage.setItem('dp_visited', '1') }}
+        >
+          <div className={`transition-all duration-500 ${splashStage >= 1 ? 'opacity-100 scale-100' : 'opacity-0 scale-90'} mb-6`}>
+            <svg width="64" height="64" viewBox="0 0 36 36" fill="none" className="drop-shadow-2xl mx-auto">
+              <path d="M18 3L33 18L18 33L3 18L18 3Z" fill="url(#sg)" stroke="#FFD700" strokeWidth="1.5"/>
+              <path d="M18 10L25 18L18 26L11 18L18 10Z" fill="#FFD700" opacity="0.3"/>
+              <defs><linearGradient id="sg" x1="3" y1="3" x2="33" y2="33"><stop offset="0%" stopColor="#FFD700"/><stop offset="100%" stopColor="#DAA520"/></linearGradient></defs>
+            </svg>
+            <h1 className="text-4xl font-black tracking-tight text-center mt-3" style={{ background: 'linear-gradient(135deg,#FFD700,#FFC125,#DAA520)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+              Dumiropay
+            </h1>
+          </div>
+          <div className={`transition-all duration-500 delay-300 ${splashStage >= 2 ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'} text-center mb-8`}>
+            <p className="text-gray-300 text-sm">Decentralized AI Compute Infrastructure</p>
+            <p className="text-[11px] font-bold tracking-widest uppercase mt-1" style={{ color: 'rgba(255,215,0,0.5)' }}>GPU · Neural Networks · Enterprise AI</p>
+          </div>
+          <div className={`transition-all duration-500 delay-500 ${splashStage >= 3 ? 'opacity-100' : 'opacity-0'} w-48`}>
+            <div className="w-full bg-gray-800 rounded-full h-1 overflow-hidden">
+              <div className="h-full rounded-full" style={{ width: '100%', background: 'linear-gradient(90deg, #FFD700, #DAA520)', animation: 'shimmer 1.2s ease-in-out' }} />
+            </div>
+            <p className="text-center text-[9px] text-gray-500 mt-2">Initializing node network…</p>
+          </div>
+          <p className="absolute bottom-6 text-[8px] text-gray-600">Tap anywhere to skip</p>
+        </div>
+      )}
+
       {/* Dark overlay over AI background */}
       <div className="absolute inset-0 pointer-events-none" style={{ background: 'rgba(3, 7, 18, 0.65)', zIndex: 0 }} />
 

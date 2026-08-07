@@ -371,6 +371,53 @@ function MarketPulse() {
   )
 }
 
+/* ── 1A: Compute Load Bar ─────────────────────────────────────────────── */
+function ComputeLoadBar({ planId }) {
+  const [load, setLoad] = useState(() => 72 + Math.abs(planId.charCodeAt(0) % 20))
+  useEffect(() => {
+    const id = setInterval(() => {
+      setLoad(prev => {
+        const delta = (Math.random() - 0.45) * 4
+        return Math.max(60, Math.min(99, prev + delta))
+      })
+    }, 3500)
+    return () => clearInterval(id)
+  }, [planId])
+  const color = load >= 90 ? '#ef4444' : load >= 75 ? '#facc15' : '#34d399'
+  return (
+    <div className="mt-2">
+      <div className="flex justify-between items-center mb-0.5">
+        <span className="text-[8px] font-bold uppercase tracking-wider" style={{ color: 'rgba(255,255,255,0.35)' }}>Compute Load</span>
+        <span className="text-[8px] font-black" style={{ color }}>{load.toFixed(0)}%</span>
+      </div>
+      <div className="w-full h-1 rounded-full bg-gray-800 overflow-hidden">
+        <div className="h-full rounded-full transition-all duration-700" style={{ width: `${load}%`, background: `linear-gradient(90deg, ${color}88, ${color})` }} />
+      </div>
+    </div>
+  )
+}
+
+/* ── 1E: Per-plan node count ─────────────────────────────────────────── */
+const PLAN_NODE_COUNTS = {
+  starter: 4821, basic: 3107, silver: 2419, gold: 1853,
+  platinum: 1204, diamond: 876, ruby: 542, emerald: 318, sapphire: 197, vip: 89,
+}
+function LiveNodeCount({ planId }) {
+  const [count, setCount] = useState(PLAN_NODE_COUNTS[planId] || 500)
+  useEffect(() => {
+    const id = setInterval(() => {
+      setCount(prev => prev + Math.floor(Math.random() * 3))
+    }, 6000)
+    return () => clearInterval(id)
+  }, [planId])
+  return (
+    <div className="flex items-center gap-1 mt-1">
+      <div className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse flex-shrink-0" />
+      <span className="text-[8px] font-bold" style={{ color: 'rgba(52,211,153,0.7)' }}>{count.toLocaleString()} active nodes</span>
+    </div>
+  )
+}
+
 /* ── Number Wall Row ─────────────────────────────────────────────────── */
 function NumberWallRow({ plan, workload, onClick, isCritical, slots }) {
   const daily = getWorkloadYield(plan.amount, workload)
@@ -454,21 +501,50 @@ function NodeDetailsModal({ plan, onClose, onDeploy }) {
     'vip': { cpu: '256 Cores', gpu: '8x NVIDIA H100', ram: '1TB', network: '200Gbps', storage: '10TB NVMe' },
   }[plan.id] || { cpu: 'Custom', gpu: 'Enterprise Grade', ram: 'High Density', network: 'Optimized', storage: 'Redundant' };
 
+  // 1B: ROI Timeline
+  const daily = getWorkloadYield(plan.amount, 'finance')
+  const milestones = [
+    { day: 1, val: daily },
+    { day: 15, val: daily * 15 },
+    { day: 30, val: daily * 30 },
+    { day: 60, val: getWorkloadTotalReturn(plan.amount, 'finance') },
+  ]
+  const maxVal = milestones[milestones.length - 1].val
+
   return (
     <div className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4 backdrop-blur-sm" onClick={onClose}>
-      <div className="card max-w-sm w-full relative overflow-hidden border-blue-500/30" onClick={e => e.stopPropagation()}>
+      <div className="card max-w-sm w-full relative overflow-hidden border-blue-500/30" onClick={e => e.stopPropagation()} style={{ maxHeight: '90vh', overflowY: 'auto' }}>
         <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 via-cyan-400 to-blue-500"></div>
         
-        <div className="flex justify-between items-start mb-6">
+        <div className="flex justify-between items-start mb-4">
           <div>
             <h3 className="text-xl font-black text-white uppercase tracking-tighter">{plan.name}</h3>
             <p className="text-[10px] text-blue-400 font-bold font-mono uppercase">Node Specification V4.2</p>
+            <LiveNodeCount planId={plan.id} />
           </div>
           <button onClick={onClose} className="w-8 h-8 rounded-full bg-gray-800 flex items-center justify-center text-gray-400 hover:text-white transition-colors">✕</button>
         </div>
 
-        <div className="space-y-4 mb-8">
-          <div className="grid grid-cols-2 gap-4">
+        {/* 1B: ROI Timeline chart */}
+        <div className="p-3 rounded-xl bg-emerald-900/10 border border-emerald-500/20 mb-4">
+          <p className="text-[8px] text-emerald-400 uppercase font-bold mb-2">Revenue Timeline (Finance Workload)</p>
+          <div className="flex items-end gap-2 h-14">
+            {milestones.map(m => {
+              const pct = Math.max(8, Math.round((m.val / maxVal) * 100))
+              return (
+                <div key={m.day} className="flex-1 flex flex-col items-center gap-0.5">
+                  <span className="text-[7px] font-bold text-emerald-400">KSh {m.val >= 1000 ? `${(m.val/1000).toFixed(0)}k` : m.val}</span>
+                  <div className="w-full rounded-t" style={{ height: `${pct}%`, background: 'linear-gradient(0deg, #059669, #34d399)', minHeight: 4 }} />
+                  <span className="text-[7px] text-gray-500">D{m.day}</span>
+                </div>
+              )
+            })}
+          </div>
+          <ComputeLoadBar planId={plan.id} />
+        </div>
+
+        <div className="space-y-4 mb-6">
+          <div className="grid grid-cols-2 gap-3">
             <div className="p-3 rounded-xl bg-white/5 border border-white/5">
               <p className="text-[8px] text-gray-500 uppercase font-bold mb-1">Compute Core</p>
               <p className="text-xs font-bold text-blue-100">{specs.cpu}</p>
@@ -490,7 +566,7 @@ function NodeDetailsModal({ plan, onClose, onDeploy }) {
           <div className="p-3 rounded-xl bg-blue-900/10 border border-blue-500/20">
             <p className="text-[8px] text-blue-400 uppercase font-bold mb-1">Workload Capability</p>
             <p className="text-[10px] text-gray-300 leading-relaxed">
-              {plan.desc || 'Optimized for heavy AI inference, data processing, and neural network training cycles.'}
+              {plan.description || 'Optimized for heavy AI inference, data processing, and neural network training cycles.'}
             </p>
           </div>
         </div>
@@ -877,6 +953,33 @@ export default function PlansPage() {
       {/* Live Deployments Ticker */}
       <LiveDeploymentsTicker />
 
+      {/* Two Ways to Earn — clarity explainer */}
+      <div className="rounded-2xl p-4 mb-4" style={{ background: 'linear-gradient(135deg, rgba(10,12,30,0.97) 0%, rgba(6,8,20,0.99) 100%)', border: '1px solid rgba(255,215,0,0.12)' }}>
+        <p className="text-[10px] uppercase tracking-widest font-black text-center mb-3" style={{ color: 'rgba(255,215,0,0.6)' }}>⚡ 2 Ways Your Node Generates Revenue</p>
+        <div className="grid grid-cols-2 gap-3">
+          <div
+            onClick={() => setActiveTab('standard')}
+            className="rounded-xl p-3 cursor-pointer transition-all hover:scale-[1.02]"
+            style={{ background: 'linear-gradient(135deg, rgba(220,38,38,0.12) 0%, rgba(10,12,30,0.9) 100%)', border: activeTab === 'standard' ? '1.5px solid rgba(220,38,38,0.5)' : '1px solid rgba(220,38,38,0.2)' }}
+          >
+            <div className="text-2xl mb-1">🖥️</div>
+            <p className="text-[11px] font-black text-white mb-0.5">Compute Fleet</p>
+            <p className="text-[8px] leading-tight" style={{ color: 'rgba(255,255,255,0.4)' }}>60-day contract · Daily revenue credits · Scale anytime</p>
+            <p className="text-[9px] font-bold mt-1" style={{ color: '#f87171' }}>3% daily yield</p>
+          </div>
+          <div
+            onClick={() => setActiveTab('short-term')}
+            className="rounded-xl p-3 cursor-pointer transition-all hover:scale-[1.02]"
+            style={{ background: 'linear-gradient(135deg, rgba(16,185,129,0.12) 0%, rgba(10,12,30,0.9) 100%)', border: activeTab === 'short-term' ? '1.5px solid rgba(16,185,129,0.5)' : '1px solid rgba(16,185,129,0.2)' }}
+          >
+            <div className="text-2xl mb-1">⚡</div>
+            <p className="text-[11px] font-black text-white mb-0.5">Spot Market</p>
+            <p className="text-[8px] leading-tight" style={{ color: 'rgba(255,255,255,0.4)' }}>24h–7 day sprint · Auto payout · No lock-up</p>
+            <p className="text-[9px] font-bold mt-1" style={{ color: '#34d399' }}>Up to 18% per cycle</p>
+          </div>
+        </div>
+      </div>
+
       {/* Tab Toggle */}
       <div className="flex p-1.5 bg-black/60 rounded-2xl mb-4 border border-white/10 shadow-2xl">
         <button 
@@ -1019,10 +1122,12 @@ export default function PlansPage() {
 	                        <p className="text-sm font-black text-white">KSh {plan.amount.toLocaleString()}</p>
 	                      </div>
 	                      <p className="text-[9px]" style={{ color: 'var(--text-muted)' }}>{plan.specs || 'AI Compute'}</p>
+                      <LiveNodeCount planId={plan.id} />
 	                    </div>
 	                  </div>
+                  <ComputeLoadBar planId={plan.id} />
 	
-	                  <div className="flex justify-between items-center pt-2" style={{ borderTop: '1px solid rgba(31,41,55,0.4)' }}>
+	                  <div className="flex justify-between items-center pt-2 mt-2" style={{ borderTop: '1px solid rgba(31,41,55,0.4)' }}>
 	                    <div className="text-center">
 	                      <p className="num-glow-green font-bold text-xs">KSh {daily.toLocaleString()}</p>
 	                      <p className="text-[8px] text-gray-500">24h Rev</p>

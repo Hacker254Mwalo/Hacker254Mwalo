@@ -292,6 +292,8 @@ export default function Dashboard() {
   const [activityEnabled, setActivityEnabled] = useState(true)
   const [streak, setStreak] = useState({ count: 0, bonusPct: 0 })
   const [streakBroken, setStreakBroken] = useState(false)
+  // 2D: Daily Node Report modal
+  const [showNodeReport, setShowNodeReport] = useState(false)
 
   function showToast(msg, type = 'success') {
     setToast({ msg, type })
@@ -323,6 +325,19 @@ export default function Dashboard() {
     } catch { /* silent */ }
   }, [user])
   useEffect(() => { loadData() }, [loadData])
+
+  // 2D: Show Daily Node Report once per day for users with active nodes
+  useEffect(() => {
+    if (!user) return
+    const key = `node_report_${user.phone || user.id}_${new Date().toDateString()}`
+    if (!localStorage.getItem(key)) {
+      const timer = setTimeout(() => {
+        setShowNodeReport(true)
+        localStorage.setItem(key, '1')
+      }, 2500) // small delay so page loads first
+      return () => clearTimeout(timer)
+    }
+  }, [user])
 
   // Load streak data on mount
   useEffect(() => {
@@ -570,6 +585,66 @@ function requireProvisioning(action) {
       {showContactAdmin && <SupportModal user={user} onClose={() => setShowContactAdmin(false)} />}
       {showCertificate && <DeploymentCertificate inv={showCertificate} onClose={() => setShowCertificate(null)} />}
       <EarnMoreModal />
+
+      {/* 2D: Daily Node Report */}
+      {showNodeReport && (
+        <div className="fixed inset-0 bg-black/85 z-50 flex items-center justify-center p-4 backdrop-blur-sm" onClick={() => setShowNodeReport(false)}>
+          <div className="card max-w-sm w-full relative overflow-hidden" onClick={e => e.stopPropagation()} style={{ border: '1px solid rgba(52,211,153,0.3)' }}>
+            <div className="absolute top-0 left-0 w-full h-1" style={{ background: 'linear-gradient(90deg, #10b981, #34d399, #10b981)' }} />
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <div className="flex items-center gap-2 mb-0.5">
+                  <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
+                  <p className="text-[10px] font-black uppercase tracking-widest text-green-400">Node Activity Report</p>
+                </div>
+                <h3 className="text-lg font-black text-white">{new Date().toLocaleDateString('en-KE', { weekday: 'long', day: 'numeric', month: 'short' })}</h3>
+              </div>
+              <button onClick={() => setShowNodeReport(false)} className="w-8 h-8 rounded-full bg-gray-800 flex items-center justify-center text-gray-400 hover:text-white">✕</button>
+            </div>
+
+            {activeNodes.length > 0 ? (
+              <>
+                <div className="space-y-2 mb-4">
+                  {activeNodes.slice(0, 3).map((node, i) => {
+                    const data = Math.round(node.amount * 0.003 * 2.4 * 10) / 10
+                    return (
+                      <div key={i} className="rounded-xl p-3 flex items-center justify-between" style={{ background: 'rgba(16,185,129,0.06)', border: '1px solid rgba(16,185,129,0.15)' }}>
+                        <div>
+                          <p className="text-xs font-bold text-white">{node.planName || 'Compute Node'}</p>
+                          <p className="text-[9px] text-gray-400">Processed {data}TB AI data today</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-sm font-black text-green-400">+KSh {(node.dailyReturn || 0).toLocaleString()}</p>
+                          <p className="text-[8px] text-gray-500">credited</p>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+                <div className="rounded-xl p-3 mb-4" style={{ background: 'rgba(255,215,0,0.06)', border: '1px solid rgba(255,215,0,0.15)' }}>
+                  <div className="flex justify-between items-center">
+                    <p className="text-xs text-gray-400">Total today</p>
+                    <p className="text-lg font-black text-yellow-400">KSh {activeNodes.reduce((s, n) => s + Number(n.dailyReturn || 0), 0).toLocaleString()}</p>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <div className="text-center py-4 mb-4">
+                <p className="text-3xl mb-2">🖥️</p>
+                <p className="text-sm text-gray-300 font-semibold">No active nodes yet</p>
+                <p className="text-[10px] text-gray-500 mt-1">Deploy your first node to see daily reports here</p>
+              </div>
+            )}
+
+            <div className="flex gap-3">
+              <button onClick={() => setShowNodeReport(false)} className="btn-secondary flex-1 text-sm">Dismiss</button>
+              {activeNodes.length === 0 && (
+                <button onClick={() => { setShowNodeReport(false); navigate('/plans') }} className="btn-primary flex-1 text-sm">Deploy Node</button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
