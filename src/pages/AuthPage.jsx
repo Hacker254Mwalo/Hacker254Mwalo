@@ -215,8 +215,88 @@ export default function AuthPage() {
         <div className="mt-3 h-px w-32 mx-auto" style={{ background: 'linear-gradient(90deg, transparent, #FFD700, #DAA520, transparent)' }}/>
       </div>
 
-      <div className="w-full mb-8 z-10">
+      <div className="w-full mb-4 z-10">
         <LiveGridTicker />
+      </div>
+
+      {/* How It Works strip */}
+      <div className="w-full max-w-sm mb-4 z-10 px-1">
+        <div
+          className="rounded-2xl px-3 py-3"
+          style={{
+            background: 'linear-gradient(135deg, rgba(255,215,0,0.06) 0%, rgba(10,10,25,0.85) 100%)',
+            border: '1px solid rgba(255,215,0,0.12)',
+            boxShadow: '0 4px 24px rgba(0,0,0,0.35)',
+            backdropFilter: 'blur(10px)',
+          }}
+        >
+          <p className="text-center text-[10px] font-bold tracking-widest uppercase mb-3" style={{ color: 'rgba(255,215,0,0.5)' }}>
+            How It Works
+          </p>
+          <div className="flex items-start justify-between gap-2">
+            {/* Step 1 */}
+            <div className="flex-1 flex flex-col items-center text-center gap-1">
+              <div
+                className="w-10 h-10 rounded-full flex items-center justify-center text-xl mb-1"
+                style={{
+                  background: 'linear-gradient(135deg, rgba(255,215,0,0.18) 0%, rgba(180,120,0,0.08) 100%)',
+                  border: '1.5px solid rgba(255,215,0,0.3)',
+                  boxShadow: '0 0 12px rgba(255,215,0,0.12)',
+                }}
+              >
+                🔐
+              </div>
+              <span className="text-[11px] font-bold text-white leading-tight">Create Account</span>
+              <span className="text-[9px] leading-tight" style={{ color: 'rgba(255,255,255,0.38)' }}>Register your node profile in seconds</span>
+            </div>
+
+            {/* Connector */}
+            <div className="flex flex-col items-center justify-center pt-4 gap-0.5 flex-shrink-0">
+              {[0,1,2].map(i => (
+                <div key={i} className="rounded-full" style={{ width: 4, height: 4, background: 'rgba(255,215,0,0.3)', animationDelay: `${i * 0.3}s` }} />
+              ))}
+            </div>
+
+            {/* Step 2 */}
+            <div className="flex-1 flex flex-col items-center text-center gap-1">
+              <div
+                className="w-10 h-10 rounded-full flex items-center justify-center text-xl mb-1"
+                style={{
+                  background: 'linear-gradient(135deg, rgba(96,165,250,0.18) 0%, rgba(30,60,120,0.08) 100%)',
+                  border: '1.5px solid rgba(96,165,250,0.3)',
+                  boxShadow: '0 0 12px rgba(96,165,250,0.12)',
+                }}
+              >
+                ⚙️
+              </div>
+              <span className="text-[11px] font-bold text-white leading-tight">Select a Node Plan</span>
+              <span className="text-[9px] leading-tight" style={{ color: 'rgba(255,255,255,0.38)' }}>Pick your GPU compute tier</span>
+            </div>
+
+            {/* Connector */}
+            <div className="flex flex-col items-center justify-center pt-4 gap-0.5 flex-shrink-0">
+              {[0,1,2].map(i => (
+                <div key={i} className="rounded-full" style={{ width: 4, height: 4, background: 'rgba(96,165,250,0.3)', animationDelay: `${i * 0.3}s` }} />
+              ))}
+            </div>
+
+            {/* Step 3 */}
+            <div className="flex-1 flex flex-col items-center text-center gap-1">
+              <div
+                className="w-10 h-10 rounded-full flex items-center justify-center text-xl mb-1"
+                style={{
+                  background: 'linear-gradient(135deg, rgba(52,211,153,0.18) 0%, rgba(10,60,30,0.08) 100%)',
+                  border: '1.5px solid rgba(52,211,153,0.3)',
+                  boxShadow: '0 0 12px rgba(52,211,153,0.12)',
+                }}
+              >
+                📈
+              </div>
+              <span className="text-[11px] font-bold text-white leading-tight">Node Goes Live</span>
+              <span className="text-[9px] leading-tight" style={{ color: 'rgba(255,255,255,0.38)' }}>Your GPU processes AI workloads 24/7</span>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div className="relative mx-auto mb-4 z-10 w-full max-w-xs">
