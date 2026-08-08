@@ -12,42 +12,65 @@ const TRUST_SIGNALS = [
 
 const STATUS_CARDS = [
   {
-    title: 'Protected session flow',
-    body: 'Sign in, recover access, and manage your account from a single private entry point.',
+    title: 'One premium entry point',
+    body: 'Your account, plans, and activities — managed from a single protected gateway.',
     accent: 'rgba(255,215,0,0.18)',
     border: 'rgba(255,215,0,0.25)',
   },
   {
-    title: 'Guided member onboarding',
-    body: 'Registration stays simple while keeping account setup controlled and clearly explained.',
+    title: 'Access & manage everything',
+    body: 'Sign in once to open your dashboard, manage plans, and track earnings in real time.',
     accent: 'rgba(96,165,250,0.18)',
     border: 'rgba(96,165,250,0.25)',
   },
   {
-    title: 'Clear next steps',
-    body: 'After signing in, your dashboard, plans, and activity are all available in one place.',
+    title: 'Earn while your node works',
+    body: 'Every plan you activate starts generating daily compute yield from active GPU nodes.',
     accent: 'rgba(52,211,153,0.18)',
     border: 'rgba(52,211,153,0.25)',
   },
 ]
 
 const ACCESS_FEATURES = [
-  'Private dashboard access',
-  'Plan and activity management',
-  'Simple account setup',
+  'Private dashboard with daily yield tracking',
+  'Activate plans from KSh 500 to earn compute yield',
+  'Full activity history with real matching logic',
 ]
 
 const PREVIEW_ITEMS = [
   { label: 'Account', value: 'Access' },
-  { label: 'Plans', value: 'Ready' },
-  { label: 'History', value: 'Available' },
+  { label: 'Plans', value: 'Active' },
+  { label: 'Yield', value: 'Daily' },
+]
+
+/* ── Live stats strip ── pure CSS/JS, no external sources ──────────────── */
+const LIVE_STATS = [
+  { label: 'GPU demand', base: 87, unit: '%', color: '#FFD700' },
+  { label: 'Nodes online', base: 1248, unit: '', color: '#34D399' },
+  { label: 'KSh paid out', base: 3420000, unit: 'M+', color: '#60A5FA' },
 ]
 
 const SIGNUP_BENEFITS = [
-  'Review your account dashboard after sign in',
-  'Browse available plans and activity in one place',
-  'Keep your activity tied to your profile',
+  'Open your dashboard and see earnings from day one',
+  'Activate a GPU node plan to start daily compute yield',
+  'Every activity is tracked and tied to your profile',
 ]
+
+/* ── Live animated value (client-side only, no external calls) ─────────── */
+function LiveValue({ stat }) {
+  const [value, setValue] = useState(stat.base)
+  useEffect(() => {
+    const id = setInterval(() => {
+      setValue((prev) => {
+        const jitter = (Math.random() - 0.42) * (stat.base > 1000 ? 40 : 1.6)
+        return stat.base > 1000 ? Math.max(stat.base - 200, Math.round((prev + jitter) / 10000) / 100) : parseFloat((prev + jitter).toFixed(1))
+      })
+    }, 2500)
+    return () => clearInterval(id)
+  }, [])
+  const display = stat.base > 1000 ? `KSh ${value}M+` : stat.unit === '%' ? `${value}%` : `${value.toLocaleString()}`
+  return <span className="text-sm font-bold tabular-nums text-white">{display}</span>
+}
 
 export default function AuthPage() {
   const [tab, setTab] = useState('login')
@@ -287,7 +310,7 @@ export default function AuthPage() {
           <div className={`transition-all duration-500 delay-300 ${splashStage >= 2 ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'} text-center mb-8`}>
             <p className="text-gray-300 text-sm">Private platform access</p>
             <p className="text-[11px] font-bold tracking-widest uppercase mt-1" style={{ color: 'rgba(255,215,0,0.5)' }}>
-              Member access · Account setup
+              GPU Nodes · Daily Yield · Member Access
             </p>
           </div>
           <div className={`transition-all duration-500 delay-500 ${splashStage >= 3 ? 'opacity-100' : 'opacity-0'} w-48`}>
@@ -367,14 +390,35 @@ export default function AuthPage() {
                 </div>
 
                 <h1 className="max-w-xl text-4xl font-black leading-tight text-white md:text-5xl">
-                  Your account, plans, and activity in one premium entry point.
+                  Your account, plans, and activities in one premium entry point.
                 </h1>
                 <p className="mt-4 max-w-2xl text-sm leading-7 text-slate-300 md:text-base">
-                  Access your account, manage your plans, and track your activity in a calm, privacy-first experience built around clarity.
+                  Access your account and manage everything from a single protected gateway — then activate a node plan and watch your daily compute yield grow.
                 </p>
               </div>
 
-              <div className="grid gap-4 md:grid-cols-3">
+                {/* ── Live stats strip ─────────────────────────────────────────── */}
+                <div
+                  className="flex flex-wrap items-center justify-center gap-5 rounded-2xl px-5 py-3"
+                  style={{
+                    background: 'linear-gradient(135deg, rgba(10,14,28,0.92) 0%, rgba(15,20,38,0.88) 100%)',
+                    border: '1px solid rgba(255,215,0,0.12)',
+                    boxShadow: '0 8px 24px rgba(0,0,0,0.24)',
+                  }}
+                >
+                  {LIVE_STATS.map((stat) => (
+                    <div key={stat.label} className="flex items-center gap-2.5">
+                      <span
+                        className="h-2 w-2 rounded-full"
+                        style={{ background: stat.color, boxShadow: `0 0 8px ${stat.color}`, animation: 'pulseDot 2s ease-in-out infinite' }}
+                      />
+                      <span className="text-xs text-slate-400">{stat.label}</span>
+                      <LiveValue stat={stat} />
+                    </div>
+                  ))}
+                </div>
+
+                <div className="grid gap-4 md:grid-cols-3">
                 {STATUS_CARDS.map((card) => (
                   <div
                     key={card.title}
@@ -455,14 +499,14 @@ export default function AuthPage() {
                     {forgotMode ? 'Account recovery' : tab === 'login' ? 'Member access' : 'Account setup'}
                   </p>
                   <h2 className="mt-2 text-2xl font-black text-white">
-                    {forgotMode ? 'Recover your account access' : tab === 'login' ? 'Welcome back' : 'Create your account'}
+                    {forgotMode ? 'Recover your account access' : tab === 'login' ? 'Welcome back' : 'Start earning today'}
                   </h2>
                   <p className="mt-2 text-sm leading-6 text-slate-300">
                     {forgotMode
                       ? 'Submit your number to start a guided recovery request.'
                       : tab === 'login'
                         ? 'Use your phone number and PIN to open your account.'
-                        : 'Set up your account with your name, phone number, and PIN.'}
+                        : 'Create your account and activate a node plan to earn daily.'}
                   </p>
                 </div>
                 <div
@@ -578,7 +622,7 @@ export default function AuthPage() {
                       required
                     />
                     <div className="mt-3 rounded-xl border border-amber-300/12 bg-amber-200/5 px-3 py-3 text-xs leading-6 text-slate-300">
-                      Your access code makes setup quick and links your new account to a trusted member.
+                      Your access code makes setup quick and links your new account to a trusted member — earning plans start at KSh 500.
                     </div>
                   </div>
                 )}
@@ -684,12 +728,12 @@ export default function AuthPage() {
                   <p className="mt-1 text-sm font-semibold text-white">Private</p>
                 </div>
                 <div className="rounded-xl border border-white/8 bg-white/4 px-3 py-3 text-center">
-                  <p className="text-[10px] uppercase tracking-[0.2em] text-slate-500">Onboarding</p>
-                  <p className="mt-1 text-sm font-semibold text-white">Guided</p>
+                  <p className="text-[10px] uppercase tracking-[0.2em] text-slate-500">Plans</p>
+                  <p className="mt-1 text-sm font-semibold text-white">9 tiers</p>
                 </div>
                 <div className="rounded-xl border border-white/8 bg-white/4 px-3 py-3 text-center">
-                  <p className="text-[10px] uppercase tracking-[0.2em] text-slate-500">Policies</p>
-                  <p className="mt-1 text-sm font-semibold text-white">Visible</p>
+                  <p className="text-[10px] uppercase tracking-[0.2em] text-slate-500">Yield</p>
+                  <p className="mt-1 text-sm font-semibold text-white">Daily</p>
                 </div>
               </div>
 

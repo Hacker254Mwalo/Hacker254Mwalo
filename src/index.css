@@ -775,3 +775,12 @@
     animation: scanLine 1s ease-in-out;
     pointer-events: none;
   }
+
+/* ── Live pulse dot for stats strip ──────────────────────────────────────── */
+@keyframes pulseDot {
+  0%, 100% { opacity: 0.55; transform: scale(0.9); }
+  50%      { opacity: 1; transform: scale(1.15); }
+}
+.pulse-dot {
+  animation: pulseDot 2s ease-in-out infinite;
+}
