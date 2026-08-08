@@ -6,6 +6,7 @@ import {
   PLANS, DAILY_RATE, DURATION_DAYS,
   WORKLOAD_MULTIPLIERS,
   getWorkloadYield, getWorkloadTotalReturn,
+  kshToTokens, TOKEN_RATE,
 } from '../lib/plans'
 import PlanCertifications from '../components/PlanCertifications'
 import DataCenterInfo from '../components/DataCenterInfo'
@@ -1267,7 +1268,10 @@ export default function PlansPage() {
           </div>
           <div>
             <p className="text-[8px] uppercase tracking-[0.2em] font-bold" style={{ color: 'rgba(0,180,255,0.7)' }}>Provisioning Credit</p>
-            <p className="text-lg font-black text-white" style={{ textShadow: '0 0 10px rgba(0,180,255,0.2)' }}>KSh {(user?.balance || 0).toLocaleString()}</p>
+            <p className="text-lg font-black text-white" style={{ textShadow: '0 0 10px rgba(0,180,255,0.2)' }}>
+              {kshToTokens(user?.balance || 0)} CT
+              <span className="text-[11px] font-bold ml-1.5" style={{ color: 'rgba(148,163,184,0.8)' }}>≈ KSh {(user?.balance || 0).toLocaleString()}</span>
+            </p>
           </div>
         </div>
         <button
@@ -1389,7 +1393,7 @@ export default function PlansPage() {
           {/* Terms at a Glance */}
           {activeTab === 'standard' ? (
             <div className="grid grid-cols-4 gap-2 mb-4">
-              {['Daily Settlement', '60-Day Contract', 'KSh 200 Min', 'Withdraw After Cycle'].map((term, i) => (
+              {['Daily Settlement', '60-Day Contract', '0.4 CT Min (KSh 200)', 'Withdraw After Cycle'].map((term, i) => (
                 <div key={i} className="rounded-lg px-2 py-2 text-center" style={{ background: 'rgba(0,180,255,0.05)', border: '1px solid rgba(0,180,255,0.1)' }}>
                   <p className="text-[8px] font-black uppercase tracking-tight text-cyan-400">{term}</p>
                 </div>
@@ -1397,7 +1401,7 @@ export default function PlansPage() {
             </div>
           ) : (
             <div className="grid grid-cols-4 gap-2 mb-4">
-              {['Instant Settlement', '24h–7d Cycle', 'KSh 3,500 Min', 'No Lock-Up'].map((term, i) => (
+              {['Instant Settlement', '24h–7d Cycle', '7 CT Min (KSh 3,500)', 'No Lock-Up'].map((term, i) => (
                 <div key={i} className="rounded-lg px-2 py-2 text-center" style={{ background: 'rgba(16,185,129,0.05)', border: '1px solid rgba(16,185,129,0.1)' }}>
                   <p className="text-[8px] font-black uppercase tracking-tight text-emerald-400">{term}</p>
                 </div>
@@ -1457,6 +1461,8 @@ export default function PlansPage() {
               const daily = getWorkloadYield(plan.amount, selectedWorkload)
               const total = getWorkloadTotalReturn(plan.amount, selectedWorkload)
               const roi = Math.round((total / plan.amount - 1) * 100)
+              const planTokens = kshToTokens(plan.amount)
+              const dailyTokens = kshToTokens(daily)
               const isCritical = plan.amount >= 15000
               const isPremium = plan.amount >= 15000
               const planImage = PLAN_IMAGES[plan.id]
@@ -1485,10 +1491,10 @@ export default function PlansPage() {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between gap-1">
                           <p className="text-sm font-bold text-white truncate">{plan.name}</p>
-                          <p className="text-sm font-black text-white flex-shrink-0">KSh {plan.amount.toLocaleString()}</p>
+                          <p className="text-sm font-black text-white flex-shrink-0">{planTokens} CT</p>
                         </div>
                         <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                          <p className="text-[9px]" style={{ color: 'var(--text-muted)' }}>{plan.specs || 'AI Compute'}</p>
+                          <p className="text-[9px]" style={{ color: 'var(--text-muted)' }}>{plan.specs || 'AI Compute'} · Worth KSh {plan.amount.toLocaleString()}</p>
                           {badge && (
                             <span className="text-[8px] font-black px-1.5 py-0.5 rounded-full" style={{ background: `${badge.color}22`, color: badge.color, border: `1px solid ${badge.color}44` }}>
                               {badge.label}
@@ -1502,12 +1508,12 @@ export default function PlansPage() {
 
                     <div className="flex justify-between items-center pt-2 mt-2" style={{ borderTop: '1px solid rgba(31,41,55,0.4)' }}>
                       <div className="text-center">
-                        <p className="num-glow-green font-bold text-xs">KSh {daily.toLocaleString()}</p>
-                        <p className="text-[8px] text-gray-500">24h Rev</p>
+                        <p className="num-glow-green font-bold text-xs">{dailyTokens} CT</p>
+                        <p className="text-[8px] text-gray-500">24h Rev · KSh {daily.toLocaleString()}</p>
                       </div>
                       <div className="text-center">
-                        <p className="num-glow-gold font-bold text-xs">KSh {total.toLocaleString()}</p>
-                        <p className="text-[8px] text-gray-500">Value</p>
+                        <p className="num-glow-gold font-bold text-xs">{kshToTokens(total)} CT</p>
+                        <p className="text-[8px] text-gray-500">Value · KSh {total.toLocaleString()}</p>
                       </div>
                       <div className="text-center">
                         <p className="text-cyan-400 font-bold text-xs">{roi}%</p>

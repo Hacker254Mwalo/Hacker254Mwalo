@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { getReferrals, generateReferralCode, addDeposit, addWithdrawal, changePassword, getUser, withdrawBonus, transferBonusToMain } from '../lib/db'
 import { canChangePassword, recordPasswordChangeAttempt } from '../lib/storage'
-import { MPESA_PAYBILL, WITHDRAWAL_FEE } from '../lib/plans'
+import { MPESA_PAYBILL, WITHDRAWAL_FEE, kshToTokens } from '../lib/plans'
 
 // ── Brand Icons (SVG) ──────────────────────────────────────────────────────────
 function MpesaIcon() {
@@ -1424,8 +1424,9 @@ export default function ProfilePage() {
 
         {/* Balance */}
         <div className="balance-gradient rounded-2xl p-5 mb-6">
-          <p className="text-gray-400 text-sm mb-1">Available Balance</p>
-          <p className="text-3xl font-black">KSh {(user?.balance || 0).toLocaleString()}</p>
+          <p className="text-gray-400 text-sm mb-1">Compute Tokens</p>
+          <p className="text-3xl font-black">{kshToTokens(user?.balance || 0)} CT</p>
+          <p className="text-gray-500 text-xs mt-0.5">≈ KSh {(user?.balance || 0).toLocaleString()}</p>
           <div className="flex gap-3 mt-4">
             <button onClick={() => setShowDeposit(true)} className="btn-primary flex-1 text-sm py-2.5">+ Top Up</button>
             <button onClick={() => setShowWithdraw(true)} className="btn-secondary flex-1 text-sm py-2.5">Withdraw</button>
@@ -1435,7 +1436,8 @@ export default function ProfilePage() {
         {(user?.bonusBalance || 0) > 0 && (
           <div className="rounded-2xl p-5 mb-6" style={{ background: 'linear-gradient(135deg, #78350f 0%, #451a03 100%)', border: '1px solid rgba(234, 179, 8, 0.3)' }}>
             <p className="text-yellow-400/80 text-sm mb-1">Bonus Balance</p>
-            <p className="text-3xl font-black text-yellow-400">KSh {(user.bonusBalance || 0).toLocaleString()}</p>
+            <p className="text-3xl font-black text-yellow-400">{kshToTokens(user.bonusBalance || 0)} CT</p>
+            <p className="text-yellow-400/60 text-xs mt-0.5">≈ KSh {(user.bonusBalance || 0).toLocaleString()}</p>
             <div className="flex gap-3 mt-4">
               <button onClick={() => setShowBonusWithdraw(true)} disabled={(user.bonusBalance || 0) < 500}
                 className="flex-1 text-sm py-2.5 rounded-xl font-semibold transition-colors"

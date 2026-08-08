@@ -36,6 +36,7 @@ import DeploymentCertificate from '../components/DeploymentCertificate'
 import PlatformStats from '../components/PlatformStats'
 import JobFeed from '../components/JobFeed'
 import { getStreakData, recordComputeCycle, getStreakBonus, getNextStreakMilestone, isStreakBroken } from '../lib/storage'
+import { kshToTokens } from '../lib/plans'
 
 const SPIN_DAYS = [1, 5] // Monday=1, Friday=5
 
@@ -719,14 +720,15 @@ function requireProvisioning(action) {
           <p className="text-xs font-bold uppercase tracking-widest mb-2" style={{ background: 'linear-gradient(90deg, #FFD700, #DAA520)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
             AI RENT MARKET S
           </p>
-          <p className="text-gray-400 text-sm mb-1">Available Balance</p>
-          <p className="text-3xl font-black balance-text-glow">KSh {(user?.balance || 0).toLocaleString()}</p>
+          <p className="text-gray-400 text-sm mb-1">Compute Tokens</p>
+          <p className="text-3xl font-black balance-text-glow">{kshToTokens(user?.balance || 0)} CT</p>
+          <p className="text-gray-500 text-xs mt-0.5">≈ KSh {(user?.balance || 0).toLocaleString()}</p>
           {(user?.bonusBalance || 0) > 0 && (
             <p className="text-yellow-400 text-sm mt-1">+ KSh {(user.bonusBalance || 0).toLocaleString()} bonus</p>
           )}
           <div className="mt-3 px-3 py-2 rounded-lg" style={{ background: 'rgba(59,130,246,0.12)', border: '1px solid rgba(59,130,246,0.25)' }}>
             <p className="text-[10px] uppercase tracking-wider text-blue-400 font-bold mb-1">🔒 Locked in AI Short-Term Nodes</p>
-            <p className="text-sm font-black text-white">KSh {shortTermInvs.reduce((s, i) => s + Number(i.amount || 0), 0).toLocaleString()}</p>
+            <p className="text-sm font-black text-white">{kshToTokens(shortTermInvs.reduce((s, i) => s + Number(i.amount || 0), 0))} CT · KSh {shortTermInvs.reduce((s, i) => s + Number(i.amount || 0), 0).toLocaleString()}</p>
             <p className="text-[10px] text-emerald-400 mt-0.5">+ KSh {shortTermInvs.reduce((s, i) => s + Number((i.totalReturn || 0) - (i.amount || 0)), 0).toLocaleString()} expected profit</p>
           </div>
           <div className="flex gap-3 mt-4">

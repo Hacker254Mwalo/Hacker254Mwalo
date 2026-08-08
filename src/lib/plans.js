@@ -1,6 +1,22 @@
 export const DAILY_RATE = 0.03 // 3% daily base rate
 export const DURATION_DAYS = 60
 
+// ── Token Economy (1 CT = KSh 500) ──────────────────────────────────────
+export const TOKEN_RATE = 500 // KSh per Compute Token
+
+export function kshToTokens(ksh) {
+  return parseFloat((ksh / TOKEN_RATE).toFixed(2))
+}
+
+export function tokensToKsh(tokens) {
+  return Math.round(tokens * TOKEN_RATE)
+}
+
+export function formatTokenDisplay(ksh) {
+  const tokens = kshToTokens(ksh)
+  return { tokens, ksh }
+}
+
 // ── Workload Multipliers (Realistic AI Compute Yields) ──────────────────
 export const WORKLOAD_MULTIPLIERS = {
   healthcare: {
