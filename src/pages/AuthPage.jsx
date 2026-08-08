@@ -452,7 +452,7 @@ export default function AuthPage() {
               <div className="mb-6 flex items-center justify-between gap-3">
                 <div>
                   <p className="text-xs font-bold uppercase tracking-[0.32em]" style={{ color: forgotMode ? 'rgba(96,165,250,0.82)' : 'rgba(255,215,0,0.72)' }}>
-                    {forgotMode ? 'Account recovery' : tab === 'login' ? 'Secure sign in' : 'Member onboarding'}
+                    {forgotMode ? 'Account recovery' : tab === 'login' ? 'Member access' : 'Account setup'}
                   </p>
                   <h2 className="mt-2 text-2xl font-black text-white">
                     {forgotMode ? 'Recover your account access' : tab === 'login' ? 'Welcome back' : 'Create your account'}
