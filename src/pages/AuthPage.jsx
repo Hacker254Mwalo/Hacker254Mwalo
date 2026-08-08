@@ -5,8 +5,8 @@ import { verifyUser, createUser, findUserByReferralCode, getUser, generateReferr
 import { canRequestPasswordReset, recordPasswordResetRequest } from '../lib/storage'
 
 const TRUST_SIGNALS = [
-  'Secure account access',
-  'Invite-based onboarding',
+  'Private member access',
+  'Simple onboarding',
   'Privacy-first experience',
 ]
 
@@ -24,8 +24,8 @@ const STATUS_CARDS = [
     border: 'rgba(96,165,250,0.25)',
   },
   {
-    title: 'Clear support path',
-    body: 'Recovery and access guidance are available directly from the authentication flow.',
+    title: 'Clear next steps',
+    body: 'After signing in, your dashboard, plans, and activity are all available in one place.',
     accent: 'rgba(52,211,153,0.18)',
     border: 'rgba(52,211,153,0.25)',
   },
@@ -34,7 +34,7 @@ const STATUS_CARDS = [
 const ACCESS_FEATURES = [
   'Private dashboard access',
   'Plan and activity management',
-  'Referral-linked onboarding',
+  'Simple account setup',
 ]
 
 const PREVIEW_ITEMS = [
@@ -46,7 +46,7 @@ const PREVIEW_ITEMS = [
 const SIGNUP_BENEFITS = [
   'Review your account dashboard after sign in',
   'Browse available plans and activity in one place',
-  'Keep invite-based access tied to your profile',
+  'Keep your activity tied to your profile',
 ]
 
 export default function AuthPage() {
@@ -287,7 +287,7 @@ export default function AuthPage() {
           <div className={`transition-all duration-500 delay-300 ${splashStage >= 2 ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'} text-center mb-8`}>
             <p className="text-gray-300 text-sm">Private platform access</p>
             <p className="text-[11px] font-bold tracking-widest uppercase mt-1" style={{ color: 'rgba(255,215,0,0.5)' }}>
-              Secure sign in · Member onboarding
+              Member access · Account setup
             </p>
           </div>
           <div className={`transition-all duration-500 delay-500 ${splashStage >= 3 ? 'opacity-100' : 'opacity-0'} w-48`}>
@@ -367,10 +367,10 @@ export default function AuthPage() {
                 </div>
 
                 <h1 className="max-w-xl text-4xl font-black leading-tight text-white md:text-5xl">
-                  Secure sign in and clear onboarding in one premium entry point.
+                  Your account, plans, and activity in one premium entry point.
                 </h1>
                 <p className="mt-4 max-w-2xl text-sm leading-7 text-slate-300 md:text-base">
-                  Access your account, manage your plans, and complete invite-based registration with a calmer, more trustworthy experience built around privacy, clarity, and support.
+                  Access your account, manage your plans, and track your activity in a calm, trustworthy experience built around privacy and clarity.
                 </p>
               </div>
 
@@ -392,18 +392,50 @@ export default function AuthPage() {
                 ))}
               </div>
 
-              {/* Platform preview panel (private access preview + why the invite matters) removed per request */}
-              <div className="space-y-4">
-                <div className="rounded-2xl border border-white/8 bg-white/4 p-4">
-                  <p className="text-xs font-bold uppercase tracking-[0.24em]" style={{ color: 'rgba(96,165,250,0.82)' }}>What you can do</p>
-                  <ul className="mt-4 space-y-3">
-                    {ACCESS_FEATURES.map((feature) => (
-                      <li key={feature} className="flex items-start gap-3 text-sm text-slate-300">
-                        <span className="mt-1 inline-flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500/15 text-[11px] text-emerald-300">✓</span>
-                        <span>{feature}</span>
-                      </li>
-                    ))}
-                  </ul>
+              <div
+                className="overflow-hidden rounded-3xl"
+                style={{
+                  background: 'linear-gradient(145deg, rgba(17,24,39,0.88) 0%, rgba(9,13,25,0.96) 100%)',
+                  border: '1px solid rgba(255,215,0,0.12)',
+                  boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
+                }}
+              >
+                <div className="grid gap-0 lg:grid-cols-[1.15fr_0.85fr]">
+                  <div className="p-5">
+                    <div className="relative overflow-hidden rounded-2xl border border-white/8 bg-slate-950/60 p-3">
+                      <img
+                        src="/datacenter-ai.webp"
+                        alt="Platform preview"
+                        className="w-full rounded-xl object-cover"
+                        style={{ maxHeight: '260px', animation: 'coinHeartbeat 4s ease-in-out infinite' }}
+                      />
+                      <div className="absolute inset-x-6 bottom-6 rounded-2xl border border-white/10 bg-slate-950/78 p-4 backdrop-blur-md">
+                        <p className="text-[10px] font-bold uppercase tracking-[0.28em]" style={{ color: 'rgba(255,215,0,0.72)' }}>Private access preview</p>
+                        <div className="mt-3 grid grid-cols-3 gap-2">
+                          {PREVIEW_ITEMS.map((item) => (
+                            <div key={item.label} className="rounded-xl border border-white/8 bg-white/5 px-3 py-2 text-center">
+                              <p className="text-[10px] uppercase tracking-[0.18em] text-slate-400">{item.label}</p>
+                              <p className="mt-1 text-sm font-semibold text-white">{item.value}</p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="p-5">
+                    <div className="rounded-2xl border border-white/8 bg-white/4 p-4">
+                      <p className="text-xs font-bold uppercase tracking-[0.24em]" style={{ color: 'rgba(96,165,250,0.82)' }}>What you can do</p>
+                      <ul className="mt-4 space-y-3">
+                        {ACCESS_FEATURES.map((feature) => (
+                          <li key={feature} className="flex items-start gap-3 text-sm text-slate-300">
+                            <span className="mt-1 inline-flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500/15 text-[11px] text-emerald-300">✓</span>
+                            <span>{feature}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -429,8 +461,8 @@ export default function AuthPage() {
                     {forgotMode
                       ? 'Submit your number to start a guided recovery request.'
                       : tab === 'login'
-                        ? 'Use your phone number and PIN to open your account securely.'
-                        : 'Complete invite-based registration with your name, number, PIN, and invitation code.'}
+                        ? 'Use your phone number and PIN to open your account.'
+                        : 'Set up your account with your name, phone number, and PIN.'}
                   </p>
                 </div>
                 <div
@@ -606,7 +638,7 @@ export default function AuthPage() {
                       </svg>
                       {forgotMode ? 'Submitting request…' : tab === 'login' ? 'Signing in…' : 'Creating account…'}
                     </span>
-                  ) : forgotMode ? 'Submit recovery request' : tab === 'login' ? 'Sign in securely' : 'Create account access'}
+                  ) : forgotMode ? 'Submit recovery request' : tab === 'login' ? 'Sign in' : 'Create account access'}
                 </button>
               </form>
 
