@@ -524,19 +524,6 @@ export default function AuthPage() {
                   </div>
                 )}
 
-                {!forgotMode && tab === 'register' && (
-                  <div className="rounded-2xl border border-white/8 bg-white/4 p-4">
-                    <p className="text-xs font-bold uppercase tracking-[0.24em]" style={{ color: 'rgba(52,211,153,0.82)' }}>After joining</p>
-                    <ul className="mt-3 space-y-2">
-                      {SIGNUP_BENEFITS.map((benefit) => (
-                        <li key={benefit} className="flex items-start gap-3 text-sm text-slate-300">
-                          <span className="mt-1 inline-block h-1.5 w-1.5 rounded-full bg-emerald-400" />
-                          <span>{benefit}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
 
                 <button
                   type="submit"
