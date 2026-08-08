@@ -1181,14 +1181,14 @@ export default function PlansPage() {
             <span style={{ color: '#00B4FF' }}>Earn While It Works.</span>
           </h2>
           <p className="text-[11px] leading-relaxed" style={{ color: '#94A3B8' }}>
-            Your money provisions a GPU node. AI workloads rent it 24/7. You earn a share of every compute cycle — deposited to your balance automatically.
+            Your provisioning credit is allocated to GPU compute resources. Enterprise AI workloads lease your allocated compute 24/7. Revenue is credited to your account in real-time as workloads execute.
           </p>
           
           {/* How it works — 3 mini steps */}
           <div className="flex items-center gap-2 mt-4">
             <div className="flex-1 rounded-lg px-3 py-2 text-center" style={{ background: 'rgba(0,180,255,0.06)', border: '1px solid rgba(0,180,255,0.12)' }}>
               <p className="text-[8px] font-black uppercase text-cyan-400 mb-0.5">1 · Deposit</p>
-              <p className="text-[9px] font-bold text-white">Fund your node</p>
+              <p className="text-[9px] font-bold text-white">Allocate credit</p>
             </div>
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#00B4FF" strokeWidth="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
             <div className="flex-1 rounded-lg px-3 py-2 text-center" style={{ background: 'rgba(16,185,129,0.06)', border: '1px solid rgba(16,185,129,0.12)' }}>
@@ -1198,7 +1198,7 @@ export default function PlansPage() {
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#00B4FF" strokeWidth="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
             <div className="flex-1 rounded-lg px-3 py-2 text-center" style={{ background: 'rgba(250,204,21,0.06)', border: '1px solid rgba(250,204,21,0.12)' }}>
               <p className="text-[8px] font-black uppercase text-yellow-400 mb-0.5">3 · Earn</p>
-              <p className="text-[9px] font-bold text-white">Get paid daily</p>
+              <p className="text-[9px] font-bold text-white">Revenue credited</p>
             </div>
           </div>
         </div>
@@ -1240,23 +1240,51 @@ export default function PlansPage() {
         </div>
       </div>
 
-      {/* ② BALANCE CHIP — right below tab, always visible ──────────────── */}
+      {/* ② ALLOCATION STATUS — Infrastructure Style ──────────────── */}
       <div className="flex items-center justify-between rounded-xl px-4 py-3 mb-4"
-        style={{ background: 'linear-gradient(135deg, rgba(255,255,255,0.04) 0%, rgba(0,0,0,0.3) 100%)', border: '1px solid rgba(255,255,255,0.07)' }}>
-        <div className="flex items-center gap-2">
-          <span className="text-lg">💰</span>
+        style={{ background: 'linear-gradient(135deg, rgba(0,180,255,0.04) 0%, rgba(10,12,30,0.95) 100%)', border: '1px solid rgba(0,180,255,0.12)' }}>
+        <div className="flex items-center gap-3">
+          <div className="relative">
+            <div className="w-3 h-3 rounded-full bg-cyan-400" />
+            <div className="absolute inset-0 w-3 h-3 rounded-full animate-ping bg-cyan-400 opacity-20" />
+          </div>
           <div>
-            <p className="text-[9px] uppercase tracking-widest text-gray-500 font-bold">Available Balance</p>
+            <p className="text-[9px] uppercase tracking-widest font-bold" style={{ color: '#00B4FF' }}>Provisioning Credit</p>
             <p className="text-base font-black text-white">KSh {(user?.balance || 0).toLocaleString()}</p>
           </div>
         </div>
         <button
           onClick={() => navigate('/profile?deposit=1')}
           className="px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-tighter transition-all active:scale-95"
-          style={{ background: 'linear-gradient(135deg, rgba(220,38,38,0.2), rgba(220,38,38,0.08))', border: '1px solid rgba(220,38,38,0.3)', color: '#f87171' }}
+          style={{ background: 'linear-gradient(135deg, rgba(0,180,255,0.15), rgba(0,180,255,0.05))', border: '1px solid rgba(0,180,255,0.3)', color: '#00B4FF' }}
         >
-          + Top Up
+          + Allocate
         </button>
+      </div>
+
+      {/* ── Uptime Sparkline ── */}
+      <div className="rounded-xl px-4 py-2 mb-4 flex items-center justify-between" style={{ background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(255,255,255,0.05)' }}>
+        <div className="flex items-center gap-2">
+          <svg width="40" height="16" viewBox="0 0 40 16" className="flex-shrink-0">
+            <polyline
+              fill="none"
+              stroke="#34D399"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+              points="0,14 3,12 6,13 9,8 12,9 15,6 18,7 21,4 24,5 27,3 30,4 33,2 36,3 40,1"
+              style={{ animation: 'pulse 2s ease-in-out infinite' }}
+            />
+          </svg>
+          <span className="text-[9px] font-mono" style={{ color: '#34D399' }}>Uptime 99.97%</span>
+        </div>
+        <div className="flex items-center gap-3">
+          <span className="text-[9px] font-mono text-gray-500">24h</span>
+          <div className="flex gap-0.5">
+            {Array.from({length: 12}, (_, i) => (
+              <div key={i} className="w-[2px] rounded-full bg-emerald-400/60" style={{ height: `${6 + Math.sin(i * 0.5) * 4}px` }} />
+            ))}
+          </div>
+        </div>
       </div>
 
       {/* ③ PLAN QUIZ ─────────────────────────────────────────────────────── */}
@@ -1408,6 +1436,7 @@ export default function PlansPage() {
               const total = getWorkloadTotalReturn(plan.amount, selectedWorkload)
               const roi = Math.round((total / plan.amount - 1) * 100)
               const isCritical = plan.amount >= 15000
+              const isPremium = plan.amount >= 15000
               const planImage = PLAN_IMAGES[plan.id]
               const badge = PLAN_BADGES[plan.id]
               const isHighlighted = highlightPlanId === plan.id
@@ -1416,8 +1445,15 @@ export default function PlansPage() {
                 <div key={plan.id} id={`plan-${plan.id}`}>
                   <HapticButton
                     onClick={() => setSelectedDetailPlan(plan)}
-                    className={`w-full text-left px-4 py-3 transition-all ${isCritical ? 'demand-critical' : ''} ${isHighlighted ? 'ring-2 ring-indigo-400 ring-inset rounded-xl' : ''}`}
+                    className={`w-full text-left px-4 py-3 transition-all relative ${isCritical ? 'demand-critical' : ''} ${isHighlighted ? 'ring-2 ring-indigo-400 ring-inset rounded-xl' : ''} ${isPremium ? 'rounded-xl overflow-hidden' : ''}`}
+                    style={isPremium ? { background: 'linear-gradient(135deg, rgba(212,175,55,0.04) 0%, rgba(10,12,30,0.98) 100%)', border: '1px solid rgba(212,175,55,0.2)' } : undefined}
                   >
+                    {/* Gold premium corner badge */}
+                    {isPremium && (
+                      <div className="absolute top-0 right-0 px-2 py-0.5 rounded-bl-lg" style={{ background: 'linear-gradient(135deg, #D4AF37, #B8860B)' }}>
+                        <span className="text-[7px] font-black text-black uppercase tracking-tighter">VIP Node</span>
+                      </div>
+                    )}
                     <div className="flex items-center gap-3 mb-2">
                       {planImage && (
                         <div className="relative w-10 h-10 rounded-lg overflow-hidden flex-shrink-0 border border-white/10">
