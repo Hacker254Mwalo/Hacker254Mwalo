@@ -1230,8 +1230,9 @@ export default function PlansPage() {
           {Object.values(PLAN_PATHS).map(path => {
             const active = activeTab === path.id
             const isLongTerm = path.id === 'standard'
-            const nodeCount = isLongTerm ? 847 + Math.floor(Math.random() * 10) : 342 + Math.floor(Math.random() * 8)
-            const avgDaily = isLongTerm ? getWorkloadYield(1000, 'finance') : Math.floor(3500 * 0.03)
+            const minEntry = isLongTerm ? 200 : 3500
+            const avgDaily = isLongTerm ? getWorkloadYield(minEntry, 'finance') : Math.floor(minEntry * 0.03)
+            const totalReturn = isLongTerm ? getWorkloadTotalReturn(minEntry, 'finance') : Math.floor(minEntry * 1.03)
             
             return (
               <HapticButton
@@ -1255,20 +1256,31 @@ export default function PlansPage() {
                 </div>
 
                 {/* Live Activity Row */}
-                <div className="flex items-center gap-3 mb-3 px-3 py-2 rounded-lg" style={{ background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(255,255,255,0.05)' }}>
-                  <div className="flex items-center gap-1.5">
-                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                    <span className="text-[9px] font-mono font-bold text-emerald-400">{nodeCount.toLocaleString()} active</span>
-                  </div>
-                  <div className="w-px h-3 bg-white/10" />
-                  <span className="text-[9px] font-mono" style={{ color: 'rgba(255,255,255,0.5)' }}>
-                    Avg: KSh {avgDaily.toLocaleString()}/day
+                <div className="flex items-center gap-2 mb-3 px-3 py-2 rounded-lg" style={{ background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(255,255,255,0.05)' }}>
+                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                  <span className="text-[9px] font-mono" style={{ color: 'rgba(255,255,255,0.6)' }}>
+                    From KSh {minEntry.toLocaleString()} →
                   </span>
-                  <div className="w-px h-3 bg-white/10" />
                   {isLongTerm ? (
-                    <span className="text-[9px] font-mono text-blue-400">Day 43/60 avg</span>
+                    <>
+                      <span className="text-[10px] font-mono font-bold" style={{ color: '#34D399' }}>
+                        +{((minEntry * DAILY_RATE * 1.25) / minEntry * 100).toFixed(1)}%/day
+                      </span>
+                      <div className="w-px h-3 bg-white/10" />
+                      <span className="text-[9px] font-mono" style={{ color: '#94A3B8' }}>
+                        KSh {avgDaily.toLocaleString()}/day · KSh {totalReturn.toLocaleString()} total
+                      </span>
+                    </>
                   ) : (
-                    <span className="text-[9px] font-mono text-purple-400">Batch in 4h 23m</span>
+                    <>
+                      <span className="text-[10px] font-mono font-bold" style={{ color: '#34D399' }}>
+                        +3% flat
+                      </span>
+                      <div className="w-px h-3 bg-white/10" />
+                      <span className="text-[9px] font-mono" style={{ color: '#94A3B8' }}>
+                        Earn KSh {Math.floor(minEntry * 0.03).toLocaleString()} at 24h
+                      </span>
+                    </>
                   )}
                 </div>
 
@@ -1295,12 +1307,12 @@ export default function PlansPage() {
         {/* ── Bottom Comparison Strip ── */}
         <div className="mt-3 grid grid-cols-2 gap-2">
           <div className="rounded-lg px-3 py-2 text-center" style={{ background: 'rgba(239,68,68,0.05)', border: '1px solid rgba(239,68,68,0.1)' }}>
-            <p className="text-[8px] uppercase font-black text-gray-500 mb-0.5">KSh 200 → 60d</p>
-            <p className="text-[10px] font-bold text-white">Total: KSh {getWorkloadTotalReturn(200, 'finance').toLocaleString()}</p>
+            <p className="text-[8px] uppercase font-black text-gray-500 mb-0.5">Long-Term at min (KSh 200)</p>
+            <p className="text-[10px] font-bold text-white">Earns KSh {getWorkloadYield(200, 'finance').toLocaleString()}/day → KSh {getWorkloadTotalReturn(200, 'finance').toLocaleString()} in 60 days</p>
           </div>
           <div className="rounded-lg px-3 py-2 text-center" style={{ background: 'rgba(16,185,129,0.05)', border: '1px solid rgba(16,185,129,0.1)' }}>
-            <p className="text-[8px] uppercase font-black text-gray-500 mb-0.5">KSh 3,500 → 24h</p>
-            <p className="text-[10px] font-bold text-white">Return: KSh {(3500 + Math.floor(3500 * 0.03)).toLocaleString()}</p>
+            <p className="text-[8px] uppercase font-black text-gray-500 mb-0.5">Short-Term at min (KSh 3,500)</p>
+            <p className="text-[10px] font-bold text-white">Earns KSh {Math.floor(3500 * 0.03).toLocaleString()} profit → KSh {(3500 + Math.floor(3500 * 0.03)).toLocaleString()} back in 24h</p>
           </div>
         </div>
       </div>
