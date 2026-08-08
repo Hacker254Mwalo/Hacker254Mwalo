@@ -203,7 +203,7 @@ export default function AuthPage() {
       }
 
       if (!refCode || !refCode.trim()) {
-        triggerErrorState('An invitation code is required to create an account.', 'ref')
+        triggerErrorState('Please enter the code that was shared with you.', 'ref')
         return
       }
 
@@ -222,7 +222,7 @@ export default function AuthPage() {
 
       const referrer = await findUserByReferralCode(refCode.trim().toUpperCase())
       if (!referrer) {
-        triggerErrorState('Invitation code not found. Please confirm the code and try again.', 'ref')
+        triggerErrorState('That code could not be found. Please confirm it and try again.', 'ref')
         return
       }
 
@@ -566,7 +566,7 @@ export default function AuthPage() {
                   <div>
                     <label className="mb-1 flex items-center gap-2 text-xs text-gray-400">
                       <span style={{ color: focusedField === 'ref' ? '#FFD700' : '#9ca3af', transition: 'color 0.2s' }}>✉️</span>
-                      Invitation code
+                      Access code
                     </label>
                     <input
                       className={`input-field ${focusedField === 'ref' ? 'input-gold-focus' : ''}`}
@@ -578,7 +578,7 @@ export default function AuthPage() {
                       required
                     />
                     <div className="mt-3 rounded-xl border border-amber-300/12 bg-amber-200/5 px-3 py-3 text-xs leading-6 text-slate-300">
-                      Invitation codes help us keep onboarding traceable, connected to an existing member, and easier to review if account help is needed later.
+                      Your access code makes setup quick and links your new account to a trusted member.
                     </div>
                   </div>
                 )}
