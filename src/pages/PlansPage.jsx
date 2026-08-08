@@ -1095,7 +1095,7 @@ export default function PlansPage() {
     : null
   const selectedPath = activeTab ? PLAN_PATHS[activeTab] : null
   const alternatePath = activeTab === 'short-term' ? PLAN_PATHS.standard : PLAN_PATHS['short-term']
-  const hasSelectedPath = Boolean(activeTab)
+  const hasSelectedPath = activeTab !== null
 
   return (
     <div className="pt-4 md:pt-20 pb-28 md:pb-8 px-4 max-w-2xl mx-auto relative">
@@ -1193,127 +1193,37 @@ export default function PlansPage() {
         <div className="absolute bottom-0 left-0 right-0 h-[2px]" style={{ background: 'linear-gradient(90deg, transparent, rgba(0,180,255,0.5), transparent)' }} />
       </div>
 
-      {/* ① NODE PATH CHOOSER — Realistic Infrastructure Style ──────────── */}
-      <div className="rounded-2xl p-4 mb-3 shadow-2xl" style={{ background: 'linear-gradient(135deg, rgba(7,10,26,0.98), rgba(10,12,30,0.95))', border: '1px solid rgba(0,180,255,0.12)' }}>
-        
-        {/* ── Live Network Status Bar ── */}
-        <div className="flex items-center justify-between px-3 py-2 rounded-xl mb-3" style={{ background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(0,180,255,0.1)' }}>
-          <div className="flex items-center gap-2">
-            <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-            <span className="text-[9px] font-black uppercase tracking-widest" style={{ color: '#00B4FF' }}>Network Status</span>
-          </div>
-          <div className="flex items-center gap-4">
-            <span className="text-[10px] font-mono" style={{ color: '#34D399' }}>1,248 nodes</span>
-            <span className="text-[10px] font-mono" style={{ color: '#FACC15' }}>94.2% demand</span>
-            <span className="text-[10px] font-mono text-gray-400">Uptime 99.97%</span>
-          </div>
-        </div>
-
-        {/* ── Header ── */}
-        <div className="flex items-start justify-between gap-3 mb-3">
-          <div>
-            <p className="text-[10px] uppercase tracking-[0.25em] font-black text-cyan-300">Choose your node path first</p>
-            <h3 className="text-base font-black text-white mt-1">Select infrastructure tier — matching plans shown below.</h3>
-          </div>
-          {selectedPath && (
-            <span
-              className="shrink-0 text-[9px] font-black uppercase tracking-[0.2em] px-2.5 py-1 rounded-full"
-              style={{ background: `${selectedPath.accent}22`, color: selectedPath.accent, border: `1px solid ${selectedPath.accent}44` }}
-            >
-              Current: {selectedPath.label}
-            </span>
-          )}
-        </div>
-
-        {/* ── Path Cards ── */}
-        <div className="grid md:grid-cols-2 gap-3">
-          {Object.values(PLAN_PATHS).map(path => {
-            const active = activeTab === path.id
-            const isLongTerm = path.id === 'standard'
-            const minEntry = isLongTerm ? 200 : 3500
-            const avgDaily = isLongTerm ? getWorkloadYield(minEntry, 'finance') : Math.floor(minEntry * 0.03)
-            const totalReturn = isLongTerm ? getWorkloadTotalReturn(minEntry, 'finance') : Math.floor(minEntry * 1.03)
-            
-            return (
-              <HapticButton
-                key={path.id}
-                onClick={() => setActiveTab(path.id)}
-                className={`relative rounded-2xl p-4 text-left transition-all duration-300 ${active ? 'scale-[1.01]' : 'hover:-translate-y-0.5'}`}
-                style={{
-                  background: active ? `linear-gradient(135deg, ${path.glow}, rgba(10,12,30,0.98))` : 'linear-gradient(135deg, rgba(255,255,255,0.03), rgba(10,12,30,0.9))',
-                  border: `1px solid ${active ? `${path.accent}66` : 'rgba(255,255,255,0.08)'}`,
-                  boxShadow: active ? `0 0 24px ${path.glow}` : 'none',
-                }}
-              >
-                {/* Card Header */}
-                <div className="flex items-start justify-between gap-3 mb-3">
-                  <div>
-                    <p className="text-[9px] font-black uppercase tracking-[0.2em]" style={{ color: path.accent }}>{path.eyebrow}</p>
-                    <h4 className="text-lg font-black text-white mt-1">{path.label}</h4>
-                    <p className="text-[10px] font-bold uppercase tracking-[0.18em] mt-1" style={{ color: active ? path.accent : '#94a3b8' }}>{path.helper}</p>
-                  </div>
-                  {active && <span className="text-xs font-black px-2 py-1 rounded-full bg-white text-black">Selected</span>}
-                </div>
-
-                {/* Live Activity Row */}
-                <div className="flex items-center gap-2 mb-3 px-3 py-2 rounded-lg" style={{ background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(255,255,255,0.05)' }}>
-                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                  <span className="text-[9px] font-mono" style={{ color: 'rgba(255,255,255,0.6)' }}>
-                    From KSh {minEntry.toLocaleString()} →
-                  </span>
-                  {isLongTerm ? (
-                    <>
-                      <span className="text-[10px] font-mono font-bold" style={{ color: '#34D399' }}>
-                        +{((minEntry * DAILY_RATE * 1.25) / minEntry * 100).toFixed(1)}%/day
-                      </span>
-                      <div className="w-px h-3 bg-white/10" />
-                      <span className="text-[9px] font-mono" style={{ color: '#94A3B8' }}>
-                        KSh {avgDaily.toLocaleString()}/day · KSh {totalReturn.toLocaleString()} total
-                      </span>
-                    </>
-                  ) : (
-                    <>
-                      <span className="text-[10px] font-mono font-bold" style={{ color: '#34D399' }}>
-                        +3% flat
-                      </span>
-                      <div className="w-px h-3 bg-white/10" />
-                      <span className="text-[9px] font-mono" style={{ color: '#94A3B8' }}>
-                        Earn KSh {Math.floor(minEntry * 0.03).toLocaleString()} at 24h
-                      </span>
-                    </>
-                  )}
-                </div>
-
-                {/* Spec Row */}
-                <div className="grid grid-cols-3 gap-2">
-                  <div className="rounded-xl p-2.5 bg-black/30 border border-white/5">
-                    <p className="text-[8px] uppercase font-black text-gray-500">Entry</p>
-                    <p className="text-[10px] font-bold text-white mt-1">{path.minimum}</p>
-                  </div>
-                  <div className="rounded-xl p-2.5 bg-black/30 border border-white/5">
-                    <p className="text-[8px] uppercase font-black text-gray-500">Payout</p>
-                    <p className="text-[10px] font-bold text-white mt-1">{isLongTerm ? 'Daily' : 'Lump Sum'}</p>
-                  </div>
-                  <div className="rounded-xl p-2.5 bg-black/30 border border-white/5">
-                    <p className="text-[8px] uppercase font-black text-gray-500">Cycle</p>
-                    <p className="text-[10px] font-bold text-white mt-1">{isLongTerm ? '60 days' : '24h–7d'}</p>
-                  </div>
-                </div>
-              </HapticButton>
-            )
-          })}
-        </div>
-
-        {/* ── Bottom Comparison Strip ── */}
-        <div className="mt-3 grid grid-cols-2 gap-2">
-          <div className="rounded-lg px-3 py-2 text-center" style={{ background: 'rgba(239,68,68,0.05)', border: '1px solid rgba(239,68,68,0.1)' }}>
-            <p className="text-[8px] uppercase font-black text-gray-500 mb-0.5">Long-Term at min (KSh 200)</p>
-            <p className="text-[10px] font-bold text-white">Earns KSh {getWorkloadYield(200, 'finance').toLocaleString()}/day → KSh {getWorkloadTotalReturn(200, 'finance').toLocaleString()} in 60 days</p>
-          </div>
-          <div className="rounded-lg px-3 py-2 text-center" style={{ background: 'rgba(16,185,129,0.05)', border: '1px solid rgba(16,185,129,0.1)' }}>
-            <p className="text-[8px] uppercase font-black text-gray-500 mb-0.5">Short-Term at min (KSh 3,500)</p>
-            <p className="text-[10px] font-bold text-white">Earns KSh {Math.floor(3500 * 0.03).toLocaleString()} profit → KSh {(3500 + Math.floor(3500 * 0.03)).toLocaleString()} back in 24h</p>
-          </div>
+      {/* ① NODE TYPE FILTER — Natural Browse Flow ─────────────────────── */}
+      <div className="mb-4">
+        {/* Simple tab switcher — like AWS/GCP region filter */}
+        <div className="flex items-center gap-2 mb-3">
+          <span className="text-[9px] uppercase tracking-widest font-bold text-gray-500 mr-2">Filter:</span>
+          <button
+            onClick={() => setActiveTab(null)}
+            className={`px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all ${
+              activeTab === null ? 'bg-white text-black' : 'text-gray-400 hover:text-white hover:bg-white/5'
+            }`}
+          >
+            All Nodes
+          </button>
+          <button
+            onClick={() => setActiveTab('standard')}
+            className={`px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all flex items-center gap-1 ${
+              activeTab === 'standard' ? 'bg-white text-black' : 'text-gray-400 hover:text-white hover:bg-white/5'
+            }`}
+          >
+            <span className="w-1.5 h-1.5 rounded-full bg-red-400" />
+            Long-Term
+          </button>
+          <button
+            onClick={() => setActiveTab('short-term')}
+            className={`px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all flex items-center gap-1 ${
+              activeTab === 'short-term' ? 'bg-white text-black' : 'text-gray-400 hover:text-white hover:bg-white/5'
+            }`}
+          >
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+            Short-Term
+          </button>
         </div>
       </div>
 
