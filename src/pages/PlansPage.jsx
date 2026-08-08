@@ -1167,30 +1167,43 @@ export default function PlansPage() {
         </div>
       )}
 
-      {/* Quick Actions Strip */}
-      <QuickActions user={user} showToast={showToast} />
-
-      {/* ── Page Header — Heavier Professional Style ── */}
-      <div className="mb-5 relative overflow-hidden rounded-2xl px-5 py-4" style={{ background: 'linear-gradient(135deg, rgba(6,182,212,0.08) 0%, rgba(10,12,30,0.95) 100%)', border: '1px solid rgba(0,180,255,0.12)' }}>
-        {/* Grid pattern overlay */}
-        <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: 'repeating-linear-gradient(0deg, transparent, transparent 20px, rgba(0,180,255,0.3) 20px, rgba(0,180,255,0.3) 21px), repeating-linear-gradient(90deg, transparent, transparent 20px, rgba(0,180,255,0.3) 20px, rgba(0,180,255,0.3) 21px)' }} />
-        <div className="relative z-10 flex items-center justify-between">
-          <div>
-            <p className="text-[9px] uppercase tracking-[0.3em] font-black text-cyan-400 mb-1">Infrastructure Portal</p>
-            <h2 className="text-2xl font-black text-white">Provision Compute Infrastructure</h2>
-            <p className="text-xs mt-1" style={{ color: 'var(--text-secondary)' }}>
-              Deploy GPU nodes · Earn real-time compute revenue · Scale anytime
-            </p>
+      {/* ── Page Header — Rent AI, Earn Real ── */}
+      <div className="mb-5 relative overflow-hidden rounded-2xl px-5 py-5" style={{ background: 'linear-gradient(135deg, rgba(10,12,30,0.98) 0%, rgba(15,23,42,0.95) 50%, rgba(10,12,30,0.98) 100%)', border: '1px solid rgba(0,180,255,0.15)' }}>
+        {/* Animated grid overlay */}
+        <div className="absolute inset-0 opacity-[0.04]" style={{ backgroundImage: 'repeating-linear-gradient(0deg, transparent, transparent 24px, rgba(0,180,255,0.4) 24px, rgba(0,180,255,0.4) 25px), repeating-linear-gradient(90deg, transparent, transparent 24px, rgba(0,180,255,0.4) 24px, rgba(0,180,255,0.4) 25px)' }} />
+        <div className="relative z-10">
+          <div className="flex items-center gap-2 mb-3">
+            <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+            <p className="text-[9px] uppercase tracking-[0.25em] font-black text-emerald-400">AI COMPUTE RENTAL PLATFORM</p>
           </div>
-          <div className="hidden md:block">
-            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="rgba(0,180,255,0.3)" strokeWidth="1">
-              <rect x="2" y="2" width="20" height="20" rx="3" />
-              <path d="M7 7h4v4H7zM13 7h4v4h-4zM7 13h4v4H7zM13 13h4v4h-4z" />
-            </svg>
+          <h2 className="text-2xl font-black text-white leading-tight mb-2">
+            Rent AI Compute Power.<br />
+            <span style={{ color: '#00B4FF' }}>Earn While It Works.</span>
+          </h2>
+          <p className="text-[11px] leading-relaxed" style={{ color: '#94A3B8' }}>
+            Your money provisions a GPU node. AI workloads rent it 24/7. You earn a share of every compute cycle — deposited to your balance automatically.
+          </p>
+          
+          {/* How it works — 3 mini steps */}
+          <div className="flex items-center gap-2 mt-4">
+            <div className="flex-1 rounded-lg px-3 py-2 text-center" style={{ background: 'rgba(0,180,255,0.06)', border: '1px solid rgba(0,180,255,0.12)' }}>
+              <p className="text-[8px] font-black uppercase text-cyan-400 mb-0.5">1 · Deposit</p>
+              <p className="text-[9px] font-bold text-white">Fund your node</p>
+            </div>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#00B4FF" strokeWidth="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+            <div className="flex-1 rounded-lg px-3 py-2 text-center" style={{ background: 'rgba(16,185,129,0.06)', border: '1px solid rgba(16,185,129,0.12)' }}>
+              <p className="text-[8px] font-black uppercase text-emerald-400 mb-0.5">2 · Provision</p>
+              <p className="text-[9px] font-bold text-white">AI uses your GPU</p>
+            </div>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#00B4FF" strokeWidth="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+            <div className="flex-1 rounded-lg px-3 py-2 text-center" style={{ background: 'rgba(250,204,21,0.06)', border: '1px solid rgba(250,204,21,0.12)' }}>
+              <p className="text-[8px] font-black uppercase text-yellow-400 mb-0.5">3 · Earn</p>
+              <p className="text-[9px] font-bold text-white">Get paid daily</p>
+            </div>
           </div>
         </div>
-        {/* Bottom accent line */}
-        <div className="absolute bottom-0 left-0 right-0 h-[2px]" style={{ background: 'linear-gradient(90deg, transparent, rgba(0,180,255,0.5), transparent)' }} />
+        {/* Bottom accent */}
+        <div className="absolute bottom-0 left-0 right-0 h-[2px]" style={{ background: 'linear-gradient(90deg, transparent, rgba(0,180,255,0.6), rgba(16,185,129,0.6), transparent)' }} />
       </div>
 
       {/* ① NODE TYPE FILTER — Natural Browse Flow ─────────────────────── */}
