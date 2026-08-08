@@ -529,7 +529,7 @@ export default function AuthPage() {
                     type="tel"
                     required
                   />
-                  <p className="mt-2 text-[11px] text-slate-500">Use the number linked to your account or invitation.</p>
+                  <p className="mt-2 text-[11px] text-slate-500">Use the phone number linked to your account.</p>
                 </div>
 
                 {!forgotMode && (
@@ -656,7 +656,7 @@ export default function AuthPage() {
                   >
                     Forgot your PIN or need account recovery?
                   </button>
-                  <span className="text-xs text-slate-500">Need help? Use the recovery flow or contact the person who shared your invite.</span>
+                  <span className="text-xs text-slate-500">Need help? Use the recovery flow or contact support.</span>
                 </div>
               ) : (
                 <p className="mt-4 text-center">
