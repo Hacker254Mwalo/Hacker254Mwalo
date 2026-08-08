@@ -304,8 +304,8 @@ export default function AuthPage() {
 
       <div className="absolute inset-0 overflow-hidden pointer-events-none" style={{ zIndex: 1 }}>
         <div className="absolute -top-20 -left-20 w-72 h-72 rounded-full opacity-20" style={{ background: 'radial-gradient(circle, #38bdf8 0%, transparent 70%)', animation: 'floatSymbol 12s ease-in-out infinite' }} />
-        <div className="absolute -bottom-32 -right-20 w-96 h-96 rounded-full opacity-10" style={{ background: 'radial-gradient(circle, #0ea5e9 0%, transparent 70%)', animation: 'floatSymbol 15s ease-in-out infinite', animationDelay: '3s' }} />
-        <div className="absolute top-1/3 right-1/4 w-48 h-48 rounded-full opacity-10" style={{ background: 'radial-gradient(circle, #7c3aed 0%, transparent 70%)', animation: 'floatSymbol 10s ease-in-out infinite', animationDelay: '6s' }} />
+        <div className="absolute -bottom-32 -right-20 w-96 h-96 rounded-full opacity-10" style={{ background: 'radial-gradient(circle, #0ea5e9 0%, transparent 70%)', animation: 'floatSymbol 15s ease-in-out infinite reverse' }} />
+        <div className="absolute top-1/3 right-1/4 w-48 h-48 rounded-full opacity-10" style={{ background: 'radial-gradient(circle, #7c3aed 0%, transparent 70%)', animation: 'floatSymbol 10s ease-in-out infinite' }} />
         {Array.from({ length: mobile ? 10 : 18 }).map((_, i) => (
           <div
             key={i}
@@ -370,7 +370,7 @@ export default function AuthPage() {
                   Your account, plans, and activity in one premium entry point.
                 </h1>
                 <p className="mt-4 max-w-2xl text-sm leading-7 text-slate-300 md:text-base">
-                  Access your account, manage your plans, and track your activity in a calm, trustworthy experience built around privacy and clarity.
+                  Access your account, manage your plans, and track your activity in a calm, privacy-first experience built around clarity.
                 </p>
               </div>
 
