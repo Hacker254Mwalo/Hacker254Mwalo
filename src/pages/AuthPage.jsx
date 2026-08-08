@@ -10,68 +10,14 @@ const TRUST_SIGNALS = [
   'Privacy-first experience',
 ]
 
-const STATUS_CARDS = [
-  {
-    title: 'One premium entry point',
-    body: 'Your account, plans, and activities — managed from a single protected gateway.',
-    accent: 'rgba(255,215,0,0.18)',
-    border: 'rgba(255,215,0,0.25)',
-  },
-  {
-    title: 'Access & manage everything',
-    body: 'Sign in once to open your dashboard, manage plans, and track earnings in real time.',
-    accent: 'rgba(96,165,250,0.18)',
-    border: 'rgba(96,165,250,0.25)',
-  },
-  {
-    title: 'Earn while your node works',
-    body: 'Every plan you activate starts generating daily compute yield from active GPU nodes.',
-    accent: 'rgba(52,211,153,0.18)',
-    border: 'rgba(52,211,153,0.25)',
-  },
-]
 
-const ACCESS_FEATURES = [
-  'Private dashboard with daily yield tracking',
-  'Activate plans from KSh 500 to earn compute yield',
-  'Full activity history with real matching logic',
-]
 
 const PREVIEW_ITEMS = [
   { label: 'Account', value: 'Access' },
-  { label: 'Plans', value: 'Active' },
-  { label: 'Yield', value: 'Daily' },
+  { label: 'Plans', value: 'Ready' },
+  { label: 'History', value: 'Available' },
 ]
 
-/* ── Live stats strip ── pure CSS/JS, no external sources ──────────────── */
-const LIVE_STATS = [
-  { label: 'GPU demand', base: 87, unit: '%', color: '#FFD700' },
-  { label: 'Nodes online', base: 1248, unit: '', color: '#34D399' },
-  { label: 'KSh paid out', base: 3420000, unit: 'M+', color: '#60A5FA' },
-]
-
-const SIGNUP_BENEFITS = [
-  'Open your dashboard and see earnings from day one',
-  'Activate a GPU node plan to start daily compute yield',
-  'Every activity is tracked and tied to your profile',
-]
-
-/* ── Live animated value (client-side only, no external calls) ─────────── */
-function LiveValue({ stat }) {
-  const [value, setValue] = useState(stat.base)
-  useEffect(() => {
-    const id = setInterval(() => {
-      setValue((prev) => {
-        const jitter = (Math.random() - 0.42) * (stat.base > 1000 ? 40 : 1.6)
-        const next = prev + jitter
-        return stat.base > 1000 ? Math.max(stat.base - 200, parseFloat(next.toFixed(2))) : parseFloat(next.toFixed(1))
-      })
-    }, 2500)
-    return () => clearInterval(id)
-  }, [])
-  const display = stat.base > 1000 ? `KSh ${value.toLocaleString()}M+` : stat.unit === '%' ? `${value}%` : `${value.toLocaleString()}`
-  return <span className="text-sm font-bold tabular-nums text-white">{display}</span>
-}
 
 export default function AuthPage() {
   const [tab, setTab] = useState('login')
@@ -438,14 +384,14 @@ export default function AuthPage() {
                     {forgotMode ? 'Account recovery' : tab === 'login' ? 'Member access' : 'Account setup'}
                   </p>
                   <h2 className="mt-2 text-2xl font-black text-white">
-                    {forgotMode ? 'Recover your account access' : tab === 'login' ? 'Welcome back' : 'Start earning today'}
+                    {forgotMode ? 'Recover your account access' : tab === 'login' ? 'Welcome back' : 'Create your account'}
                   </h2>
                   <p className="mt-2 text-sm leading-6 text-slate-300">
                     {forgotMode
                       ? 'Submit your number to start a guided recovery request.'
                       : tab === 'login'
                         ? 'Use your phone number and PIN to open your account.'
-                        : 'Create your account and activate a node plan to earn daily.'}
+                        : 'Set up your account to access the compute network.'}
                   </p>
                 </div>
                 <div
@@ -561,7 +507,7 @@ export default function AuthPage() {
                       required
                     />
                     <div className="mt-3 rounded-xl border border-amber-300/12 bg-amber-200/5 px-3 py-3 text-xs leading-6 text-slate-300">
-                      Your access code makes setup quick and links your new account to a trusted member — earning plans start at KSh 500.
+                      Your access code connects your account to the compute network through a trusted member.
                     </div>
                   </div>
                 )}
@@ -660,21 +606,6 @@ export default function AuthPage() {
                   </button>
                 </p>
               )}
-
-              <div className="mt-6 grid gap-3 sm:grid-cols-3">
-                <div className="rounded-xl border border-white/8 bg-white/4 px-3 py-3 text-center">
-                  <p className="text-[10px] uppercase tracking-[0.2em] text-slate-500">Access</p>
-                  <p className="mt-1 text-sm font-semibold text-white">Private</p>
-                </div>
-                <div className="rounded-xl border border-white/8 bg-white/4 px-3 py-3 text-center">
-                  <p className="text-[10px] uppercase tracking-[0.2em] text-slate-500">Plans</p>
-                  <p className="mt-1 text-sm font-semibold text-white">9 tiers</p>
-                </div>
-                <div className="rounded-xl border border-white/8 bg-white/4 px-3 py-3 text-center">
-                  <p className="text-[10px] uppercase tracking-[0.2em] text-slate-500">Yield</p>
-                  <p className="mt-1 text-sm font-semibold text-white">Daily</p>
-                </div>
-              </div>
 
               <p className="mt-6 text-center text-xs" style={{ color: 'rgba(218,165,32,0.58)' }}>
                 By using Dumiropay you agree to our{' '}
