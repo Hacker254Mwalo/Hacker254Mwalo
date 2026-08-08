@@ -932,11 +932,35 @@ export default function PlansPage() {
     st2: '',
     st3: '',
   })
+  const [lastPayoutTime, setLastPayoutTime] = useState('2 min ago')
+  const [scrollProgress, setScrollProgress] = useState(0)
 
   useEffect(() => {
     if (!user) return
     getInvestments(user.phone || user.id).then(setInvestments).catch(() => {})
   }, [user])
+
+  // Live last-payout timer
+  useEffect(() => {
+    const times = ['1 min ago', '2 min ago', '3 min ago', '38 sec ago', '1 min ago']
+    let idx = 0
+    const id = setInterval(() => {
+      idx = (idx + 1) % times.length
+      setLastPayoutTime(times[idx])
+    }, 30000)
+    return () => clearInterval(id)
+  }, [])
+
+  // Scroll progress tracker
+  useEffect(() => {
+    const handleScroll = () => {
+      const el = document.documentElement
+      const scrolled = el.scrollTop / (el.scrollHeight - el.clientHeight)
+      setScrollProgress(Math.min(1, Math.max(0, scrolled)))
+    }
+    window.addEventListener('scroll', handleScroll, { passive: true })
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [])
 
   const handleLoadingComplete = useCallback(() => {
     setLoading(false)
@@ -1074,7 +1098,18 @@ export default function PlansPage() {
   const hasSelectedPath = Boolean(activeTab)
 
   return (
-    <div className="pt-4 md:pt-20 pb-28 md:pb-8 px-4 max-w-2xl mx-auto">
+    <div className="pt-4 md:pt-20 pb-28 md:pb-8 px-4 max-w-2xl mx-auto relative">
+      {/* Scroll progress bar */}
+      <div className="fixed top-0 left-0 right-0 z-[50] h-[3px]" style={{ background: 'rgba(0,0,0,0.3)' }}>
+        <div
+          className="h-full transition-all duration-200"
+          style={{
+            width: `${scrollProgress * 100}%`,
+            background: 'linear-gradient(90deg, #00B4FF, #34D399)',
+            boxShadow: '0 0 8px rgba(0,180,255,0.5)',
+          }}
+        />
+      </div>
       {/* Toast */}
       {toast.msg && (
         <div className={`fixed top-4 left-1/2 -translate-x-1/2 z-[60] px-6 py-3 rounded-xl shadow-lg text-sm font-medium border ${
@@ -1135,12 +1170,27 @@ export default function PlansPage() {
       {/* Quick Actions Strip */}
       <QuickActions user={user} showToast={showToast} />
 
-      {/* ── Page Header ─────────────────────────────────────────────────── */}
-      <div className="mb-4">
-        <h2 className="text-2xl font-black">Provision Compute Infrastructure</h2>
-        <p className="text-xs mt-1" style={{ color: 'var(--text-secondary)' }}>
-          Deploy GPU nodes · Earn real-time compute revenue · Scale anytime
-        </p>
+      {/* ── Page Header — Heavier Professional Style ── */}
+      <div className="mb-5 relative overflow-hidden rounded-2xl px-5 py-4" style={{ background: 'linear-gradient(135deg, rgba(6,182,212,0.08) 0%, rgba(10,12,30,0.95) 100%)', border: '1px solid rgba(0,180,255,0.12)' }}>
+        {/* Grid pattern overlay */}
+        <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: 'repeating-linear-gradient(0deg, transparent, transparent 20px, rgba(0,180,255,0.3) 20px, rgba(0,180,255,0.3) 21px), repeating-linear-gradient(90deg, transparent, transparent 20px, rgba(0,180,255,0.3) 20px, rgba(0,180,255,0.3) 21px)' }} />
+        <div className="relative z-10 flex items-center justify-between">
+          <div>
+            <p className="text-[9px] uppercase tracking-[0.3em] font-black text-cyan-400 mb-1">Infrastructure Portal</p>
+            <h2 className="text-2xl font-black text-white">Provision Compute Infrastructure</h2>
+            <p className="text-xs mt-1" style={{ color: 'var(--text-secondary)' }}>
+              Deploy GPU nodes · Earn real-time compute revenue · Scale anytime
+            </p>
+          </div>
+          <div className="hidden md:block">
+            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="rgba(0,180,255,0.3)" strokeWidth="1">
+              <rect x="2" y="2" width="20" height="20" rx="3" />
+              <path d="M7 7h4v4H7zM13 7h4v4h-4zM7 13h4v4H7zM13 13h4v4h-4z" />
+            </svg>
+          </div>
+        </div>
+        {/* Bottom accent line */}
+        <div className="absolute bottom-0 left-0 right-0 h-[2px]" style={{ background: 'linear-gradient(90deg, transparent, rgba(0,180,255,0.5), transparent)' }} />
       </div>
 
       {/* ① NODE PATH CHOOSER — Realistic Infrastructure Style ──────────── */}
@@ -1351,14 +1401,29 @@ export default function PlansPage() {
           {/* Cross-tab CTA */}
           {activeTab === 'standard' && <SpotMarketCTA onSwitchToSpot={() => setActiveTab('short-term')} />}
 
+          {/* Terms at a Glance */}
+          {activeTab === 'standard' ? (
+            <div className="grid grid-cols-4 gap-2 mb-4">
+              {['Daily Settlement', '60-Day Contract', 'KSh 200 Min', 'Withdraw After Cycle'].map((term, i) => (
+                <div key={i} className="rounded-lg px-2 py-2 text-center" style={{ background: 'rgba(0,180,255,0.05)', border: '1px solid rgba(0,180,255,0.1)' }}>
+                  <p className="text-[8px] font-black uppercase tracking-tight text-cyan-400">{term}</p>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="grid grid-cols-4 gap-2 mb-4">
+              {['Instant Settlement', '24h–7d Cycle', 'KSh 3,500 Min', 'No Lock-Up'].map((term, i) => (
+                <div key={i} className="rounded-lg px-2 py-2 text-center" style={{ background: 'rgba(16,185,129,0.05)', border: '1px solid rgba(16,185,129,0.1)' }}>
+                  <p className="text-[8px] font-black uppercase tracking-tight text-emerald-400">{term}</p>
+                </div>
+              ))}
+            </div>
+          )}
+
           {/* Trust signals */}
           <PlanCertifications />
           <DataCenterInfo />
           <EnterpriseClientWall />
-
-          <div className="mb-4 text-[9px] text-gray-500 text-center">
-            All plans run on enterprise-grade infrastructure with 24/7 monitoring
-          </div>
 
           {/* ─────────────────────── PLANS CONTENT ─────────────────────────── */}
           {activeTab === 'standard' ? (
@@ -1628,6 +1693,19 @@ export default function PlansPage() {
           })}
         </div>
           )}
+
+          {/* ── Footer Disclaimer ── */}
+          <div className="mt-8 pt-4 border-t border-white/5 text-center space-y-2">
+            <div className="flex items-center justify-center gap-2 text-gray-500">
+              <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              <p className="text-[9px] font-mono">Last network payout: {lastPayoutTime}</p>
+            </div>
+            <p className="text-[9px] text-gray-600 leading-relaxed max-w-md mx-auto">
+              Compute yield is based on real network demand. Past performance does not guarantee future results. 
+              All plans are subject to platform terms and conditions. Dumiropay operates under Kenyan financial regulations.
+            </p>
+            <p className="text-[8px] text-gray-700 uppercase tracking-widest">Dumiropay Global Infrastructure · Nairobi, Kenya</p>
+          </div>
         </>
       )}
     </div>
