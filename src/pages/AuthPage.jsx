@@ -365,7 +365,7 @@ export default function AuthPage() {
           </div>
 
           <div className="grid gap-6 lg:grid-cols-[1.05fr_0.95fr] lg:items-start">
-            <div className="space-y-6">
+              <div className="space-y-6">
               <div>
                 <div className="mb-5 flex items-center gap-3">
                   <div
@@ -389,52 +389,6 @@ export default function AuthPage() {
                     <p className="text-sm text-slate-300">Private member access</p>
                   </div>
                 </div>
-
-                <h1 className="max-w-xl text-4xl font-black leading-tight text-white md:text-5xl">
-                  Your account, plans, and activities in one premium entry point.
-                </h1>
-                <p className="mt-4 max-w-2xl text-sm leading-7 text-slate-300 md:text-base">
-                  Access your account and manage everything from a single protected gateway — then activate a node plan and watch your daily compute yield grow.
-                </p>
-              </div>
-
-                {/* ── Live stats strip ─────────────────────────────────────────── */}
-                <div
-                  className="flex flex-wrap items-center justify-center gap-5 rounded-2xl px-5 py-3"
-                  style={{
-                    background: 'linear-gradient(135deg, rgba(10,14,28,0.92) 0%, rgba(15,20,38,0.88) 100%)',
-                    border: '1px solid rgba(255,215,0,0.12)',
-                    boxShadow: '0 8px 24px rgba(0,0,0,0.24)',
-                  }}
-                >
-                  {LIVE_STATS.map((stat) => (
-                    <div key={stat.label} className="flex items-center gap-2.5">
-                      <span
-                        className="h-2 w-2 rounded-full"
-                        style={{ background: stat.color, boxShadow: `0 0 8px ${stat.color}`, animation: 'pulseDot 2s ease-in-out infinite' }}
-                      />
-                      <span className="text-xs text-slate-400">{stat.label}</span>
-                      <LiveValue stat={stat} />
-                    </div>
-                  ))}
-                </div>
-
-                <div className="grid gap-4 md:grid-cols-3">
-                {STATUS_CARDS.map((card) => (
-                  <div
-                    key={card.title}
-                    className="rounded-2xl p-4"
-                    style={{
-                      background: `linear-gradient(145deg, ${card.accent} 0%, rgba(15,23,42,0.86) 55%, rgba(8,11,22,0.95) 100%)`,
-                      border: `1px solid ${card.border}`,
-                      boxShadow: '0 8px 28px rgba(0,0,0,0.22)',
-                      backdropFilter: 'blur(12px)',
-                    }}
-                  >
-                    <p className="text-xs font-bold uppercase tracking-[0.22em] text-white">{card.title}</p>
-                    <p className="mt-3 text-sm leading-6 text-slate-300">{card.body}</p>
-                  </div>
-                ))}
               </div>
 
               <div
@@ -445,40 +399,24 @@ export default function AuthPage() {
                   boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
                 }}
               >
-                <div className="grid gap-0 lg:grid-cols-[1.15fr_0.85fr]">
-                  <div className="p-5">
-                    <div className="relative overflow-hidden rounded-2xl border border-white/8 bg-slate-950/60 p-3">
-                      <img
-                        src="/datacenter-ai.webp"
-                        alt="Platform preview"
-                        className="w-full rounded-xl object-cover"
-                        style={{ maxHeight: '260px', animation: 'coinHeartbeat 4s ease-in-out infinite' }}
-                      />
-                      <div className="absolute inset-x-6 bottom-6 rounded-2xl border border-white/10 bg-slate-950/78 p-4 backdrop-blur-md">
-                        <p className="text-[10px] font-bold uppercase tracking-[0.28em]" style={{ color: 'rgba(255,215,0,0.72)' }}>Private access preview</p>
-                        <div className="mt-3 grid grid-cols-3 gap-2">
-                          {PREVIEW_ITEMS.map((item) => (
-                            <div key={item.label} className="rounded-xl border border-white/8 bg-white/5 px-3 py-2 text-center">
-                              <p className="text-[10px] uppercase tracking-[0.18em] text-slate-400">{item.label}</p>
-                              <p className="mt-1 text-sm font-semibold text-white">{item.value}</p>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="p-5">
-                    <div className="rounded-2xl border border-white/8 bg-white/4 p-4">
-                      <p className="text-xs font-bold uppercase tracking-[0.24em]" style={{ color: 'rgba(96,165,250,0.82)' }}>What you can do</p>
-                      <ul className="mt-4 space-y-3">
-                        {ACCESS_FEATURES.map((feature) => (
-                          <li key={feature} className="flex items-start gap-3 text-sm text-slate-300">
-                            <span className="mt-1 inline-flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500/15 text-[11px] text-emerald-300">✓</span>
-                            <span>{feature}</span>
-                          </li>
+                <div className="p-5">
+                  <div className="relative overflow-hidden rounded-2xl border border-white/8 bg-slate-950/60 p-3">
+                    <img
+                      src="/datacenter-ai.webp"
+                      alt="Platform preview"
+                      className="w-full rounded-xl object-cover"
+                      style={{ maxHeight: '260px', animation: 'coinHeartbeat 4s ease-in-out infinite' }}
+                    />
+                    <div className="absolute inset-x-6 bottom-6 rounded-2xl border border-white/10 bg-slate-950/78 p-4 backdrop-blur-md">
+                      <p className="text-[10px] font-bold uppercase tracking-[0.28em]" style={{ color: 'rgba(255,215,0,0.72)' }}>Private access preview</p>
+                      <div className="mt-3 grid grid-cols-3 gap-2">
+                        {PREVIEW_ITEMS.map((item) => (
+                          <div key={item.label} className="rounded-xl border border-white/8 bg-white/5 px-3 py-2 text-center">
+                            <p className="text-[10px] uppercase tracking-[0.18em] text-slate-400">{item.label}</p>
+                            <p className="mt-1 text-sm font-semibold text-white">{item.value}</p>
+                          </div>
                         ))}
-                      </ul>
+                      </div>
                     </div>
                   </div>
                 </div>
