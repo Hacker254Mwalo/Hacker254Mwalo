@@ -1168,42 +1168,57 @@ export default function PlansPage() {
       )}
 
       {/* ── Page Header — Rent AI, Earn Real ── */}
-      <div className="mb-5 relative overflow-hidden rounded-2xl px-5 py-5" style={{ background: 'linear-gradient(135deg, rgba(10,12,30,0.98) 0%, rgba(15,23,42,0.95) 50%, rgba(10,12,30,0.98) 100%)', border: '1px solid rgba(0,180,255,0.15)' }}>
+      <div className="mb-5 relative overflow-hidden rounded-2xl px-5 py-6 shadow-2xl" style={{ background: 'linear-gradient(160deg, #0a0e1e 0%, #0f1b2d 25%, #0d1520 50%, #111827 75%, #0a0e1e 100%)', border: '1px solid rgba(0,180,255,0.2)', boxShadow: '0 0 40px rgba(0,180,255,0.08), inset 0 1px 0 rgba(255,255,255,0.05)' }}>
+        {/* Floating glow orbs */}
+        <div className="absolute top-[-30px] right-[-20px] w-[120px] h-[120px] rounded-full opacity-15" style={{ background: 'radial-gradient(circle, rgba(0,180,255,0.8) 0%, transparent 70%)', animation: 'float 6s ease-in-out infinite' }} />
+        <div className="absolute bottom-[-40px] left-[-30px] w-[100px] h-[100px] rounded-full opacity-10" style={{ background: 'radial-gradient(circle, rgba(16,185,129,0.8) 0%, transparent 70%)', animation: 'float 8s ease-in-out infinite reverse' }} />
+        <div className="absolute top-[40%] right-[30%] w-[60px] h-[60px] rounded-full opacity-5" style={{ background: 'radial-gradient(circle, rgba(250,204,21,0.8) 0%, transparent 70%)', animation: 'float 5s ease-in-out infinite 1s' }} />
+        
         {/* Animated grid overlay */}
-        <div className="absolute inset-0 opacity-[0.04]" style={{ backgroundImage: 'repeating-linear-gradient(0deg, transparent, transparent 24px, rgba(0,180,255,0.4) 24px, rgba(0,180,255,0.4) 25px), repeating-linear-gradient(90deg, transparent, transparent 24px, rgba(0,180,255,0.4) 24px, rgba(0,180,255,0.4) 25px)' }} />
+        <div className="absolute inset-0 opacity-[0.05]" style={{ backgroundImage: 'repeating-linear-gradient(0deg, transparent, transparent 20px, rgba(0,180,255,0.3) 20px, rgba(0,180,255,0.3) 21px), repeating-linear-gradient(90deg, transparent, transparent 20px, rgba(0,180,255,0.3) 20px, rgba(0,180,255,0.3) 21px)', animation: 'gridShift 20s linear infinite' }} />
+        
+        {/* Diagonal light sweep */}
+        <div className="absolute inset-0 opacity-[0.03]" style={{ background: 'linear-gradient(105deg, transparent 30%, rgba(0,180,255,0.5) 50%, transparent 70%)', animation: 'lightSweep 4s ease-in-out infinite' }} />
+        
         <div className="relative z-10">
           <div className="flex items-center gap-2 mb-3">
-            <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-            <p className="text-[9px] uppercase tracking-[0.25em] font-black text-emerald-400">AI COMPUTE RENTAL PLATFORM</p>
+            <div className="relative">
+              <div className="w-2.5 h-2.5 rounded-full bg-emerald-400" />
+              <div className="absolute inset-0 w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping opacity-40" />
+            </div>
+            <p className="text-[9px] uppercase tracking-[0.3em] font-black text-emerald-400">AI COMPUTE RENTAL PLATFORM</p>
           </div>
-          <h2 className="text-2xl font-black text-white leading-tight mb-2">
+          <h2 className="text-[26px] font-black text-white leading-[1.15] mb-3" style={{ textShadow: '0 0 20px rgba(0,180,255,0.3)' }}>
             Rent AI Compute Power.<br />
-            <span style={{ color: '#00B4FF' }}>Earn While It Works.</span>
+            <span style={{ color: '#00B4FF', textShadow: '0 0 15px rgba(0,180,255,0.5)' }}>Earn While It Works.</span>
           </h2>
-          <p className="text-[11px] leading-relaxed" style={{ color: '#94A3B8' }}>
+          <p className="text-[11px] leading-relaxed mb-4" style={{ color: 'rgba(148,163,184,0.9)' }}>
             Your provisioning credit is allocated to GPU compute resources. Enterprise AI workloads lease your allocated compute 24/7. Revenue is credited to your account in real-time as workloads execute.
           </p>
           
-          {/* How it works — 3 mini steps */}
-          <div className="flex items-center gap-2 mt-4">
-            <div className="flex-1 rounded-lg px-3 py-2 text-center" style={{ background: 'rgba(0,180,255,0.06)', border: '1px solid rgba(0,180,255,0.12)' }}>
-              <p className="text-[8px] font-black uppercase text-cyan-400 mb-0.5">1 · Deposit</p>
-              <p className="text-[9px] font-bold text-white">Allocate credit</p>
+          {/* How it works — 3 mini steps with glass effect */}
+          <div className="flex items-center gap-1.5">
+            <div className="flex-1 rounded-xl px-3 py-2.5 text-center relative overflow-hidden" style={{ background: 'rgba(0,180,255,0.06)', border: '1px solid rgba(0,180,255,0.15)', backdropFilter: 'blur(8px)', boxShadow: '0 4px 15px rgba(0,180,255,0.05)' }}>
+              <div className="absolute inset-0 opacity-30" style={{ background: 'linear-gradient(180deg, rgba(0,180,255,0.1) 0%, transparent 100%)' }} />
+              <p className="text-[8px] font-black uppercase text-cyan-400 mb-0.5 relative z-10">1 · Deposit</p>
+              <p className="text-[9px] font-bold text-white relative z-10">Allocate credit</p>
             </div>
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#00B4FF" strokeWidth="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-            <div className="flex-1 rounded-lg px-3 py-2 text-center" style={{ background: 'rgba(16,185,129,0.06)', border: '1px solid rgba(16,185,129,0.12)' }}>
-              <p className="text-[8px] font-black uppercase text-emerald-400 mb-0.5">2 · Provision</p>
-              <p className="text-[9px] font-bold text-white">AI uses your GPU</p>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#00B4FF" strokeWidth="2.5" className="flex-shrink-0"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+            <div className="flex-1 rounded-xl px-3 py-2.5 text-center relative overflow-hidden" style={{ background: 'rgba(16,185,129,0.06)', border: '1px solid rgba(16,185,129,0.15)', backdropFilter: 'blur(8px)', boxShadow: '0 4px 15px rgba(16,185,129,0.05)' }}>
+              <div className="absolute inset-0 opacity-30" style={{ background: 'linear-gradient(180deg, rgba(16,185,129,0.1) 0%, transparent 100%)' }} />
+              <p className="text-[8px] font-black uppercase text-emerald-400 mb-0.5 relative z-10">2 · Provision</p>
+              <p className="text-[9px] font-bold text-white relative z-10">AI uses your GPU</p>
             </div>
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#00B4FF" strokeWidth="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-            <div className="flex-1 rounded-lg px-3 py-2 text-center" style={{ background: 'rgba(250,204,21,0.06)', border: '1px solid rgba(250,204,21,0.12)' }}>
-              <p className="text-[8px] font-black uppercase text-yellow-400 mb-0.5">3 · Earn</p>
-              <p className="text-[9px] font-bold text-white">Revenue credited</p>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#00B4FF" strokeWidth="2.5" className="flex-shrink-0"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+            <div className="flex-1 rounded-xl px-3 py-2.5 text-center relative overflow-hidden" style={{ background: 'rgba(250,204,21,0.06)', border: '1px solid rgba(250,204,21,0.15)', backdropFilter: 'blur(8px)', boxShadow: '0 4px 15px rgba(250,204,21,0.05)' }}>
+              <div className="absolute inset-0 opacity-30" style={{ background: 'linear-gradient(180deg, rgba(250,204,21,0.1) 0%, transparent 100%)' }} />
+              <p className="text-[8px] font-black uppercase text-yellow-400 mb-0.5 relative z-10">3 · Earn</p>
+              <p className="text-[9px] font-bold text-white relative z-10">Revenue credited</p>
             </div>
           </div>
         </div>
-        {/* Bottom accent */}
-        <div className="absolute bottom-0 left-0 right-0 h-[2px]" style={{ background: 'linear-gradient(90deg, transparent, rgba(0,180,255,0.6), rgba(16,185,129,0.6), transparent)' }} />
+        {/* Bottom accent glow */}
+        <div className="absolute bottom-0 left-0 right-0 h-[3px]" style={{ background: 'linear-gradient(90deg, transparent, rgba(0,180,255,0.8), rgba(16,185,129,0.8), transparent)', filter: 'blur(1px)', boxShadow: '0 0 15px rgba(0,180,255,0.4)' }} />
       </div>
 
       {/* ① NODE TYPE FILTER — Natural Browse Flow ─────────────────────── */}
@@ -1240,48 +1255,55 @@ export default function PlansPage() {
         </div>
       </div>
 
-      {/* ② ALLOCATION STATUS — Infrastructure Style ──────────────── */}
-      <div className="flex items-center justify-between rounded-xl px-4 py-3 mb-4"
-        style={{ background: 'linear-gradient(135deg, rgba(0,180,255,0.04) 0%, rgba(10,12,30,0.95) 100%)', border: '1px solid rgba(0,180,255,0.12)' }}>
+      {/* ② ALLOCATION STATUS — Premium Glass ──────────────── */}
+      <div className="flex items-center justify-between rounded-xl px-4 py-3.5 mb-3 relative overflow-hidden"
+        style={{ background: 'linear-gradient(145deg, rgba(15,23,42,0.9) 0%, rgba(0,180,255,0.03) 50%, rgba(15,23,42,0.9) 100%)', border: '1px solid rgba(0,180,255,0.15)', boxShadow: '0 8px 32px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.03)' }}>
+        {/* Subtle glow orb */}
+        <div className="absolute top-[-10px] left-[20%] w-[60px] h-[60px] rounded-full opacity-5" style={{ background: 'radial-gradient(circle, rgba(0,180,255,0.8) 0%, transparent 70%)' }} />
         <div className="flex items-center gap-3">
           <div className="relative">
-            <div className="w-3 h-3 rounded-full bg-cyan-400" />
-            <div className="absolute inset-0 w-3 h-3 rounded-full animate-ping bg-cyan-400 opacity-20" />
+            <div className="w-3.5 h-3.5 rounded-full bg-cyan-400" style={{ boxShadow: '0 0 8px rgba(0,180,255,0.5)' }} />
+            <div className="absolute inset-0 w-3.5 h-3.5 rounded-full animate-ping bg-cyan-400 opacity-20" />
           </div>
           <div>
-            <p className="text-[9px] uppercase tracking-widest font-bold" style={{ color: '#00B4FF' }}>Provisioning Credit</p>
-            <p className="text-base font-black text-white">KSh {(user?.balance || 0).toLocaleString()}</p>
+            <p className="text-[8px] uppercase tracking-[0.2em] font-bold" style={{ color: 'rgba(0,180,255,0.7)' }}>Provisioning Credit</p>
+            <p className="text-lg font-black text-white" style={{ textShadow: '0 0 10px rgba(0,180,255,0.2)' }}>KSh {(user?.balance || 0).toLocaleString()}</p>
           </div>
         </div>
         <button
           onClick={() => navigate('/profile?deposit=1')}
-          className="px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-tighter transition-all active:scale-95"
-          style={{ background: 'linear-gradient(135deg, rgba(0,180,255,0.15), rgba(0,180,255,0.05))', border: '1px solid rgba(0,180,255,0.3)', color: '#00B4FF' }}
+          className="px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-tighter transition-all active:scale-95 relative overflow-hidden"
+          style={{ background: 'linear-gradient(135deg, rgba(0,180,255,0.2) 0%, rgba(0,120,200,0.1) 100%)', border: '1px solid rgba(0,180,255,0.35)', color: '#00B4FF', boxShadow: '0 0 12px rgba(0,180,255,0.15)' }}
         >
           + Allocate
         </button>
       </div>
 
-      {/* ── Uptime Sparkline ── */}
-      <div className="rounded-xl px-4 py-2 mb-4 flex items-center justify-between" style={{ background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(255,255,255,0.05)' }}>
-        <div className="flex items-center gap-2">
-          <svg width="40" height="16" viewBox="0 0 40 16" className="flex-shrink-0">
+      {/* ── Uptime Sparkline — Premium ── */}
+      <div className="rounded-xl px-4 py-2.5 mb-4 flex items-center justify-between relative overflow-hidden" style={{ background: 'rgba(10,15,30,0.8)', border: '1px solid rgba(52,211,153,0.12)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.02)' }}>
+        <div className="flex items-center gap-2.5">
+          <svg width="48" height="18" viewBox="0 0 48 18" className="flex-shrink-0">
             <polyline
               fill="none"
               stroke="#34D399"
               strokeWidth="1.5"
               strokeLinecap="round"
-              points="0,14 3,12 6,13 9,8 12,9 15,6 18,7 21,4 24,5 27,3 30,4 33,2 36,3 40,1"
-              style={{ animation: 'pulse 2s ease-in-out infinite' }}
+              points="0,16 4,13 8,14 12,9 16,10 20,6 24,7 28,4 32,5 36,2 40,3 44,1 48,2"
+              style={{ filter: 'drop-shadow(0 0 4px rgba(52,211,153,0.4))' }}
+            />
+            <polyline
+              fill="rgba(52,211,153,0.1)"
+              stroke="none"
+              points="0,18 0,16 4,13 8,14 12,9 16,10 20,6 24,7 28,4 32,5 36,2 40,3 44,1 48,2 48,18"
             />
           </svg>
-          <span className="text-[9px] font-mono" style={{ color: '#34D399' }}>Uptime 99.97%</span>
+          <span className="text-[9px] font-mono font-bold" style={{ color: '#34D399' }}>Uptime 99.97%</span>
         </div>
         <div className="flex items-center gap-3">
           <span className="text-[9px] font-mono text-gray-500">24h</span>
-          <div className="flex gap-0.5">
-            {Array.from({length: 12}, (_, i) => (
-              <div key={i} className="w-[2px] rounded-full bg-emerald-400/60" style={{ height: `${6 + Math.sin(i * 0.5) * 4}px` }} />
+          <div className="flex gap-0.5 items-end">
+            {Array.from({length: 16}, (_, i) => (
+              <div key={i} className="w-[2px] rounded-full" style={{ height: `${4 + Math.sin(i * 0.6) * 3 + 3}px`, background: `rgba(52,211,153,${0.3 + Math.sin(i * 0.4) * 0.2})` }} />
             ))}
           </div>
         </div>
