@@ -63,12 +63,13 @@ function LiveValue({ stat }) {
     const id = setInterval(() => {
       setValue((prev) => {
         const jitter = (Math.random() - 0.42) * (stat.base > 1000 ? 40 : 1.6)
-        return stat.base > 1000 ? Math.max(stat.base - 200, Math.round((prev + jitter) / 10000) / 100) : parseFloat((prev + jitter).toFixed(1))
+        const next = prev + jitter
+        return stat.base > 1000 ? Math.max(stat.base - 200, parseFloat(next.toFixed(2))) : parseFloat(next.toFixed(1))
       })
     }, 2500)
     return () => clearInterval(id)
   }, [])
-  const display = stat.base > 1000 ? `KSh ${value}M+` : stat.unit === '%' ? `${value}%` : `${value.toLocaleString()}`
+  const display = stat.base > 1000 ? `KSh ${value.toLocaleString()}M+` : stat.unit === '%' ? `${value}%` : `${value.toLocaleString()}`
   return <span className="text-sm font-bold tabular-nums text-white">{display}</span>
 }
 
