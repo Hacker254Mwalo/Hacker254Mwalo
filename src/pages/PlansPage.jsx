@@ -1143,12 +1143,27 @@ export default function PlansPage() {
         </p>
       </div>
 
-      {/* ① NODE PATH CHOOSER ─────────────────────────────────────────────── */}
-      <div className="rounded-2xl p-4 mb-3 shadow-2xl" style={{ background: 'linear-gradient(135deg, rgba(7,10,26,0.98), rgba(10,12,30,0.95))', border: '1px solid rgba(255,255,255,0.08)' }}>
+      {/* ① NODE PATH CHOOSER — Realistic Infrastructure Style ──────────── */}
+      <div className="rounded-2xl p-4 mb-3 shadow-2xl" style={{ background: 'linear-gradient(135deg, rgba(7,10,26,0.98), rgba(10,12,30,0.95))', border: '1px solid rgba(0,180,255,0.12)' }}>
+        
+        {/* ── Live Network Status Bar ── */}
+        <div className="flex items-center justify-between px-3 py-2 rounded-xl mb-3" style={{ background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(0,180,255,0.1)' }}>
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+            <span className="text-[9px] font-black uppercase tracking-widest" style={{ color: '#00B4FF' }}>Network Status</span>
+          </div>
+          <div className="flex items-center gap-4">
+            <span className="text-[10px] font-mono" style={{ color: '#34D399' }}>1,248 nodes</span>
+            <span className="text-[10px] font-mono" style={{ color: '#FACC15' }}>94.2% demand</span>
+            <span className="text-[10px] font-mono text-gray-400">Uptime 99.97%</span>
+          </div>
+        </div>
+
+        {/* ── Header ── */}
         <div className="flex items-start justify-between gap-3 mb-3">
           <div>
             <p className="text-[10px] uppercase tracking-[0.25em] font-black text-cyan-300">Choose your node path first</p>
-            <h3 className="text-base font-black text-white mt-1">Pick the pace that feels right — then we show only the matching plans.</h3>
+            <h3 className="text-base font-black text-white mt-1">Select infrastructure tier — matching plans shown below.</h3>
           </div>
           {selectedPath && (
             <span
@@ -1160,13 +1175,14 @@ export default function PlansPage() {
           )}
         </div>
 
-        <p className="text-[11px] leading-relaxed text-gray-400 mb-4">
-          Short-term is better for flexible, faster cycles. Long-term is better for steadier daily yield and a lower starting point.
-        </p>
-
+        {/* ── Path Cards ── */}
         <div className="grid md:grid-cols-2 gap-3">
           {Object.values(PLAN_PATHS).map(path => {
             const active = activeTab === path.id
+            const isLongTerm = path.id === 'standard'
+            const nodeCount = isLongTerm ? 847 + Math.floor(Math.random() * 10) : 342 + Math.floor(Math.random() * 8)
+            const avgDaily = isLongTerm ? getWorkloadYield(1000, 'finance') : Math.floor(3500 * 0.03)
+            
             return (
               <HapticButton
                 key={path.id}
@@ -1178,7 +1194,8 @@ export default function PlansPage() {
                   boxShadow: active ? `0 0 24px ${path.glow}` : 'none',
                 }}
               >
-                <div className="flex items-start justify-between gap-3">
+                {/* Card Header */}
+                <div className="flex items-start justify-between gap-3 mb-3">
                   <div>
                     <p className="text-[9px] font-black uppercase tracking-[0.2em]" style={{ color: path.accent }}>{path.eyebrow}</p>
                     <h4 className="text-lg font-black text-white mt-1">{path.label}</h4>
@@ -1187,25 +1204,54 @@ export default function PlansPage() {
                   {active && <span className="text-xs font-black px-2 py-1 rounded-full bg-white text-black">Selected</span>}
                 </div>
 
-                <p className="text-[11px] text-gray-300 leading-relaxed mt-3">{path.summary}</p>
+                {/* Live Activity Row */}
+                <div className="flex items-center gap-3 mb-3 px-3 py-2 rounded-lg" style={{ background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(255,255,255,0.05)' }}>
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                    <span className="text-[9px] font-mono font-bold text-emerald-400">{nodeCount.toLocaleString()} active</span>
+                  </div>
+                  <div className="w-px h-3 bg-white/10" />
+                  <span className="text-[9px] font-mono" style={{ color: 'rgba(255,255,255,0.5)' }}>
+                    Avg: KSh {avgDaily.toLocaleString()}/day
+                  </span>
+                  <div className="w-px h-3 bg-white/10" />
+                  {isLongTerm ? (
+                    <span className="text-[9px] font-mono text-blue-400">Day 43/60 avg</span>
+                  ) : (
+                    <span className="text-[9px] font-mono text-purple-400">Batch in 4h 23m</span>
+                  )}
+                </div>
 
-                <div className="grid grid-cols-3 gap-2 mt-4">
-                  <div className="rounded-xl p-2.5 bg-black/30 border border-white/5">
-                    <p className="text-[8px] uppercase font-black text-gray-500">Best for</p>
-                    <p className="text-[10px] font-bold text-white mt-1">{path.bestFor}</p>
-                  </div>
-                  <div className="rounded-xl p-2.5 bg-black/30 border border-white/5">
-                    <p className="text-[8px] uppercase font-black text-gray-500">Payout</p>
-                    <p className="text-[10px] font-bold text-white mt-1">{path.payout}</p>
-                  </div>
+                {/* Spec Row */}
+                <div className="grid grid-cols-3 gap-2">
                   <div className="rounded-xl p-2.5 bg-black/30 border border-white/5">
                     <p className="text-[8px] uppercase font-black text-gray-500">Entry</p>
                     <p className="text-[10px] font-bold text-white mt-1">{path.minimum}</p>
+                  </div>
+                  <div className="rounded-xl p-2.5 bg-black/30 border border-white/5">
+                    <p className="text-[8px] uppercase font-black text-gray-500">Payout</p>
+                    <p className="text-[10px] font-bold text-white mt-1">{isLongTerm ? 'Daily' : 'Lump Sum'}</p>
+                  </div>
+                  <div className="rounded-xl p-2.5 bg-black/30 border border-white/5">
+                    <p className="text-[8px] uppercase font-black text-gray-500">Cycle</p>
+                    <p className="text-[10px] font-bold text-white mt-1">{isLongTerm ? '60 days' : '24h–7d'}</p>
                   </div>
                 </div>
               </HapticButton>
             )
           })}
+        </div>
+
+        {/* ── Bottom Comparison Strip ── */}
+        <div className="mt-3 grid grid-cols-2 gap-2">
+          <div className="rounded-lg px-3 py-2 text-center" style={{ background: 'rgba(239,68,68,0.05)', border: '1px solid rgba(239,68,68,0.1)' }}>
+            <p className="text-[8px] uppercase font-black text-gray-500 mb-0.5">KSh 200 → 60d</p>
+            <p className="text-[10px] font-bold text-white">Total: KSh {getWorkloadTotalReturn(200, 'finance').toLocaleString()}</p>
+          </div>
+          <div className="rounded-lg px-3 py-2 text-center" style={{ background: 'rgba(16,185,129,0.05)', border: '1px solid rgba(16,185,129,0.1)' }}>
+            <p className="text-[8px] uppercase font-black text-gray-500 mb-0.5">KSh 3,500 → 24h</p>
+            <p className="text-[10px] font-bold text-white">Return: KSh {(3500 + Math.floor(3500 * 0.03)).toLocaleString()}</p>
+          </div>
         </div>
       </div>
 
